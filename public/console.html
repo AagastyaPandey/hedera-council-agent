@@ -172,9 +172,12 @@ async function refreshList() {
 }
 
 function stage(index, name, tone, tag, score, scoreLabel, reason, hard) {
+  // Outer cell reveals in; the inner wrapper takes the flash and shake, so the two animations never replace each other.
   const s = el("div", undefined, `border-t border-edge py-3 text-left md:px-4 xl:border-l xl:first:border-l-0 xl:pl-4 xl:first:pl-0 ${hard ? "border-t-danger" : ""}`);
+  const inner = el("div", undefined, "stage-inner");
   const top = el("div", undefined, "flex items-baseline justify-between gap-3"); top.append(el("span", index, "doc-folio"), pill(tone, tag));
-  s.append(top, el("div", name, "mt-2 text-[14px] font-medium text-body"), (() => { const r = el("div", undefined, "mt-4"); r.append(ring(score, tone, scoreLabel)); return r; })(), el("p", reason, "mt-3 text-[11.5px] leading-snug text-dim"));
+  inner.append(top, el("div", name, "mt-2 text-[14px] font-medium text-body"), (() => { const r = el("div", undefined, "mt-4"); r.append(ring(score, tone, scoreLabel)); return r; })(), el("p", reason, "mt-3 text-[11.5px] leading-snug text-dim"));
+  s.append(inner);
   return s;
 }
 
@@ -230,7 +233,8 @@ async function select(id) {
   const gate = !check.matches ? ["neutral", "skipped", "n/a", "not reached", "The check failed first, so the agent refuses whatever the owner approves."]
     : !large ? ["safe", "clear", "n/a", "no gate", "Below the large threshold, no World ID needed."]
     : approval ? ["safe", "approved", "1", "approved", `World ID approved (${approval.source}), single use.`]
-    : o?.worldGateReason ? ["danger", "blocked", "0", "blocked", o.worldGateReason] : ["warn", "pending", "—", "pending", "A fresh World ID check for this exact proposal is required."];
+    : decision === "SIGNED" ? ["safe", "approved", "1", "approved", `${o.worldGateReason ?? "World ID approved"} The approval is spent.`]
+    : decision === "REFUSED" && o?.worldGateReason ? ["danger", "blocked", "0", "blocked", o.worldGateReason] : ["warn", "pending", "—", "pending", "A fresh World ID check for this exact proposal is required."];
   const pr = $("process"); pr.dataset.proposal = id; pr.dataset.decision = decision ?? "PENDING";
   pr.replaceChildren(
     stage("01", "Claim", "safe", "recorded", "1.00", "described", `${hbar(p.description.amountTinybars)} to ${p.description.payee}.`),
@@ -264,10 +268,10 @@ function choreograph({ decision, check, o }) {
   // the stage that decided it flashes: the failed check, or the blocked gate, or the signature
   const decided = !check.matches ? 1 : decision === "REFUSED" ? 2 : 3;
   if (decision) {
-    const st = stages[decided];
-    const cls = decision === "SIGNED" ? "m-flash-green" : "m-flash-red";
-    st.style.setProperty("--d", `${end.toFixed(2)}s`); st.classList.add(cls);
-    if (decision === "REFUSED") { st.classList.add("m-shake"); }
+    const inner = stages[decided].firstElementChild;
+    inner.style.setProperty("--d", `${end.toFixed(2)}s`);
+    inner.classList.add(decision === "SIGNED" ? "m-flash-green" : "m-flash-red");
+    if (decision === "REFUSED") inner.classList.add("m-shake");
   }
   [...$("ledger").querySelectorAll("td.text-danger")].forEach((td, i) => replay(td, "m-shake", end + 0.1 + i * 0.12));
   replay($("alert"), "m-wipe", end + 0.05);

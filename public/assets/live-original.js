@@ -192,7 +192,7 @@ if (document.body.querySelector(".hero .scene")) {
     setTimeout(() => runFlow(flow, { stop, ok: decision === "SIGNED" }), reduced() ? 0 : 2600);
     if (decision === "SIGNED") { const sc = $("stampText").closest(".stamp"); sc.style.color = "#3f9b45"; sc.style.borderColor = "#3f9b45"; }
     if (!check.matches) replay($("numR"), "m-shake", 3.3);
-    col(foot[1], "Check", [["Result", check.matches ? "matches" : "mismatch"], ["Paid via", o?.paidVia ?? "—"], ["Price", h.checkPrice], ["Gate", o?.worldGateReason ? "blocked" : large ? "required" : "none"]]);
+    col(foot[1], "Check", [["Result", check.matches ? "matches" : "mismatch"], ["Paid via", o?.paidVia ?? "—"], ["Price", h.checkPrice], ["Gate", !large ? "none" : decision === "SIGNED" ? "approved" : decision === "REFUSED" && o?.worldGateReason && check.matches ? "blocked" : decision === "REFUSED" ? "not reached" : "required"]]);
     col(foot[2], "Commitment", [["policy", short(policy.hash, 12)], ["entry", short(o?.auditHash, 12)], ["schedule", o?.scheduledTxId ?? "—"], ["0G", o?.zeroGRequestId ? short(o.zeroGRequestId, 12) : o?.zeroGSource ?? "—"]]);
   }
 }
