@@ -1,70 +1,92 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
 <title>Council Agent · Console</title><link rel="icon" href="data:,">
-<link rel="stylesheet" href="/assets/original.css">
-<link rel="stylesheet" href="/assets/console.css">
+<link rel="stylesheet" href="/assets/console-original.css">
 </head><body data-page="console" data-state="loading">
-<div class="grain" aria-hidden="true"></div>
-<div class="sheet">
-  <div class="rail"><div class="wordmark">COUNCIL</div><div class="rail-rule"></div><div class="rail-meta">Fig.&nbsp;03&nbsp;&middot;&nbsp;Console</div></div>
-  <div class="rail-r" aria-hidden="true"><div class="dot"></div><div class="est">Mumbai&nbsp;2026</div></div>
-  <header class="topbar">
-    <div class="menu">
-      <div class="label menu-title">Menu</div>
-      <a href="/">Atlas</a>
-      <a href="/console.html" aria-current="page">Console</a>
-      <a href="/report.html">Report</a>
-      <a href="/policy">Policy</a>
-      <a href="/audit/verify">Audit</a>
-    </div>
-    <div><div class="label">Mode</div><p class="topval"><span class="live"></span><span id="tMode">&mdash;</span></p></div>
-    <div><div class="label">Log</div><p class="topval" id="tLog">&mdash;</p></div>
-    <div class="right"><div class="label">Seats</div><p class="topval" id="tSeats">&mdash;</p></div>
-  </header>
-  <div id="chips" hidden></div>
-    <main class="console" style="padding-top:34px">
-      <aside id="meta"></aside>
-      <div>
-        <!-- CONSOLE: #banner, #head (selected proposal), #record, #process, then #new, #proposals, #join -->
-        <div id="banner" class="banner" hidden></div>
-        <div class="kicker" id="kicker">Council console</div>
-        <h1 class="h1" id="title">Console</h1>
-        <p class="prose" id="lede" style="max-width:62ch">Submit a proposal, watch the agent check it against the chain, approve large ones with World ID, and join the council. Pick a proposal below to open its record.</p>
-        <div class="actions" id="head-actions"></div>
+<div class="app-shell">
+  <aside class="app-rail" aria-hidden="true">
+    <a href="/" class="app-rail-mark">COUNCIL</a>
+    <span class="app-rail-rule"></span>
+    <span class="app-rail-meta">Council Agent, Mumbai 2026</span>
+  </aside>
+  <div class="app-rail-r" aria-hidden="true"><span class="app-dot"></span><span class="app-rail-meta" id="railMode">&mdash;</span></div>
 
-        <section id="record" aria-label="Selected proposal"></section>
-
-        <section class="sec" id="new" aria-label="New proposal">
-          <h2>New proposal <small>description vs actual transfer</small></h2>
-          <form id="new-form">
-            <div class="formgrid">
-              <div><label for="f-purpose">Purpose</label><input id="f-purpose" name="purpose" value="Pay the venue deposit" required maxlength="200"></div>
-              <div><label for="f-id">Proposal id</label><input id="f-id" name="id" required pattern="[A-Za-z0-9_\-]{1,64}"></div>
-              <div><label for="f-payee">Described payee</label><input id="f-payee" name="payee" value="0.0.1001" required></div>
-              <div><label for="f-amount">Described amount (HBAR)</label><input id="f-amount" name="amount" value="0.1" required></div>
-              <div><label for="f-tpayee">Actual transfer payee</label><input id="f-tpayee" name="tpayee" value="0.0.1001" required></div>
-              <div><label for="f-tamount">Actual transfer amount (HBAR)</label><input id="f-tamount" name="tamount" value="0.1" required></div>
-            </div>
-            <p class="actions"><button type="submit">Submit to the agent</button><span class="muted" style="align-self:center">Make the actual transfer differ to see a refusal.</span></p>
-          </form>
-        </section>
-
-        <section class="sec" id="proposals" aria-label="Proposals"></section>
-
-        <section class="sec" id="join" aria-label="Join the council">
-          <h2>Council seats <small>one person, one seat</small></h2>
-          <p id="seats"></p>
-          <button id="join-btn" class="secondary">Join the council (World ID)</button>
-        </section>
-
-        <div id="qr"></div>
-        <p id="status" role="status"></p>
-        <pre id="result" hidden></pre>
+  <header class="app-header">
+    <div class="app-header-inner">
+      <a href="/" class="app-wordmark"><span class="app-wordmark-mark" aria-hidden="true"></span><span class="app-wordmark-text">Council <em>Agent</em></span></a>
+      <span class="app-header-note">Working papers</span>
+      <nav class="app-nav" aria-label="Primary">
+        <a href="/">Atlas</a>
+        <a href="/console.html" aria-current="page">Console</a>
+        <a href="/report.html">Report</a>
+        <a href="/policy">Policy</a>
+        <a href="/audit/verify">Audit</a>
+      </nav>
+      <div class="app-header-actions">
+        <a href="/audit" class="app-header-link"><span>Audit log</span></a>
+        <span class="app-chain"><span class="status-dot text-safe"></span><span id="chainTag">&mdash;</span></span>
       </div>
-    </main>
-  <div class="ticker" aria-hidden="true"><div class="ticker-track"><span id="tickA"></span><span id="tickB"></span></div></div>
-  <footer class="footer" id="consoleFooter"><div class="col"></div><div class="col"></div><div class="col"></div><div class="col"></div></footer>
+    </div>
+    <nav class="app-mobile-nav" aria-label="Primary mobile"><a href="/">Atlas</a><a href="/console.html" aria-current="page">Console</a><a href="/report.html">Report</a></nav>
+  </header>
+
+  <main class="app-main">
+    <header class="mb-7 border-b border-edge pb-6" id="pageHeader">
+      <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div class="max-w-3xl">
+          <div class="mb-3 flex flex-wrap items-center gap-3" id="metaRow"></div>
+          <h1 class="doc-title text-body" id="title">Console</h1>
+          <p class="doc-deck mt-4" id="lede">Submit a proposal, watch the agent check it against the chain, approve large ones with World ID, and join the council.</p>
+        </div>
+        <div class="flex shrink-0 flex-wrap items-center gap-2" id="head-actions"></div>
+      </div>
+    </header>
+
+    <div id="banner" class="panel p-4 mb-6" hidden></div>
+
+    <section class="mb-10" id="recordWrap" aria-label="Selected proposal" hidden>
+      <div class="mb-4 flex flex-wrap items-end justify-between gap-3"><div><h2 class="doc-section-title text-body">Record</h2><p class="mt-1.5 max-w-2xl text-[12px] leading-relaxed text-dim" id="recordSub"></p></div></div>
+      <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <div class="panel p-5" id="record"></div>
+        <div class="panel p-5" id="process"></div>
+      </div>
+    </section>
+
+    <section class="mb-10" id="new" aria-label="New proposal">
+      <div class="mb-4 flex flex-wrap items-end justify-between gap-3"><div><h2 class="doc-section-title text-body">New proposal</h2><p class="mt-1.5 max-w-2xl text-[12px] leading-relaxed text-dim">Make the actual transfer differ from the description to see a refusal.</p></div></div>
+      <form id="new-form" class="panel p-5">
+        <div class="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+          <label class="flex flex-col gap-1.5"><span class="mono-label">Purpose</span><input id="f-purpose" name="purpose" value="Pay the venue deposit" required maxlength="200" class="h-9 border border-edge2 bg-panel2 px-2.5 text-[12px] text-body"></label>
+          <label class="flex flex-col gap-1.5"><span class="mono-label">Proposal id</span><input id="f-id" name="id" required pattern="[A-Za-z0-9_\-]{1,64}" class="h-9 border border-edge2 bg-panel2 px-2.5 text-[12px] text-body"></label>
+          <label class="flex flex-col gap-1.5"><span class="mono-label">Described payee</span><input id="f-payee" name="payee" value="0.0.1001" required class="h-9 border border-edge2 bg-panel2 px-2.5 text-[12px] text-body"></label>
+          <label class="flex flex-col gap-1.5"><span class="mono-label">Described amount (HBAR)</span><input id="f-amount" name="amount" value="0.1" required class="h-9 border border-edge2 bg-panel2 px-2.5 text-[12px] text-body"></label>
+          <label class="flex flex-col gap-1.5"><span class="mono-label">Actual transfer payee</span><input id="f-tpayee" name="tpayee" value="0.0.1001" required class="h-9 border border-edge2 bg-panel2 px-2.5 text-[12px] text-body"></label>
+          <label class="flex flex-col gap-1.5"><span class="mono-label">Actual transfer amount (HBAR)</span><input id="f-tamount" name="tamount" value="0.1" required class="h-9 border border-edge2 bg-panel2 px-2.5 text-[12px] text-body"></label>
+        </div>
+        <div class="mt-5 flex flex-wrap items-center gap-2"><button type="submit" class="btn btn-primary">Submit to the agent</button></div>
+      </form>
+    </section>
+
+    <section class="mb-10" id="proposals" aria-label="Proposals"></section>
+
+    <section class="mb-10" id="join" aria-label="Join the council">
+      <div class="mb-4 flex flex-wrap items-end justify-between gap-3"><div><h2 class="doc-section-title text-body">Council seats</h2><p class="mt-1.5 max-w-2xl text-[12px] leading-relaxed text-dim">One person, one seat, keyed by the World ID nullifier.</p></div></div>
+      <div class="panel p-5"><p id="seats" class="text-[12px] text-body"></p><div class="mt-4"><button id="join-btn" class="btn">Join the council (World ID)</button></div></div>
+    </section>
+
+    <div id="qr"></div>
+    <p id="status" role="status" class="text-[12px]"></p>
+    <pre id="result" hidden class="hash mt-4 max-h-64 overflow-auto whitespace-pre-wrap border border-edge p-3"></pre>
+  </main>
+
+  <footer class="app-footer">
+    <div class="app-footer-inner">
+      <p id="footLeft">Council Agent, Mumbai 2026</p>
+      <div class="flex flex-wrap items-center gap-4"><p id="footRight">&mdash;</p></div>
+    </div>
+  </footer>
 </div>
 <script src="/vendor/idkit.js"></script>
 <script type="module">
@@ -72,10 +94,34 @@ import { api, bus, hbar, qs } from "/assets/api.js";
 import { runWorldFlow, runMockedFlow } from "/assets/world-flow.js";
 const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
-const status = (t, cls = "") => { $("status").textContent = t; $("status").className = cls; };
+const status = (t, tone = "") => { $("status").textContent = t; $("status").className = `text-[12px] ${tone === "ok" ? "text-safe" : tone === "bad" ? "text-danger" : "text-dim"}`; };
 const show = (o) => { $("result").hidden = false; $("result").textContent = JSON.stringify(o, null, 2); };
 const toTiny = (h) => Math.round(Number(h) * 1e8);
-const th = (t) => { const x = el("th", t); return x; };
+
+// Original components (ui.tsx): StatusPill, KeyValue, HashLine, Stat.
+const TONE = { safe: ["text-safe", "●"], warn: ["text-signal", "◐"], danger: ["text-danger", "✕"], neutral: ["text-dim", "○"] };
+function pill(tone, label) {
+  const s = el("span", undefined, `inline-flex items-baseline gap-1.5 font-sans text-[10.5px] leading-none ${TONE[tone][0]}`);
+  s.append(Object.assign(el("span", TONE[tone][1], "text-[9px]"), { ariaHidden: "true" }), el("span", label));
+  return s;
+}
+function kv(label, value, tone) {
+  const row = el("div", undefined, "flex items-baseline justify-between gap-4 border-b border-edge/60 py-2 last:border-0");
+  row.append(el("span", label, "mono-label shrink-0"));
+  const v = el("span", undefined, "min-w-0 text-right text-[12px] text-body");
+  if (value instanceof Node) v.append(value); else { v.textContent = value; if (tone) v.className += ` ${tone}`; }
+  row.append(v); return row;
+}
+function hashLine(label, value) {
+  const row = el("div", undefined, "flex min-w-0 flex-col gap-1.5 border-b border-edge/70 py-2.5 last:border-0");
+  row.append(el("span", label, "mono-label"), el("code", value || "none yet", "hash block min-w-0 max-w-full truncate"));
+  return row;
+}
+function sectionHead(title, desc) {
+  const w = el("div", undefined, "mb-4 flex flex-wrap items-end justify-between gap-3");
+  const d = el("div"); d.append(el("h2", title, "doc-section-title text-body")); if (desc) d.append(el("p", desc, "mt-1.5 max-w-2xl text-[12px] leading-relaxed text-dim"));
+  w.append(d); return w;
+}
 
 let world = { configured: false, mockedAllowed: false };
 let health = {};
@@ -84,32 +130,35 @@ let selected = qs("proposal");
 async function refreshSeats() {
   const s = (await api.seats()).data;
   $("seats").textContent = `${s.count} seat${s.count === 1 ? "" : "s"} held.`;
-  $("tSeats").textContent = String(s.count).padStart(2, "0");
 }
 
 async function refreshList() {
   const rows = (await api.proposals()).data.proposals ?? [];
   const box = $("proposals");
-  const t = el("table", undefined, "list");
+  box.replaceChildren(sectionHead("Proposals", `${rows.length} registered. Select one to open its record.`));
+  const t = el("table", undefined, "w-full border-collapse text-[12px]");
   const head = t.createTHead().insertRow();
-  for (const x of ["Proposal", "Amount", "Check", "Decision"]) head.append(th(x));
+  for (const h of ["Proposal", "Amount", "Check", "Decision"]) head.append(el("th", h, "mono-label border-b border-edge py-2 text-left font-normal"));
   const body = t.createTBody();
   for (const p of rows) {
     const tr = body.insertRow(); tr.dataset.proposal = p.id; tr.dataset.decision = p.decision ?? "PENDING"; tr.dataset.selected = String(p.id === selected);
-    tr.insertCell().textContent = `${p.id}${p.large ? " · large" : ""}`;
-    tr.insertCell().textContent = hbar(p.amountTinybars);
-    const c = tr.insertCell(); c.textContent = p.matches ? "matches" : "MISMATCH"; c.className = p.matches ? "green" : "red";
-    const d = tr.insertCell(); d.textContent = p.decision ?? "not submitted"; d.className = "dec"; d.dataset.decision = p.decision ?? "PENDING";
+    tr.className = `cursor-pointer border-b border-edge/70 hover:bg-panel ${p.id === selected ? "bg-panel" : ""}`;
+    const c = (node) => { const td = tr.insertCell(); td.className = "py-2.5 pr-3"; td.append(node); };
+    c(document.createTextNode(`${p.id}${p.large ? " · large" : ""}`));
+    c(document.createTextNode(hbar(p.amountTinybars)));
+    c(pill(p.matches ? "safe" : "danger", p.matches ? "matches" : "mismatch"));
+    c(p.decision ? pill(p.decision === "SIGNED" ? "safe" : "danger", p.decision.toLowerCase()) : pill("neutral", "not submitted"));
     tr.onclick = () => select(p.id);
   }
-  box.replaceChildren(el("h2", undefined), rows.length ? t : el("p", "No proposals yet.", "muted"));
-  box.firstChild.append(document.createTextNode("Proposals"), Object.assign(el("small"), { textContent: `${rows.length} registered` }));
+  box.append(rows.length ? Object.assign(el("div", undefined, "panel p-5"), {}) : el("p", "No proposals yet.", "text-dim text-[12px]"));
+  if (rows.length) box.lastChild.append(t);
 }
 
-function step(no, title, state, tag, text) {
-  const s = el("div", undefined, "step"); s.dataset.state = state;
-  const n = el("div", undefined, "no"); n.append(el("span", `0${no}`), el("span", tag, "st"));
-  s.append(n, el("h3", title), el("p", text));
+function step(no, title, tone, tag, text) {
+  const s = el("div", undefined, "border-b border-edge/60 py-3 last:border-0");
+  const top = el("div", undefined, "flex items-baseline justify-between gap-3");
+  top.append(el("span", `0${no} ${title}`, "mono-label"), pill(tone, tag));
+  s.append(top, el("p", text, "mt-1.5 text-[12px] leading-relaxed text-dim"));
   return s;
 }
 
@@ -117,80 +166,72 @@ async function select(id) {
   selected = id;
   history.replaceState(null, "", `?proposal=${encodeURIComponent(id)}`);
   const r = await api.proposal(id);
-  const box = $("record");
-  if (!r.ok) { box.replaceChildren(el("p", r.data.error, "red")); return; }
+  if (!r.ok) { status(r.data.error, "bad"); return; }
   const { proposal: p, check, lastOutcome: o, large, approval } = r.data;
   const decision = o?.decision ?? null;
 
-  // Banner and headline
-  const b = $("banner"); b.hidden = !o; b.className = `banner ${decision === "SIGNED" ? "ok" : "bad"}`;
-  if (o) b.replaceChildren(el("b", decision === "SIGNED" ? "Agent signed. " : "Agent refused. "), document.createTextNode(o.reason.slice(0, 220)));
-  $("kicker").textContent = `Proposal ${p.id} · decision trail`;
+  const b = $("banner"); b.hidden = !o;
+  if (o) { b.replaceChildren(pill(decision === "SIGNED" ? "safe" : "danger", decision === "SIGNED" ? "Agent signed" : "Agent refused"), el("p", o.reason.slice(0, 260), "mt-2 text-[12px] leading-relaxed text-dim")); b.className = `panel p-4 mb-6 ${decision === "SIGNED" ? "" : "panel-accent"}`; }
+  $("metaRow").replaceChildren(el("span", `Proposal ${p.id}`, "mono-label"), el("span", large ? "Large" : "Routine", "chip"), el("span", health.mode === "real" ? "Real mode" : "SIMULATED", "chip"));
   $("title").textContent = p.description.purpose;
   $("lede").textContent = check.verdict;
-  $("lede").className = `prose ${check.matches ? "" : "red"}`;
   document.title = `Council Agent · ${p.id}`;
-  $("meta").replaceChildren(...[`Record ${p.id}`, large ? "Large proposal" : "Routine proposal", new Date(p.createdAt).toLocaleDateString()].map((t) => el("div", t)),
-    el("div", health.mode === "real" ? "Real mode" : "SIMULATED", "tagbox"));
 
-  // Actions: submit, approve, report
   const actions = $("head-actions"); actions.replaceChildren();
-  const sub = el("button", o ? "Submit again" : "Submit to the agent");
+  const sub = el("button", o ? "Submit again" : "Submit to the agent", "btn btn-primary");
   sub.onclick = async () => {
     sub.disabled = true;
     const res = await api.submit(p); show(res.data);
-    status(res.data.decision === "SIGNED" ? `Agent signed. Scheduled tx ${res.data.scheduledTxId}.` : `Agent refused: ${res.data.reason}`, res.data.decision === "SIGNED" ? "green" : "red");
+    status(res.data.decision === "SIGNED" ? `Agent signed. Scheduled tx ${res.data.scheduledTxId}.` : `Agent refused: ${res.data.reason}`, res.data.decision === "SIGNED" ? "ok" : "bad");
     await refreshList(); await select(id);
   };
   actions.append(sub);
   if (large && check.matches) {
-    const ap = el("button", approval ? `World ID approved (${approval.source}), valid to ${new Date(approval.expiresAt).toLocaleTimeString()}` : world.configured ? "Approve with World ID" : "Approve (MOCKED demo)", "secondary");
+    const ap = el("button", approval ? `World ID approved (${approval.source}), valid to ${new Date(approval.expiresAt).toLocaleTimeString()}` : world.configured ? "Approve with World ID" : "Approve (MOCKED demo)", "btn");
     ap.disabled = Boolean(approval) || (!world.configured && !world.mockedAllowed);
     ap.onclick = async () => { ap.disabled = true; await approve(id); await select(id); };
     actions.append(ap);
   }
-  const rep = el("a", "Open report", "btn secondary"); rep.href = `/report.html?proposal=${encodeURIComponent(id)}`;
+  const rep = el("a", "Open report", "btn"); rep.href = `/report.html?proposal=${encodeURIComponent(id)}`;
   actions.append(rep);
 
-  // Record table and process strip
-  const rec = el("table", undefined, "rec");
-  const row = (k, v, cls, hash) => { const tr = rec.insertRow(); tr.append(th(k)); const td = tr.insertCell(); td.textContent = v; if (cls) td.className = cls; if (hash) td.classList.add("hash"); };
-  row("Requested", hbar(p.description.amountTinybars));
-  row("Described payee", p.description.payee);
-  row("Actual transfer", `${hbar(p.transfer.amountTinybars)} to ${p.transfer.payee}`, check.matches ? "" : "red");
-  row("Token", `${p.description.token} / ${p.transfer.token}`);
-  row("Transfer read from", o?.transferSource === "hedera-mirror-node" ? "Hedera mirror node (on-chain)" : "the request body");
-  row("Schedule", o?.scheduledTxId ?? p.scheduleId ?? "none yet", "", true);
-  row("Check payment", o?.paidTxId ? `${o.paidTxId} (${o.paidVia})` : "not paid yet", "", true);
-  row("0G verdict", o ? `${o.zeroGSource}${o.zeroGRequestId ? " · " + o.zeroGRequestId : ""}` : "none yet");
-  row("HCS audit", o?.auditTxId ?? "none yet", "", true);
-  row("World ID gate", o?.worldGateReason ?? (large ? "required for this size" : "not required"), o?.worldGateReason && decision === "REFUSED" ? "red" : "");
-  const sec1 = el("div", undefined, "sec"); sec1.append(el("h2", "Record"), rec);
-
-  const gate = !check.matches ? ["wait", "skipped", "Not reached: the check failed first, so the agent refuses whatever the owner approves."]
-    : !large ? ["pass", "n/a", "Below the large threshold, no World ID needed."]
-    : approval ? ["pass", "approved", `World ID approved (${approval.source}), single use.`]
-    : o?.worldGateReason ? ["fail", "blocked", o.worldGateReason] : ["wait", "pending", "A fresh World ID check for this exact proposal is required."];
-  const steps = el("div", undefined, "steps");
-  steps.append(
-    step(1, "Claim", "pass", "recorded", `${hbar(p.description.amountTinybars)} to ${p.description.payee}.`),
-    step(2, "Check", check.matches ? "pass" : "fail", check.matches ? "matches" : "mismatch", check.matches ? "Description and transfer agree." : check.mismatches.map((m) => `${m.field}: ${m.described} vs ${m.actual}`).join("; ")),
-    step(3, "Gate", gate[0], gate[1], gate[2]),
-    step(4, "Sign", decision === "SIGNED" ? "pass" : decision === "REFUSED" ? "fail" : "wait", decision ? decision.toLowerCase() : "pending", o ? (decision === "SIGNED" ? `Scheduled ${o.scheduledTxId}.` : "No signature added.") : "Waiting for the agent."),
+  $("recordWrap").hidden = false;
+  $("recordSub").textContent = "The description against the transfer the agent actually checked.";
+  const rec = $("record"); rec.replaceChildren();
+  rec.append(
+    kv("Requested", hbar(p.description.amountTinybars)),
+    kv("Described payee", p.description.payee),
+    kv("Actual transfer", `${hbar(p.transfer.amountTinybars)} to ${p.transfer.payee}`, check.matches ? "" : "text-danger"),
+    kv("Token", `${p.description.token} / ${p.transfer.token}`),
+    kv("Transfer read from", o?.transferSource === "hedera-mirror-node" ? "Hedera mirror node (on-chain)" : "the request body"),
+    kv("0G verdict", o ? `${o.zeroGSource}${o.zeroGRequestId ? " · " + o.zeroGRequestId : ""}` : "none yet"),
+    kv("World ID gate", o?.worldGateReason ?? (large ? "required for this size" : "not required"), o?.worldGateReason && decision === "REFUSED" ? "text-danger" : ""),
+    hashLine("Schedule", o?.scheduledTxId ?? p.scheduleId),
+    hashLine("Check payment", o?.paidTxId ? `${o.paidTxId} (${o.paidVia})` : ""),
+    hashLine("HCS audit entry", o?.auditHash ? `#${o.auditSeq} ${o.auditHash}` : ""),
   );
-  const sec2 = el("div", undefined, "sec"); sec2.dataset.proposal = id; sec2.dataset.decision = decision ?? "PENDING";
-  const h2 = el("h2", "Process"); h2.append(el("small", `claim → check → gate → sign`));
-  sec2.append(h2, steps);
-  box.replaceChildren(sec1, sec2);
+
+  const gate = !check.matches ? ["neutral", "skipped", "Not reached: the check failed first, so the agent refuses whatever the owner approves."]
+    : !large ? ["safe", "n/a", "Below the large threshold, no World ID needed."]
+    : approval ? ["safe", "approved", `World ID approved (${approval.source}), single use.`]
+    : o?.worldGateReason ? ["danger", "blocked", o.worldGateReason] : ["warn", "pending", "A fresh World ID check for this exact proposal is required."];
+  const proc = $("process"); proc.replaceChildren(el("span", "Process: claim, check, gate, sign", "mono-label"));
+  proc.dataset.proposal = id; proc.dataset.decision = decision ?? "PENDING";
+  proc.append(
+    step(1, "Claim", "safe", "recorded", `${hbar(p.description.amountTinybars)} to ${p.description.payee}.`),
+    step(2, "Check", check.matches ? "safe" : "danger", check.matches ? "matches" : "mismatch", check.matches ? "Description and transfer agree." : check.mismatches.map((m) => `${m.field}: ${m.described} vs ${m.actual}`).join("; ")),
+    step(3, "Gate", gate[0], gate[1], gate[2]),
+    step(4, "Sign", decision === "SIGNED" ? "safe" : decision === "REFUSED" ? "danger" : "warn", decision ? decision.toLowerCase() : "pending", o ? (decision === "SIGNED" ? `Scheduled ${o.scheduledTxId}.` : "No signature added.") : "Waiting for the agent."),
+  );
   await refreshList();
 }
 
 async function approve(proposalId) {
   const res = world.configured
-    ? await runWorldFlow({ proposalId, onQr: (_u, svg) => { const i = el("img"); i.src = svg; i.alt = "Scan with World App"; $("qr").replaceChildren(i); }, onStatus: status })
+    ? await runWorldFlow({ proposalId, onQr: (_u, svg) => { const i = el("img"); i.src = svg; i.alt = "Scan with World App"; i.className = "my-3 h-56 w-56 bg-white p-2"; $("qr").replaceChildren(i); }, onStatus: status })
     : await runMockedFlow({ proposalId });
   $("qr").replaceChildren();
-  status(res.ok ? `Approved${res.data.source === "mocked" ? " (MOCKED, demo only)" : " with World ID"}. Single use, 5 minutes.` : res.data.error, res.ok ? "green" : "red");
+  status(res.ok ? `Approved${res.data.source === "mocked" ? " (MOCKED, demo only)" : " with World ID"}. Single use, 5 minutes.` : res.data.error, res.ok ? "ok" : "bad");
 }
 
 $("new-form").onsubmit = async (e) => {
@@ -202,9 +243,9 @@ $("new-form").onsubmit = async (e) => {
     transfer: { payee: f.tpayee, amountTinybars: toTiny(f.tamount), token: "HBAR" },
   };
   const res = await api.submit(proposal);
-  if (res.status >= 400) { status(res.data.error, "red"); return; }
+  if (res.status >= 400) { status(res.data.error, "bad"); return; }
   show(res.data);
-  status(res.data.decision === "SIGNED" ? `Agent signed. Scheduled tx ${res.data.scheduledTxId}.` : `Agent refused: ${res.data.reason}`, res.data.decision === "SIGNED" ? "green" : "red");
+  status(res.data.decision === "SIGNED" ? `Agent signed. Scheduled tx ${res.data.scheduledTxId}.` : `Agent refused: ${res.data.reason}`, res.data.decision === "SIGNED" ? "ok" : "bad");
   await select(proposal.id);
   $("new-form").elements.id.value = `P-${Date.now().toString(36).toUpperCase()}`;
 };
@@ -213,29 +254,24 @@ $("new-form").elements.id.value = `P-${Date.now().toString(36).toUpperCase()}`;
 $("join-btn").onclick = async () => {
   $("join-btn").disabled = true;
   const res = world.configured
-    ? await runWorldFlow({ join: true, onQr: (_u, svg) => { const i = el("img"); i.src = svg; $("qr").replaceChildren(i); }, onStatus: status })
+    ? await runWorldFlow({ join: true, onQr: (_u, svg) => { const i = el("img"); i.src = svg; i.className = "my-3 h-56 w-56 bg-white p-2"; $("qr").replaceChildren(i); }, onStatus: status })
     : world.mockedAllowed ? await runMockedFlow({ join: true }) : { ok: false, data: { error: "World ID is not configured here." } };
   $("qr").replaceChildren();
-  status(res.ok ? `Joined: ${res.data.seat} (${res.data.proof}).` : res.data.error, res.ok ? "green" : "red");
+  status(res.ok ? `Joined: ${res.data.seat} (${res.data.proof}).` : res.data.error, res.ok ? "ok" : "bad");
   $("join-btn").disabled = false; await refreshSeats();
 };
 
 bus.addEventListener("proposal:decision", (e) => { document.body.dataset.decision = e.detail.outcome.decision; });
 
 health = (await api.health()).data;
-const polHash = (await fetch("/policy").then((r) => r.json()).catch(() => ({}))).hash;
 const ver = await fetch("/audit/verify").then((r) => r.json()).catch(() => ({}));
-const logLine = ver.ok ? `verified, ${ver.checked} entries` : ver.checked === 0 ? "empty" : "BROKEN";
-$("tMode").textContent = `${health.mode} · ${health.network}`;
-$("tLog").textContent = logLine;
-const tick = `COUNCIL AGENT \u00b7 ${health.mode.toUpperCase()} \u00b7 CHECK ${health.checkPrice} \u00b7 LOG ${logLine.toUpperCase()} \u00b7 WORLD ${health.world.startsWith("real") ? "REAL" : "MOCKED"} \u00b7 0G ${health.zeroG.toUpperCase()} \u00b7 `;
-$("tickA").textContent = tick + tick + tick; $("tickB").textContent = tick + tick + tick;
-const fcol = (i, label, rows) => { const c = document.querySelectorAll("#consoleFooter .col")[i]; const l = el("div", label, "label"); const p = el("p"); rows.forEach(([k, v], j) => { if (j) p.append(document.createElement("br")); p.append(document.createTextNode(k + " "), el("b", v)); }); c.replaceChildren(l, p); };
-fcol(0, "Rails", [["x402", health.x402Buyer.startsWith("real") ? "real" : "sim"], ["0G", health.zeroG], ["World", health.world.startsWith("real") ? "real" : "mocked"], ["Mode", health.mode]]);
-fcol(1, "Traffic", [["Check price", health.checkPrice], ["Spend left", health.spendCapRemaining]]);
-fcol(2, "Commitment", [["policy", polHash ? polHash.slice(0, 12) + "…" : "—"], ["topic", String(health.hcsTopic).slice(0, 14)]]);
-fcol(3, "Read", [["policy", "/policy"], ["audit", "/audit"], ["verify", "/audit/verify"]]);
-$("meta").replaceChildren(el("div", "No proposal open"), el("div", health.mode === "real" ? "Real mode" : "SIMULATED", "tagbox"));
+const pol = await fetch("/policy").then((r) => r.json()).catch(() => ({}));
+const logLine = ver.ok ? `log verified, ${ver.checked} entries` : ver.checked === 0 ? "log empty" : "log BROKEN";
+$("railMode").textContent = `${health.mode}, ${health.network}`;
+$("chainTag").textContent = `${health.mode}, ${health.network}`;
+$("footLeft").textContent = `Council Agent, Mumbai 2026, policy ${pol.hash ? pol.hash.slice(0, 12) + "…" : "n/a"}`;
+$("footRight").textContent = `${logLine}, check ${health.checkPrice}, World ${health.world.startsWith("real") ? "real" : "mocked"}, 0G ${health.zeroG}`;
+$("metaRow").replaceChildren(el("span", "Council console", "mono-label"), el("span", health.mode === "real" ? "Real mode" : "SIMULATED", "chip"));
 world = (await api.worldConfig()).data;
 await Promise.all([refreshList(), refreshSeats()]);
 if (selected) await select(selected);

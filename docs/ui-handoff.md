@@ -5,9 +5,13 @@
 > (`public/ecosystem.html`, `public/report-editorial.html`): markup, CSS, SVG scenery and animation are
 > unchanged. Only the copy and links were edited (Aegis / IntentLock / AIP-042 became this project's), the fake
 > random metrics and the external price fetch were removed, and `public/assets/live-original.js` fills in live
-> data. `console.html` wears the same original shell (`public/assets/original.css`); its record, process strip
-> and forms are components drawn for this project, because the original console is a Next.js app with another
-> project's data and a second contributor.
+> data. `console.html` uses the original console's own stylesheet and components: `design/aegis-console.css` is the
+> original `console/app/globals.css`, unmodified, compiled with `npm run css:console` (Tailwind CLI) into
+> `public/assets/console-original.css`, and the page is built on its `app-shell`, `app-header`, `app-rail`,
+> `doc-title`, `panel`, `btn`, `chip` and `mono-label` classes and the StatusPill, KeyValue and HashLine markup from
+> its `ui.tsx`. After changing `console.html`, rerun `npm run css:console`. What is not copied is the original
+> Next.js app itself (React, viem, ethers, Ledger, its API routes and its contract data): it is a different
+> project's EVM app and cannot run against this Hedera backend.
 >
 > **Rule check before submitting.** Those files were written on Oct 25 2026, before the event (Nov 5-7), and
 > ETHGlobal's From Scratch rule says prior project-specific "code, designs, or assets are not allowed" in
