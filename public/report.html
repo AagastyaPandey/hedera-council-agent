@@ -527,9 +527,12 @@
       <div class="label menu-title">Menu</div>
       <a href="/">Atlas</a>
       <a href="/console.html">Console</a>
+      <a href="/mandate.html">Instructions</a>
+      <a href="/council.html">Council</a>
+      <a href="/member.html">My seat</a>
+      <a href="/report.html" aria-current="page">Report</a>
       <a href="/policy">Policy</a>
-      <a href="/audit">Audit log</a>
-      <a href="/audit/verify">Audit check</a>
+      <a href="/audit/verify">Audit</a>
       <a href="/verify.html">Verify log</a>
     </div>
     <div>
@@ -1036,6 +1039,7 @@ function describeDecision(record) {
     case "REFUSED": return { label: "Refused", text: "The agent refused.", tone: "refused" };
     case "CANCELLED": return { label: "Cancelled", text: "The proposal was cancelled.", tone: "cancelled" };
     case "PENDING_CHALLENGE": return { label: "Pending", text: "Waiting in the challenge window.", tone: "pending" };
+    case "PENDING_VOTE": return { label: "Waiting for the council", text: "Outside the standing instruction: the council is voting.", tone: "vote" };
     default: return { label: "Unknown", text: "The recorded decision is not recognized.", tone: "pending" };
   }
 }
@@ -1104,7 +1108,8 @@ function renderHero(record, mode, animate) {
   const stamp = cloneLiveNode(document.querySelector(".stamp"));
   stamp.style.animation = animate ? "" : "none";
   stamp.style.color = decision.tone === "signed" ? "var(--pass-ink)" :
-    ["refused", "cancelled"].includes(decision.tone) ? "var(--red-ink)" : "var(--muted-ink)";
+    ["refused", "cancelled"].includes(decision.tone) ? "var(--red-ink)" : decision.tone === "vote" ? "#9a6b15" : "var(--muted-ink)";
+  stamp.dataset.tone = decision.tone;
   stamp.style.borderColor = stamp.style.color;
   byId("stampText").textContent = decision.label;
   byId("stampSub").textContent = record?.lastOutcome?.auditHash?.slice(0, 12) || proposal?.id || "No record";
@@ -1167,6 +1172,10 @@ function outcomeRows(record) {
     ["0G source", outcome?.zeroGSource], ["0G commentary", outcome?.zeroGVerdictText],
     ["Transfer source", outcome?.transferSource], ["Decision mode", outcome?.mode],
     ["Cancellation audit sequence", outcome?.cancelledBy?.auditSeq], ["Cancellation audit hash", outcome?.cancelledBy?.auditHash],
+    ["Standing instruction", outcome?.mandate ? `${outcome.mandate.id} · ${outcome.mandate.within ? "within" : "outside"}` : undefined],
+    ["Instruction violations", outcome?.mandate?.violations?.length ? outcome.mandate.violations.join("; ") : undefined],
+    ["Instruction rules hash", outcome?.mandate?.rulesHash],
+    ["Council vote", outcome?.vote ? `${outcome.vote.status} · ${outcome.vote.yes} yes, ${outcome.vote.no} no, ${outcome.vote.needed} of ${outcome.vote.eligible?.length ?? "?"} needed` : undefined],
   ];
 }
 
@@ -1215,6 +1224,12 @@ function renderFooter(record, mode) {
   consoleLink.href = `/console.html${record ? `?proposal=${encodeURIComponent(record.proposal.id)}` : ""}`;
   consoleLink.textContent = "Open console";
   row.append(consoleLink);
+  if (record?.lastOutcome?.decision === "PENDING_VOTE") {
+    const voteLink = document.createElement("a");
+    voteLink.href = "/council.html";
+    voteLink.textContent = "Waiting for the council: vote";
+    row.append(document.createElement("br"), voteLink);
+  }
   actions.append(row);
   columns[3]?.replaceChildren(...actions.childNodes);
 }
