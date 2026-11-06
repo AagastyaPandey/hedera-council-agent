@@ -7,7 +7,7 @@ exact on-chain transfer it will execute. The agent pays for a check of
 each proposal, signs routine ones itself, and refuses any proposal whose
 actual transfer does not match its description. Before signing a large
 proposal, its owner must pass a fresh World ID check tied to that exact
-proposal. If the check is denied or expires, the agent does not sign.
+proposal (the transfer bytes themselves, via the IDKit signal). If the check is denied or expires, the agent does not sign.
 
 Proposals are Hedera Scheduled Transactions plus HCS, with no smart
 contracts. The exact transfer is fixed when the proposal is created, and
@@ -197,7 +197,11 @@ and in every outcome.
 - World ID: without `WORLD_RP_ID`, `WORLD_APP_ID` and `WORLD_SIGNING_KEY`, the
   approval page offers a MOCKED approval (testnet only). With them, only
   server-verified World ID proofs count and mocks are refused. `npm run demo`
-  always uses MOCKED approvals.
+  always uses MOCKED approvals. The approval is bound to the exact transfer
+  bytes: the server derives an IDKit `signal` (`council-proposal:` plus the
+  SHA-256 of the proposal fingerprint) from its own registered copy, the
+  owner's proof must carry that signal's hash, and a proof made for any
+  other content is refused without being spent.
 
 No fake transaction id is ever presented as real.
 

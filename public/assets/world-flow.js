@@ -20,7 +20,7 @@ export async function runWorldFlow({ proposalId, join = false, onQr = () => {}, 
     rp_context: ctx.data.rpContext,
     allow_legacy_proofs: true,
     environment: ctx.data.environment,
-  }).preset(window.IDKit.proofOfHuman());
+  }).preset(window.IDKit.proofOfHuman(ctx.data.signal ? { signal: ctx.data.signal } : undefined));
   onQr(request.connectorURI, api.qrUrl(request.connectorURI));
   emit("world:qr", { action: ctx.data.action });
   onStatus(`Scan with World App to prove you are human for "${ctx.data.action}".`);
