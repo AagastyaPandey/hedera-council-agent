@@ -30,26 +30,58 @@ proposal (description vs exact transfer)
   -> audit: every decision logged to an HCS topic
 ```
 
-- `src/proposal.ts` - proposal and transfer model
+- `src/proposal.ts` - proposal and transfer model, input validation
 - `src/checker.ts` - deterministic mismatch checker
-- `src/budget.ts` - spending cap for check payments
-- `src/x402.ts` - 402 response, self-run x402 facilitator shape
-- `src/hedera.ts` - Hedera client, env-gated real / simulated
+- `src/budget.ts` - spending cap for check payments (USDC)
+- `src/x402.ts` - plain 402 shape used in simulated mode
+- `src/x402Client.ts`, `src/payment.ts` - the agent pays for checks over real x402
+- `src/hedera.ts` - Hedera client, env-gated real / simulated; schedules, HCS, setup helpers
 - `src/zeroG.ts` - 0G Private Computer client (OpenAI-compatible)
-- `src/world.ts` - World ID gate, denied / expired / wrong-proposal paths
+- `src/world.ts` - World ID: RP-signed requests, server-side verification, approval store, gate
+- `src/store.ts` - durable council seats and spent approvals (`.data/state.json`)
 - `src/council.ts` - orchestration: pay, verdict, check, gate, sign or refuse
-- `src/server.ts` - HTTP server: `/health`, `/check`, `/proposals`, `/council/join`
+- `src/server.ts` - HTTP server and API (below)
+- `src/preflight.ts` - checks every external dependency, one-time Hedera setup
 - `src/demo.ts` - demo rehearsal, 4 scenes
+- `public/world.html` - World ID approval and council-join page (IDKit 4.x, QR for World App)
 
 ## Setup
 
 ```bash
 npm install
-cp .env.example .env   # fill in the real values below, never commit .env
-npm test               # build + 10 unit tests
+cp .env.example .env   # fill in the values below, never commit .env
+npm test               # build + 25 tests (unit + HTTP level)
+npm run preflight      # check Hedera, x402, 0G, World ID; add -- --setup to do one-time Hedera setup
 npm run demo           # demo rehearsal, 4 scenes
-npm start              # HTTP server on :3000 (PORT to change)
+npm start              # HTTP server on :3000 (PORT to change); World page at /world.html
 ```
+
+`.env` is loaded automatically by `npm start`, `npm run demo` and `npm run preflight`.
+Node 20.12 or newer.
+
+## API
+
+| Route | What it does |
+| --- | --- |
+| `GET /health` | mode, what is real and what is simulated |
+| `POST /check` | the paid check service, protected by x402 (HTTP 402 until paid) |
+| `POST /proposals` | full flow: pay via x402, 0G verdict, mismatch check, World ID gate, sign or refuse |
+| `GET /proposals/:id` | registered proposal, last outcome, approval state |
+| `POST /world/rp-context` | RP-signed IDKit request for one server-chosen action |
+| `POST /world/verify` | verifies the owner's World ID for one proposal and stores the approval server-side |
+| `POST /council/join` | Proof of Human council join, one seat per nullifier |
+| `GET /council/seats` | current seats |
+| `GET /world.html?proposal=<id>` / `?join` | approval and join page |
+
+Authorization rules the tests enforce: a client-supplied World ID "check" in the
+request body is ignored; only approvals the server verified itself count. An
+approval is bound to one proposal id, expires after 5 minutes, and is spent
+on the first signing. A proposal id is bound to its content on first submission.
+Each World proof is accepted once (keyed on action + nullifier, stored on disk).
+The World environment comes from server config, so a client cannot pick
+`staging` or `sandbox`. With World configured, mocked approvals are refused.
+There is no user authentication on `POST /proposals`: run it on a trusted
+network, it is a council agent API, not a public one.
 
 ## Env vars
 
