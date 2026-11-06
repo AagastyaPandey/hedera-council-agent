@@ -27,6 +27,15 @@ Solidity contracts, Hardhat config and contract tests left out (it builds and ru
 this project's live proposals, decisions, hashes and log verification from this server. `/original-console` redirects to it. The project's own screens (`public/`) use the same
 stylesheet and component markup.
 
+## Animations (Atlas and report)
+
+- Atlas: the original page never applied its polygon `fill` (its `poly()` helper dropped the argument, so every island rendered black);
+  fixed in one line. The replay timeline is driven by the real proposals (`window.ATLAS_MODEL.phases`, rewritten in
+  `public/assets/live-original.js`): a refused mismatch severs the council bridge, a large proposal waiting for World ID darkens the
+  World ID shore, and the ticker and state label carry the real ids.
+- Report: the numerals count up from 0 to the described and actual amounts (same ease as the original, with decimals) and the stamp
+  scrambles in. Both respect `prefers-reduced-motion`.
+
 ## Where to work
 
 The paper-and-red design is implemented on every page, matched against the rendered reference

@@ -480,7 +480,7 @@
     return E('rect',{x:x,y:y,width:w,height:h,fill:fill},parent,cls,delay);
   }
   function poly(pts,fill,parent,cls,delay){
-    return E('polygon',{points:pts.map(function(p){return p.join(',');}).join(' ')},parent,cls,delay);
+    return E('polygon',{points:pts.map(function(p){return p.join(',');}).join(' '),fill:fill},parent,cls,delay);
   }
   function txt(x,y,str,parent,size){
     var t = E('text',{x:x,y:y,fill:'#8b857a','font-size':size||7,
@@ -526,6 +526,7 @@
     ]
   };
 
+  window.ATLAS_MODEL = MODEL;   /* live-original.js rewrites MODEL.phases from real proposals */
   var groups = {};   /* chainId -> { g, iso } */
   var linkGroups = {};
 

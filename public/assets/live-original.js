@@ -34,6 +34,37 @@ function lines(p, rows, base = 1.25) {
   }));
 }
 
+
+// Same ease as the original page's count-up (1 - 2^-10t), with decimals for HBAR amounts.
+function countTo(el, target, delay, decimals = 2) {
+  if (!el) return;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const fmt = (v) => v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: decimals });
+  if (reduce) { el.textContent = fmt(target); return; }
+  el.textContent = "0";
+  let start = null;
+  const frame = (ts) => {
+    if (start === null) start = ts;
+    const t = Math.min(1, (ts - start) / 1400);
+    el.textContent = fmt(t === 1 ? target : target * (1 - Math.pow(2, -10 * t)));
+    if (t < 1) requestAnimationFrame(frame);
+  };
+  setTimeout(() => requestAnimationFrame(frame), delay);
+}
+const GLYPHS = "\u2593\u2592\u2591#@%&*+=<>/|01";
+function scrambleIn(el, final, delay) {
+  if (!el) return;
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) { el.textContent = final; return; }
+  setTimeout(() => {
+    let i = 0; const frames = 11;
+    const id = setInterval(() => {
+      i += 1; const done = Math.floor((final.length * i) / frames);
+      el.textContent = final.slice(0, done) + [...final.slice(done)].map((c) => (c === " " ? " " : GLYPHS[(Math.random() * GLYPHS.length) | 0])).join("");
+      if (i >= frames) { clearInterval(id); el.textContent = final; }
+    }, 26);
+  }, delay);
+}
+
 const [health, list, seats, policy, verify] = await Promise.all([
   api.health(), api.proposals(), api.seats(),
   fetch("/policy").then((r) => r.json()).catch(() => ({})),
@@ -55,6 +86,25 @@ if (document.body.querySelector(".hero .scene")) {
     const href = `/report.html?from=atlas&proposal=${encodeURIComponent(latest.id)}`;
     $("ctaReport").href = href;
     $("navReport").href = `/report.html?proposal=${encodeURIComponent(latest.id)}`;
+  }
+  // Drive the replay timeline from the real proposals. Links: b1 treasury-agent, b2 treasury-council, b3 treasury-World ID.
+  if (window.ATLAS_MODEL && rows.length) {
+    const mismatch = rows.find((p) => p.decision === "REFUSED" && !p.matches);
+    const worldBlocked = rows.find((p) => p.decision === "REFUSED" && p.matches && p.large);
+    const firstSigned = rows.find((p) => p.decision === "SIGNED");
+    const all = { b1: "open", b2: "open", b3: "open" };
+    const phases = [
+      { t: 0, chains: {}, links: {}, note: `Genesis · ${rows.length} proposals` },
+      { t: 3, chains: {}, links: { b1: "open" }, note: "Treasury scheduled" },
+      { t: 6, chains: {}, links: { b1: "open", b2: "open" }, note: "Check paid over x402" },
+      { t: 9, chains: {}, links: all, note: "All nodes linked" },
+      { t: 13, chains: { rollup: "degraded" }, links: all, note: firstSigned ? `Agent checking · ${firstSigned.id} matches` : "Agent checking" },
+    ];
+    if (mismatch) phases.push({ t: 17, chains: { rollup: "degraded" }, links: { ...all, b2: "severed" }, note: `${mismatch.id} refused · transfer mismatch` });
+    if (worldBlocked) phases.push({ t: 21, chains: { rollup: "degraded", outpost: "dark" }, links: { ...all, ...(mismatch ? { b2: "severed" } : {}) }, note: `${worldBlocked.id} waits · World ID required` });
+    phases.push({ t: 25, chains: {}, links: all, note: `${signed} signed · ${refused} refused · log ${logLine}` });
+    window.ATLAS_MODEL.phases.length = 0;
+    window.ATLAS_MODEL.phases.push(...phases);
   }
   const cols = document.querySelectorAll(".footer .col");
   col(cols[0], "Council", [["Proposals", String(rows.length).padStart(2, "0")], ["Signed", String(signed).padStart(2, "0")], ["Refused", String(refused).padStart(2, "0")], ["Seats", String(seats.data.count).padStart(2, "0")]]);
@@ -86,9 +136,9 @@ if (document.body.querySelector(".hero .scene")) {
     text($("tVerdict"), check.matches ? (decision === "SIGNED" ? "Signed" : decision === "REFUSED" ? "Refused" : "Matches") : "Mismatch");
     text($("tLayer"), `${h.mode} · ${o?.transferSource === "hedera-mirror-node" ? "on-chain" : "request"}`);
     text($("tProp"), p.id);
-    text($("numL"), num(p.description.amountTinybars));
-    text($("numR"), num(p.transfer.amountTinybars));
-    text($("stampText"), decision === "PENDING" ? "Pending" : decision === "SIGNED" ? "Signed" : "Refused");
+    countTo($("numL"), p.description.amountTinybars / 1e8, 950);
+    countTo($("numR"), p.transfer.amountTinybars / 1e8, 1190);
+    scrambleIn($("stampText"), decision === "PENDING" ? "Pending" : decision === "SIGNED" ? "Signed" : "Refused", 1900);
     text($("stampSub"), o?.auditHash ? `0x${o.auditHash.slice(0, 8)}` : p.id);
     const st = document.querySelectorAll(".statement");
     lines(st[0], check.matches
