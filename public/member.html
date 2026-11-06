@@ -60,6 +60,16 @@
           <div class="cv-cards" id="waitingList" aria-live="polite"></div>
         </section>
 
+        <section class="doc-section" id="removals" aria-labelledby="removalsTitle">
+          <div class="doc-section-head"><h2 class="doc-section-title" id="removalsTitle">Removal votes</h2><span class="doc-folio" id="removalsFolio">&mdash;</span></div>
+          <div id="removalsBox"></div>
+        </section>
+
+        <section class="doc-section" id="invites" aria-labelledby="invitesTitle">
+          <div class="doc-section-head"><h2 class="doc-section-title" id="invitesTitle">Invites issued</h2><span class="doc-folio" id="invitesFolio">&mdash;</span></div>
+          <div id="invitesBox"></div>
+        </section>
+
         <section class="doc-section" id="ballots" aria-labelledby="ballotsTitle">
           <div class="doc-section-head"><h2 class="doc-section-title" id="ballotsTitle">Ballots cast</h2><span class="doc-folio" id="ballotsFolio">&mdash;</span></div>
           <div id="ballotsBox"></div>
@@ -78,7 +88,7 @@
 <script src="/vendor/idkit.js"></script>
 <script type="module">
 import { api, qs } from "/assets/api.js";
-import { $, el, when, identities, loadWorld, isDemo, feedback, mountIdentityBar, voteCard, updateVoteCard, showStamp, castBallot, seatAvatar, sourceBadge, pill, poll, fillChrome } from "/assets/council-votes.js";
+import { $, el, when, identities, loadWorld, isDemo, feedback, mountIdentityBar, voteCard, updateVoteCard, showStamp, castBallot, createInvite, invitePanel, resultLabel, seatAvatar, sourceBadge, pill, poll, fillChrome } from "/assets/council-votes.js";
 import { reduced, stagger } from "/assets/motion.js";
 
 const fb = feedback($("status"), $("qr"));
@@ -86,6 +96,7 @@ const cards = new Map();
 let world = { configured: false, mockedAllowed: false };
 let seat = qs("seat") || identities.current()?.seat || null;
 let bar;
+let issued = null; // the invite this page just issued: its code is shown once
 
 // Who may press the buttons here: this browser's DEMO identity for this seat, or anyone with World ID (the proof picks the seat).
 function ctx() {
@@ -122,6 +133,7 @@ function renderNoSeat() {
   $("waitingFolio").textContent = "—"; $("ballotsFolio").textContent = "—";
   $("waitingList").replaceChildren(el("p", "Votes waiting for a seat appear here once you hold one.", "cv-empty"));
   $("ballotsBox").replaceChildren();
+  for (const id of ["removals", "invites"]) { $(`${id}Folio`).textContent = "—"; $(`${id}Box`).replaceChildren(); }
 }
 
 function renderSeat(m) {
@@ -145,6 +157,15 @@ function renderSeat(m) {
     if (mine) facts.append(el("span", mine.source === "world" ? "held by this browser (World ID)" : "held by this browser (DEMO)", "cv-mono"));
     info.append(facts);
     const sw = renderSwitch(); if (sw) info.append(sw);
+    if (mine && (world.configured || mine.nullifier)) {
+      const btn = el("button", "Invite a member", "btn", { type: "button", id: "invite-btn" });
+      btn.onclick = async () => {
+        btn.disabled = true;
+        try { const r = await createInvite({ world, identity: mine, fb }); if (r.ok) { issued = r.data; await refresh(); } } finally { btn.disabled = false; }
+      };
+      const row = el("div", undefined, "cv-identity-row"); row.style.marginTop = "14px"; row.append(btn);
+      info.append(row);
+    }
     card.append(seatAvatar(m.seat, { pose: m.awaiting.length ? "wait" : "idle", size: 96 }), info);
     $("seatBox").replaceChildren(card);
   }
@@ -167,6 +188,65 @@ function renderWaiting(m) {
   if (added.length && !reduced()) stagger(added, 0, 0.06);
 }
 
+function renderRemovals(m) {
+  const list = m.removals ?? [];
+  const open = list.filter((i) => i.decision === "open").length;
+  $("removalsFolio").textContent = list.length ? `${list.length} about or proposed by this seat${open ? ` · ${open} open` : ""}` : "none";
+  const box = $("removalsBox");
+  const key = JSON.stringify(list.map((i) => [i.subject, i.decision, i.vote.yes, i.vote.no]));
+  if (box.dataset.key === key) return;
+  box.dataset.key = key;
+  if (!list.length) { box.replaceChildren(el("p", "No vote to remove a seat involves this seat. Removing another seat takes a majority of the other seats; leaving is immediate.", "cv-empty")); return; }
+  const table = el("table", undefined, "doc-ledger cv-ledger");
+  const hr = el("tr");
+  [["Vote", ""], ["What", ""], ["Tally", "cv-num"], ["Result", ""]].forEach(([t, c]) => hr.append(el("th", t, c, { scope: "col" })));
+  const head = el("thead"); head.append(hr);
+  const body = el("tbody");
+  for (const i of list) {
+    const tr = el("tr", undefined, undefined, { "data-subject": i.subject });
+    const s = el("td"); s.append(el("a", i.subject, "cv-mono", { href: i.decision === "open" ? "/council.html#open" : "/council.html#closed" }));
+    const what = el("td", `${i.title}${i.target === m.seat ? " (this seat)" : ""} · proposed by ${i.openedBy}`);
+    what.prepend(el("span", "Removal", "cv-kind-tag"));
+    const result = el("td");
+    if (i.decision === "open") result.append(pill("warn", `${Math.max(0, i.vote.needed - i.vote.yes)} more yes`));
+    else { const r = resultLabel(i); result.append(pill(r.tone, r.label.toLowerCase())); }
+    tr.append(s, what, el("td", `${i.vote.yes}–${i.vote.no} of ${i.vote.eligible.length}`, "cv-num"), result);
+    body.append(tr);
+  }
+  table.append(head, body);
+  box.replaceChildren(table);
+}
+
+function renderInvites(m) {
+  const list = m.invites ?? [];
+  const used = list.filter((i) => i.status === "used").length;
+  $("invitesFolio").textContent = list.length ? `${list.length} issued · ${used} used · codes are shown once, to the issuer` : "none";
+  const box = $("invitesBox");
+  const key = JSON.stringify([list, issued?.code ?? null]);
+  if (box.dataset.key === key) return;
+  box.dataset.key = key;
+  const nodes = [];
+  if (issued && issued.by === m.seat) nodes.push(invitePanel(issued));
+  if (!list.length) nodes.push(el("p", "This seat has not invited anyone. Every seat after the founder joins with a single-use invite from a seat holder.", "cv-empty"));
+  else {
+    const table = el("table", undefined, "doc-ledger cv-ledger");
+    const hr = el("tr");
+    [["Invite", ""], ["Issued", ""], ["Status", ""], ["Expires", "cv-num"]].forEach(([t, c]) => hr.append(el("th", t, c, { scope: "col" })));
+    const head = el("thead"); head.append(hr);
+    const body = el("tbody");
+    for (const i of list) {
+      const tr = el("tr");
+      const status = el("td");
+      status.append(i.status === "used" ? pill("safe", `used by ${i.usedBy}`) : i.status === "open" ? pill("warn", "unused") : pill("danger", "expired"));
+      tr.append(el("td", i.id, "cv-mono"), el("td", when(i.createdAt)), status, el("td", when(i.expiresAt), "cv-num"));
+      body.append(tr);
+    }
+    table.append(head, body);
+    nodes.push(table);
+  }
+  box.replaceChildren(...nodes);
+}
+
 function renderBallots(m) {
   $("mBallots").textContent = String(m.ballots.length);
   $("ballotsFolio").textContent = m.ballots.length ? `${m.ballots.length} cast · one per seat per subject` : "none yet";
@@ -182,9 +262,9 @@ function renderBallots(m) {
   const body = el("tbody");
   for (const b of [...m.ballots].reverse()) {
     const tr = el("tr");
-    const s = el("td"); s.append(el("a", b.subject, "cv-mono", { href: b.kind === "mandate" ? "/mandate.html#history" : `/console.html?proposal=${encodeURIComponent(b.subject)}` }));
+    const s = el("td"); s.append(el("a", b.subject, "cv-mono", { href: b.kind === "mandate" ? "/mandate.html#history" : b.kind === "revocation" ? "/council.html#closed" : `/console.html?proposal=${encodeURIComponent(b.subject)}` }));
     const c = el("td"); c.append(pill(b.choice === "yes" ? "safe" : "danger", b.choice));
-    tr.append(s, el("td", b.kind === "mandate" ? "standing instruction" : "payment"), c, el("td", when(b.at), "cv-num"));
+    tr.append(s, el("td", b.kind === "mandate" ? "standing instruction" : b.kind === "revocation" ? "seat removal" : "payment"), c, el("td", when(b.at), "cv-num"));
     body.append(tr);
   }
   table.append(head, body);
@@ -204,6 +284,8 @@ async function refresh() {
   }
   renderSeat(r.data);
   renderWaiting(r.data);
+  renderRemovals(r.data);
+  renderInvites(r.data);
   renderBallots(r.data);
 }
 
@@ -214,6 +296,7 @@ bar = mountIdentityBar($("identity"), {
   world, fb,
   onChange: async (next) => {
     seat = next?.seat ?? seat;
+    issued = null;
     const url = new URL(location.href); if (seat) url.searchParams.set("seat", seat); history.replaceState(null, "", url);
     fb.set("", "neutral");
     cards.forEach((c) => c.remove()); cards.clear();

@@ -39,15 +39,20 @@ export const api = {
   },
   rpContext: (body) => call("POST", "/world/rp-context", body),
   verifyWorld: (body) => call("POST", "/world/verify", body),
+  // body.invite: the single-use code from a seat holder (not needed by the first seat).
   join: (body) => call("POST", "/council/join", body),
+  // { mocked, byNullifier } or { seat, idkitResult } -> { code, link, expiresAt, by }.
+  invite: (body) => call("POST", "/council/invites", body),
+  // Own seat: leave at once. Another seat: 202, opens a revocation vote R-n.
+  revoke: (body) => call("POST", "/council/revoke", body),
   qrUrl: (data) => `/world/qr.svg?data=${encodeURIComponent(data)}`,
   // Standing instructions and council votes (docs/mandate-spec.md).
   mandate: () => call("GET", "/mandate"),
   draftMandate: (text) => call("POST", "/mandate/draft", { text }),
   votes: () => call("GET", "/council/votes"),
   member: (seat) => call("GET", `/council/members/${encodeURIComponent(seat)}`),
-  // kind "proposal" or "mandate"; ballot { choice, mocked, byNullifier } or { choice, idkitResult }.
-  vote: (kind, subject, ballot) => call("POST", `${kind === "mandate" ? "/mandate" : "/proposals"}/${encodeURIComponent(subject)}/vote`, ballot),
+  // kind "proposal", "mandate" or "revocation"; ballot { choice, mocked, byNullifier } or { choice, idkitResult }.
+  vote: (kind, subject, ballot) => call("POST", `${kind === "mandate" ? "/mandate" : kind === "revocation" ? "/council/revocations" : "/proposals"}/${encodeURIComponent(subject)}/vote`, ballot),
 };
 
 export const hbar = (tinybars) =>

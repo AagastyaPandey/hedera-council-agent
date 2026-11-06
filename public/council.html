@@ -79,7 +79,7 @@
 <script src="/vendor/idkit.js"></script>
 <script type="module">
 import { api, hbar } from "/assets/api.js";
-import { $, el, when, identities, loadWorld, isDemo, feedback, mountIdentityBar, voteCard, updateVoteCard, showStamp, castBallot, seatAvatar, sourceBadge, decisionLabel, pill, poll, fillChrome } from "/assets/council-votes.js";
+import { $, el, when, identities, loadWorld, isDemo, feedback, mountIdentityBar, voteCard, updateVoteCard, showStamp, castBallot, seatAvatar, sourceBadge, decisionLabel, resultLabel, revokeSeat, pill, poll, fillChrome } from "/assets/council-votes.js";
 import { stagger, reduced } from "/assets/motion.js";
 
 const fb = feedback($("status"), $("qr"));
@@ -91,6 +91,10 @@ let identity = identities.current();
 let world = { configured: false, mockedAllowed: false };
 let first = true;
 let unavailable = false;
+let seatsNow = [];
+let removalTargets = new Map(); // target seat -> open removal vote subject
+// An invite link (/council.html?invite=CODE) pre-fills the join.
+const inviteCode = new URLSearchParams(location.search).get("invite");
 
 const detail = (item) => {
   const d = drafts.get(item.subject);
@@ -166,12 +170,14 @@ function renderClosed(closed) {
   const body = el("tbody");
   for (const item of closed) {
     const tr = el("tr", undefined, undefined, { "data-subject": item.subject });
-    const s = el("td"); s.append(el("a", item.subject, "cv-mono", { href: item.kind === "mandate" ? "/mandate.html#history" : `/console.html?proposal=${encodeURIComponent(item.subject)}` }));
+    const s = el("td"); s.append(el("a", item.subject, "cv-mono", { href: item.kind === "mandate" ? "/mandate.html#history" : item.kind === "revocation" ? `/member.html?seat=${encodeURIComponent(item.target)}` : `/console.html?proposal=${encodeURIComponent(item.subject)}` }));
     const what = el("td", item.kind === "proposal" && item.amountTinybars !== undefined ? `${item.title} · ${hbar(item.amountTinybars)} to ${item.payee}` : item.title);
+    if (item.kind === "revocation") what.prepend(el("span", "Removal", "cv-kind-tag"));
     const tally = el("td", `${item.vote.yes}–${item.vote.no} of ${item.vote.eligible.length}`, "cv-num");
     const result = el("td");
     const passed = item.vote.status === "passed";
-    result.append(pill(passed ? "safe" : "danger", item.kind === "mandate" ? (passed ? "adopted" : "rejected") : (passed ? "passed" : "refused")));
+    if (item.kind === "revocation") { const r = resultLabel(item); result.append(pill(r.tone, r.label.toLowerCase())); }
+    else result.append(pill(passed ? "safe" : "danger", item.kind === "mandate" ? (passed ? "adopted" : "rejected") : (passed ? "passed" : "refused")));
     if (item.kind === "proposal" && item.decision) { const d = decisionLabel(item.decision); result.append(" ", pill(d.tone, d.label.toLowerCase())); }
     tr.append(s, what, tally, result);
     body.append(tr);
@@ -180,18 +186,43 @@ function renderClosed(closed) {
   $("closedList").replaceChildren(table);
 }
 
+function memberActions(s) {
+  const acts = el("div", undefined, "cv-member-acts");
+  const mine = identity?.seat === s.seat;
+  const open = removalTargets.get(s.seat);
+  const canAct = world.configured || (isDemo(world) && Boolean(identity?.nullifier));
+  if (open) { acts.append(el("small", `Removal vote ${open} open`)); return acts; }
+  const btn = el("button", mine ? "Leave the council" : "Propose removal", "cv-member-act", { type: "button", "data-seat": s.seat, "data-action": mine ? "leave" : "remove", "aria-label": mine ? `Leave the council (${s.seat})` : `Propose removing ${s.seat}` });
+  btn.disabled = !canAct;
+  if (!canAct) btn.title = "Pick a seat you hold under Act as first.";
+  btn.onclick = async () => {
+    if (mine && !confirm(`Leave the council as ${s.seat}? This is immediate: your seat is revoked, you cannot rejoin, and every pending proposal and open vote is cancelled.`)) return;
+    btn.disabled = true;
+    const res = await revokeSeat({ world, identity, seat: s.seat, fb });
+    if (!res.ok) btn.disabled = false;
+    $("memberList").dataset.key = "";
+    await refresh();
+    if (res.ok && res.data.voteOpened) $("open")?.scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "start" });
+  };
+  acts.append(btn);
+  if (!mine) acts.append(el("small", "a majority of the other seats decides"));
+  return acts;
+}
+
 function renderMembers(seats) {
   $("mSeats").textContent = String(seats.length);
-  $("membersFolio").textContent = `${seats.length} seat${seats.length === 1 ? "" : "s"} · one person, one seat, keyed by the World ID nullifier`;
+  $("membersFolio").textContent = `${seats.length} seat${seats.length === 1 ? "" : "s"} · one person, one seat, keyed by the World ID nullifier · new seats by invite`;
   const list = $("memberList");
-  const key = JSON.stringify([seats, identities.list().map((x) => x.seat)]);
+  const key = JSON.stringify([seats, identities.list().map((x) => x.seat), identity?.seat ?? null, [...removalTargets]]);
   if (list.dataset.key === key) return;
   list.dataset.key = key;
-  if (!seats.length) { list.replaceChildren(el("p", "No seats yet. Join above: the first members adopt the owner's instruction.", "cv-empty")); return; }
+  if (!seats.length) { list.replaceChildren(el("p", "No seats yet. The first member founds the council and invites the rest; the members adopt the owner's instruction.", "cv-empty")); return; }
   list.replaceChildren(...seats.map((s) => {
+    const wrap = el("div", undefined, "cv-member-wrap", { "data-seat": s.seat, "data-mine": String(Boolean(identities.find(s.seat))) });
     const a = el("a", undefined, "cv-member", { href: `/member.html?seat=${encodeURIComponent(s.seat)}`, "data-mine": String(Boolean(identities.find(s.seat))), "aria-label": `${s.seat}, ${s.source === "world" ? "World ID" : "mocked"} seat${identities.find(s.seat) ? ", held by this browser" : ""}` });
     a.append(seatAvatar(s.seat), el("b", s.seat), sourceBadge(s.source), el("small", `joined ${when(s.joinedAt)}`));
-    return a;
+    wrap.append(a, memberActions(s));
+    return wrap;
   }));
 }
 
@@ -201,8 +232,10 @@ async function refresh() {
   if (s.ok) {
     if (bar.prune(s.data.seats.map((x) => x.seat))) identity = identities.current();
     if (String(s.data.count) !== $("mSeats").textContent) fillChrome();
-    renderMembers(s.data.seats);
+    seatsNow = s.data.seats;
   }
+  if (v.ok) removalTargets = new Map(v.data.open.filter((i) => i.kind === "revocation").map((i) => [i.target, i.subject]));
+  if (s.ok) renderMembers(seatsNow);
   if (m.ok) for (const d of m.data.drafts ?? []) drafts.set(d.id, d);
   if (!v.ok) {
     if (!unavailable) fb.set(v.status === 404 ? "This server has no council votes route yet (GET /council/votes)." : v.data?.error || "Could not load council votes.", "bad");
@@ -220,9 +253,11 @@ world = await loadWorld();
 $("mMode").textContent = world.configured ? "World ID ballots" : isDemo(world) ? "DEMO identities" : "Voting off";
 $("mStamp").textContent = world.configured ? "World ID" : isDemo(world) ? "Demo" : "Read only";
 bar = mountIdentityBar($("identity"), {
-  world, fb,
-  onChange: async (next) => {
+  world, fb, invite: inviteCode,
+  onChange: async (next, meta = {}) => {
     identity = next;
+    // A spent invite link should not linger in the address bar.
+    if (meta.usedInvite) { const url = new URL(location.href); url.searchParams.delete("invite"); history.replaceState(null, "", url); }
     for (const card of cards.values()) card.dataset.stale = "1";
     // Re-draw every card's buttons for the new identity.
     cards.forEach((card) => card.remove()); cards.clear();
