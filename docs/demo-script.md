@@ -21,14 +21,14 @@ Show the exact mismatch fields on screen.
 ## 1:20-2:05, Scenes 3 and 4, World ID gate
 Show Scene 3, then Scene 4.
 Say: "Large proposals need the owner's fresh World ID, tied to that exact proposal. Approved, the agent signs. Denied or expired, the agent does not sign, even though the transfer itself matches."
-Show the World ID verify call and the denied path.
+Show /world.html (QR for World App, or the labelled MOCKED button), the server verification, and the denied path.
 
 ## 2:05-2:30, close
 Say: "Hedera x402 pays for the check, Scheduled Transactions fix the transfer, HCS logs every decision, World ID gates the large ones, 0G writes the verdict. One agent seat, three partners, five tracks."
 Show the repo URL, https://github.com/BeastAyyG/hedera-council-agent, and the track list.
 
 ## Checklist before recording
-- `npm test` green, 10/10
+- `npm test` green, 25/25
 - `npm run demo` green, all 4 scenes correct
 - If real mode: .env filled, one real x402 payment settled, HashScan link copied into the README "Hedera transaction IDs" section
 - Close other windows, use a clean terminal, 720p or better

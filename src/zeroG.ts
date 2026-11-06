@@ -16,7 +16,7 @@ export interface ZeroGVerdict {
   text: string;
   requestId: string | null;
   model: string;
-  source: "0g" | "simulated";
+  source: "0g" | "simulated" | "unavailable";
 }
 
 export interface ZeroGConfig {
@@ -44,6 +44,21 @@ export async function zeroGVerdict(
     return { text: `[SIMULATED 0G verdict] ${template}`, requestId: null, model: config.model, source: "simulated" };
   }
   const prompt = `You are a treasury council checker. Write a short plain-language verdict (2-3 sentences) for this proposal check. Do not invent numbers. Check result: ${input.checkVerdict}`;
+  // A 0G outage must not lose a check the agent already paid for: the
+  // decision is deterministic, so record the failure and carry on.
+  try {
+    return await callZeroG(config, prompt, template);
+  } catch (err) {
+    return {
+      text: `[0G verdict unavailable: ${err instanceof Error ? err.message : String(err)}] ${template}`,
+      requestId: null,
+      model: config.model,
+      source: "unavailable",
+    };
+  }
+}
+
+async function callZeroG(config: ZeroGConfig, prompt: string, template: string): Promise<ZeroGVerdict> {
   const res = await fetch(`${config.baseUrl.replace(/\/$/, "")}/chat/completions`, {
     method: "POST",
     headers: {
@@ -56,6 +71,7 @@ export async function zeroGVerdict(
       messages: [{ role: "user", content: prompt }],
       temperature: 0,
     }),
+    signal: AbortSignal.timeout(30_000),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");

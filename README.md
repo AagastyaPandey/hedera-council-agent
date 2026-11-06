@@ -30,37 +30,72 @@ proposal (description vs exact transfer)
   -> audit: every decision logged to an HCS topic
 ```
 
-- `src/proposal.ts` - proposal and transfer model
+- `src/proposal.ts` - proposal and transfer model, input validation
 - `src/checker.ts` - deterministic mismatch checker
-- `src/budget.ts` - spending cap for check payments
-- `src/x402.ts` - 402 response, self-run x402 facilitator shape
-- `src/hedera.ts` - Hedera client, env-gated real / simulated
+- `src/budget.ts` - spending cap for check payments (USDC)
+- `src/x402.ts` - plain 402 shape used in simulated mode
+- `src/x402Client.ts`, `src/payment.ts` - the agent pays for checks over real x402
+- `src/hedera.ts` - Hedera client, env-gated real / simulated; schedules, HCS, setup helpers
 - `src/zeroG.ts` - 0G Private Computer client (OpenAI-compatible)
-- `src/world.ts` - World ID gate, denied / expired / wrong-proposal paths
+- `src/world.ts` - World ID: RP-signed requests, server-side verification, approval store, gate
+- `src/store.ts` - durable council seats and spent approvals (`.data/state.json`)
 - `src/council.ts` - orchestration: pay, verdict, check, gate, sign or refuse
-- `src/server.ts` - HTTP server: `/health`, `/check`, `/proposals`, `/council/join`
+- `src/server.ts` - HTTP server and API (below)
+- `src/preflight.ts` - checks every external dependency, one-time Hedera setup
 - `src/demo.ts` - demo rehearsal, 4 scenes
+- `public/world.html` - World ID approval and council-join page (IDKit 4.x, QR for World App)
 
 ## Setup
 
 ```bash
 npm install
-cp .env.example .env   # fill in the real values below, never commit .env
-npm test               # build + 10 unit tests
+cp .env.example .env   # fill in the values below, never commit .env
+npm test               # build + 25 tests (unit + HTTP level)
+npm run preflight      # check Hedera, x402, 0G, World ID; add -- --setup to do one-time Hedera setup
 npm run demo           # demo rehearsal, 4 scenes
-npm start              # HTTP server on :3000 (PORT to change)
+npm start              # HTTP server on :3000 (PORT to change); World page at /world.html
 ```
+
+`.env` is loaded automatically by `npm start`, `npm run demo` and `npm run preflight`.
+Node 20.12 or newer.
+
+## API
+
+| Route | What it does |
+| --- | --- |
+| `GET /health` | mode, what is real and what is simulated |
+| `POST /check` | the paid check service, protected by x402 (HTTP 402 until paid) |
+| `POST /proposals` | full flow: pay via x402, 0G verdict, mismatch check, World ID gate, sign or refuse |
+| `GET /proposals/:id` | registered proposal, last outcome, approval state |
+| `POST /world/rp-context` | RP-signed IDKit request for one server-chosen action |
+| `POST /world/verify` | verifies the owner's World ID for one proposal and stores the approval server-side |
+| `POST /council/join` | Proof of Human council join, one seat per nullifier |
+| `GET /council/seats` | current seats |
+| `GET /world.html?proposal=<id>` / `?join` | approval and join page |
+
+Authorization rules the tests enforce: a client-supplied World ID "check" in the
+request body is ignored; only approvals the server verified itself count. An
+approval is bound to one proposal id, expires after 5 minutes, and is spent
+on the first signing. A proposal id is bound to its content on first submission.
+Each World proof is accepted once (keyed on action + nullifier, stored on disk).
+The World environment comes from server config, so a client cannot pick
+`staging` or `sandbox`. With World configured, mocked approvals are refused.
+There is no user authentication on `POST /proposals`: run it on a trusted
+network, it is a council agent API, not a public one.
 
 ## Env vars
 
 | Var | What it is |
 | --- | --- |
 | `HEDERA_NETWORK` | `testnet` (default) or `mainnet` |
-| `HEDERA_ACCOUNT_ID` | Hedera testnet account id, e.g. `0.0.123456`, from portal.hedera.com |
-| `HEDERA_PRIVATE_KEY` | Private key for that account, ECDSA |
-| `HEDERA_TOPIC_ID` | HCS topic id for the audit log, optional |
-| `X402_CHECK_PRICE_TINYBARS` | Price of one proposal check, default `100000` (0.001 HBAR) |
-| `AGENT_SPEND_CAP_TINYBARS` | Agent spending cap per run, default `1000000` |
+| `HEDERA_ACCOUNT_ID` | Agent's Hedera account id, e.g. `0.0.123456`, from portal.hedera.com |
+| `HEDERA_PRIVATE_KEY` | Its private key. Raw hex is read as ECDSA (required for x402); DER keeps its own type; `HEDERA_KEY_TYPE=ed25519` for raw ED25519 |
+| `HEDERA_TREASURY_ACCOUNT_ID` | Account the proposals pay out of, default the agent account. Use a threshold-key account for a real multi-member council |
+| `HEDERA_TOPIC_ID` | HCS topic for the audit log. Created on first audit if unset (printed in the log) |
+| `X402_PAY_TO` | Account that receives check fees. Defaults to the agent, which pays itself: use `npm run preflight -- --create-fee-account` |
+| `X402_PRICE_USDC` | Price of one check, default `0.01` |
+| `CHECK_SERVICE_URL` | Paid check service the agent calls, default this server's `/check` |
+| `AGENT_SPEND_CAP_USDC` | Agent spending cap per run, default `0.10` |
 | `LARGE_PROPOSAL_TINYBARS` | Large threshold, World ID required at or above, default `50000000` (0.5 HBAR) |
 | `ZERO_G_API_KEY` | 0G Private Computer API key, `sk-` key from pc.0g.ai |
 | `ZERO_G_BASE_URL` | Default `https://router-api.0g.ai/v1` |
@@ -68,7 +103,9 @@ npm start              # HTTP server on :3000 (PORT to change)
 | `WORLD_RP_ID` | World ID RP id (`rp_...`), server only, from developer.world.org |
 | `WORLD_APP_ID` | World ID app id (`app_...`), public |
 | `WORLD_SIGNING_KEY` | World signing key, server only, never expose to the client |
+| `WORLD_ENVIRONMENT` | `production` (default), `staging` or `sandbox`. Server-side only |
 | `X402_FACILITATOR_URL` | Default `https://x402.org/facilitator` (Official) |
+| `STATE_FILE` | Council seats and spent approvals, default `.data/state.json` |
 
 How to get Hedera testnet credentials: register at portal.hedera.com,
 choose Testnet, create an account. It gives an account ID, a private key,
@@ -89,9 +126,10 @@ returns HTTP 402 with a `PAYMENT-REQUIRED` header carrying those
 accepts. A paid request is verified and settled by the facilitator. The paying account must be
 associated with that token; testnet USDC comes from faucet.circle.com
 (Hedera Testnet). `src/x402Client.ts` is the agent-side x402 client
-(`@x402/fetch` + `@x402/hedera` Exact scheme). The internal council
-check fee is still paid in HBAR via the Hedera SDK, under the spending
-cap, and logged to HCS.
+(`@x402/fetch` + `@x402/hedera` Exact scheme). The agent pays that route itself
+(`src/payment.ts`) under the USDC spending cap, never offering more than the
+configured price, and the settlement transaction id is the payment id.
+Every decision is logged to HCS.
 
 How to get 0G credits: ask at the 0G booth / 0G docs at the event. Every
 team gets 0G compute credits to build with. A key is created at pc.0g.ai
@@ -101,21 +139,27 @@ printed per check.
 
 ## Real vs simulated
 
-Without `HEDERA_ACCOUNT_ID` and `HEDERA_PRIVATE_KEY`, the app runs in
-SIMULATED mode: the full logic runs, but chain ids are `SIM-PAY-…`,
-`SIM-SCHED-…`, `SIM-HCS-…` and output says SIMULATED. Without
-`ZERO_G_API_KEY`, 0G verdicts are labelled `[SIMULATED 0G verdict]`.
-World ID proofs in the demo are labelled MOCKED, because World is
-mocking proofs for this event and no sandbox app is needed.
+Each integration switches on by its own env vars and is labelled in `/health`
+and in every outcome.
 
-With the env vars set, the same code paths use the real Hedera SDK
-(Scheduled Transactions, HCS, transfer payments, receipt verification),
-the real 0G API, and backend World ID validation. No fake transaction
-id is ever presented as real.
+- Hedera and x402: without `HEDERA_ACCOUNT_ID` and `HEDERA_PRIVATE_KEY` the full
+  logic runs in SIMULATED mode (`SIM-PAY-…`, `SIM-SCHED-…`, `SIM-HCS-…`). With
+  them, the agent pays `/check` over real x402, creates or co-signs real
+  Scheduled Transactions and writes real HCS messages.
+- 0G: without `ZERO_G_API_KEY` verdicts are labelled `[SIMULATED 0G verdict]`.
+  If 0G fails after a check was paid, the failure is recorded in the verdict
+  and the deterministic decision still stands.
+- World ID: without `WORLD_RP_ID`, `WORLD_APP_ID` and `WORLD_SIGNING_KEY`, the
+  approval page offers a MOCKED approval (testnet only). With them, only
+  server-verified World ID proofs count and mocks are refused. `npm run demo`
+  always uses MOCKED approvals.
 
-Current status at build time: SIMULATED. No real Hedera payment has
-settled yet, because no testnet credentials were available on this
-machine. See "Hedera transaction IDs" below.
+No fake transaction id is ever presented as real.
+
+Current status at build time: the code paths for all of this are written and
+tested against stubs, but no real Hedera payment, 0G call or World proof has
+run, because no credentials were available. `npm run preflight` shows what is
+missing.
 
 ## Demo rehearsal
 
@@ -138,48 +182,48 @@ Demo video: 2-3 minutes. ETHGlobal requires 2-4 minutes, 0G wants under
 ## Track-by-track submission notes
 
 1. **Hedera, AI Agents That Pay: x402 on Hedera, $6,500.**
-   Proves it: `POST /check` returns HTTP 402 with price and payTo
-   (`src/x402.ts`, `src/server.ts`). The agent pays on Hedera testnet
-   with no human approving (`src/council.ts`, `src/hedera.ts` `pay()`),
-   under a spending cap (`src/budget.ts`), and each payment is logged
-   to an HCS topic (`audit()`). Demo scene 1 shows a paid check and a
-   sign; the README section below holds the real transaction ID and
-   HashScan link once a real payment settles.
+   `POST /check` is a real x402 resource (`src/server.ts`, `@x402/express`,
+   Official facilitator). The agent is the buyer: `src/payment.ts` and
+   `src/x402Client.ts` pay it $0.01 testnet USDC per check with no human
+   approving, refuse any offer above the configured price, stay under a
+   USDC spending cap (`src/budget.ts`), and use the settlement transaction
+   id as the payment id. `src/council.ts` cross-checks the paid result
+   against its own deterministic check. Each decision is logged to HCS.
+   Real transaction ids go in the section below once a payment settles.
 2. **Hedera, "No Solidity Allowed": Build with Hedera SDKs, $2,000.**
-   Proves it: Hedera JS/TS SDK (`@hiero-ledger/sdk`), no Solidity anywhere
-   in this repo. Uses HTS transfers, HCS topics, and Scheduled
-   Transactions, three native services (`src/hedera.ts`).
+   `@hiero-ledger/sdk`, no Solidity anywhere in this repo. HTS (the USDC
+   transfer inside each x402 payment), HCS (audit topic, created on first
+   use) and Scheduled Transactions (`src/hedera.ts`). The agent creates the
+   schedule for the exact transfer, or adds its signature with
+   `ScheduleSign` when another member already created the identical one.
+   With a threshold-key treasury (`HEDERA_TREASURY_ACCOUNT_ID`) the transfer
+   executes once enough council members have signed. With the default
+   single-key treasury, the agent's one signature executes it.
 3. **World, World ID Agent Pass, $5,000.**
-   Proves it: before signing a large proposal, the owner must pass a
-   fresh World ID check tied to that exact proposal id
-   (`src/world.ts` `worldGate()`, `src/council.ts` step 4). Demo scene 3
-   is the approved path, scene 4 is the denied path where the agent
-   does not sign. Backend validation is `POST
-   https://developer.world.org/api/v4/verify/{rp_id}`
-   (`src/world.ts` `verifyWorldProof()`, `POST /world/verify`), checking
-   success, action (`council-sign:<proposalId>`), environment, and
-   `results[0].success`; an unvalidated client response is never
-   treated as authorization. There is no standalone Agent Pass SDK;
-   the official flow is World ID human-in-the-loop / IDKit 4.x.
-   Integration debrief: see `docs/world-debrief.md` (to be filled after
-   the first real integration attempt).
+   Before signing a large proposal the owner must pass a fresh World ID
+   check for that exact proposal. The server signs the IDKit request
+   (`rpContextFor`, RP signing key never leaves the server), the owner scans
+   the QR on `/world.html`, and the server verifies the result at
+   `POST https://developer.world.org/api/v4/verify/{rp_id}` with the
+   environment pinned from config (`src/world.ts`). The approval is stored
+   server-side for 5 minutes, bound to the proposal, and spent once; the proof's
+   nullifier is recorded so it cannot be replayed. This follows World's
+   human-in-the-loop guidance. There is no standalone Agent Pass SDK.
+   Debrief: `docs/world-debrief.md`, to fill in after the first real run.
 4. **World, Best Use of IDKit, $2,500, if time allows.**
-   Proves it: `POST /council/join` (`src/server.ts`). Proof of Human to
-   join the council, one person gets one seat, keyed by the IDKit proof
-   nullifier. Demo path is labelled MOCKED; real IDKit server
-   verification is the remaining step.
+   `POST /council/join` plus `/world.html?join`. Proof of Human, verified on
+   the server, one council seat per nullifier, stored on disk
+   (`src/store.ts`). Not yet run against World with real credentials.
 5. **0G, Build with 0G Private Computer, $5,000.**
-   Proves it: 0G writes the check's plain-language verdict in the main
-   flow (`src/zeroG.ts`), and the request id is printed per check
-   (`src/demo.ts`, `src/council.ts`). The verdict is load-bearing: it
-   is the human-readable record of the check that the sign/refuse
-   decision is logged alongside. If 0G is removed, there is no verdict
-   and no plain-language explanation of any check. Not a chat wrapper:
-   the AI call is the check's verdict, not decoration.
+   0G writes the check's plain-language verdict in the main flow
+   (`src/zeroG.ts`) and its `x_0g_trace.request_id` is stored and logged to
+   HCS per check. The deterministic checker, not 0G, decides to refuse; the
+   verdict is the human-readable record that decision is logged alongside.
+   Not yet run with a real key.
 
 ## Hedera transaction IDs
 
-TODO, fill with real links only after a real payment settles on testnet.
+Fill with real links only after a real payment settles on testnet.
 Do not put SIM- ids here.
 
 - Check payment, scene 1: tx id: (none yet), HashScan: (none yet)
@@ -188,6 +232,6 @@ Do not put SIM- ids here.
 
 ## What is not in scope
 
-No dashboard. No tokenization (Tokenize Anything dropped). No robot
+No dashboard (only the small World ID approval page). No tokenization (Tokenize Anything dropped). No robot
 (Physical AI dropped). No earning loop (Agents That Pay for Themselves
 dropped). No Continuity tracks: this is a new-project-only submission.

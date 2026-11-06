@@ -8,7 +8,7 @@ Deadline: Saturday Nov 7, 09:00 IST, via the Hacker Dashboard
 An AI agent holds one signing seat on a Hedera treasury council. It pays for a check of each proposal and signs routine ones itself. It refuses any proposal whose actual transfer does not match its description, and it needs its owner's fresh World ID before signing a large one.
 
 ## Long description
-A treasury proposal is a transfer plus a description of that transfer. Most agents trust the description. This agent does not. It pays $0.01 via x402 for an independent check, 0G Private Computer writes the plain-language verdict, and a deterministic checker compares the exact payee, amount, and token against the description. If they differ, the agent refuses, even though it already paid for the check.
+A treasury proposal is a transfer plus a description of that transfer. Most agents trust the description. This agent does not. It pays $0.01 in testnet USDC over x402 for an independent check, 0G Private Computer writes the plain-language verdict, and a deterministic checker compares the exact payee, amount, and token against the description. If they differ, the agent refuses, even though it already paid for the check.
 
 Proposals are Hedera Scheduled Transactions plus HCS, with no smart contracts. The exact transfer is fixed when the proposal is created, and council signatures approve it. Every decision, sign or refuse, is logged to an HCS topic.
 
@@ -27,7 +27,8 @@ Fill this in at submission time, honestly. At build time the demo ran in simulat
 
 ## Submission checklist
 - [ ] Repo public, README complete, .env never committed
-- [ ] `npm test` 10/10, `npm run demo` 4/4 scenes correct
+- [ ] `npm test` 25/25, `npm run demo` 4/4 scenes correct
+- [ ] `npm run preflight` has no FAIL lines
 - [ ] Real x402 payment settled, HashScan link in README (or simulated mode stated plainly)
 - [ ] 0G request ids shown in the demo
 - [ ] World ID approved and denied paths both shown
