@@ -120,7 +120,6 @@ npm start              # HTTP server on :3000 (PORT to change); UI at /
 | `npm run propose -- 0.0.<payee> <hbar> "<purpose>"` | A council member schedules a transfer (real mode) |
 | `npm run verify -- <proposalId> [--server URL]` | Replayable audit of one decision |
 | `npm run ready` | Submission readiness: PASS / TODO / FAIL |
-| `npm run console:install`, `npm run console` | The separate original console app (see `docs/submission.md`) |
 
 ### Try the whole flow in the browser (simulated)
 
