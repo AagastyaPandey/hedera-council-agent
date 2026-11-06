@@ -46,14 +46,14 @@ council member schedules the exact transfer out of a 2-of-2 treasury (Hedera Sch
 - `src/server.ts` - HTTP server and API (below)
 - `src/preflight.ts` - checks every external dependency, one-time Hedera setup
 - `src/demo.ts` - demo rehearsal, 4 scenes
-- `public/` - the UI: `index.html`, `report.html`, `console.html`, shared `assets/` (see `docs/ui-handoff.md`)
+- `public/` - the UI: `index.html` (atlas), `report.html`, `console.html`, shared `assets/` (see `docs/ui-handoff.md`)
 
 ## Setup
 
 ```bash
 npm install
 cp .env.example .env   # fill in the values below, never commit .env
-npm test               # build + 34 tests (unit + HTTP level)
+npm test               # build + 35 tests (unit + HTTP level)
 npm run preflight      # check Hedera, x402, 0G, World ID; add -- --setup, --create-fee-account, --create-council for one-time Hedera setup
 npm run demo           # demo rehearsal, 4 scenes
 npm start              # HTTP server on :3000 (PORT to change); UI at /

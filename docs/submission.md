@@ -27,7 +27,7 @@ Fill this in at submission time, honestly. At build time the demo ran in simulat
 
 ## Submission checklist
 - [ ] Repo public, README complete, .env never committed
-- [ ] `npm test` 34/34, `npm run demo` 4/4 scenes correct
+- [ ] `npm test` 35/35, `npm run demo` 4/4 scenes correct
 - [ ] `npm run preflight` has no FAIL lines
 - [ ] Real x402 payment settled, HashScan link in README (or simulated mode stated plainly)
 - [ ] 0G request ids shown in the demo

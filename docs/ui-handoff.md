@@ -5,24 +5,36 @@ visual lives in `public/`. Nothing outside `public/` needs to change for the UI 
 
 ## Where to work
 
-| File | Role | Design reference |
+The paper-and-red design (cream `#f0ede5` paper, red `#df3d2a` headline type, tiny mono
+labels, vertical rail, pixel-isometric islands) is implemented on every page. Everything
+visual lives in `public/`; nothing outside it needs to change.
+
+| File | Role | Reference look |
 | --- | --- | --- |
-| `public/assets/theme.css` | **Placeholder tokens and components. Replace this.** | the paper / red system |
-| `public/index.html` | Atlas: the overview. Every proposal is a node (`data-proposal`, `data-decision`, `data-large`) | "Archipelago poster" |
-| `public/report.html` | One proposal as a poster: two big numbers, *described* vs *actual transfer*, headline verdict | "AIP-042 report poster" |
-| `public/console.html` | Working console: proposal list, record, submit, World ID approval, join council | "Console, paper and red" |
-| `public/assets/rail.js` | The shared left rail. One place to change navigation | |
+| `public/assets/theme.css` | Tokens and all components (frame, rail, ticker, poster, record, process strip) | all three |
+| `public/index.html` | Atlas: treasury island plus one island per proposal, bridges, legend, timeline | The Archipelago poster |
+| `public/report.html` | Poster: *described* vs *actual* numerals, pixel island, stamp, red verdict | AIP-042 report poster |
+| `public/console.html` | Console: headline, record table, claim/check/gate/sign strip, new proposal, join | Console, paper and red |
+| `public/assets/scene.js` | SVG scenery generators: `island`, `pixelIsland`, `bridge`, `sky` | |
+| `public/assets/rail.js` | Top meta row (menu and status columns) and the bottom ticker | |
 
 Do not touch: `public/assets/api.js` and `public/assets/world-flow.js`. They are the
 seam to the server. Restyle the markup around them, keep calling them.
 
+Animation hooks already in the markup: `.packet` (the red dot on each bridge, ready to
+travel), `.island` groups (`data-proposal`, `data-decision`, `data-large`), `.stamp`,
+`.ticker .run` (CSS marquee, off under `prefers-reduced-motion`), `.timeline .fill`, and
+the `.step[data-state]` strip (`pass`, `fail`, `wait`).
+
 ## From Scratch rule (important)
 
 ETHGlobal's From Scratch rule says prior project-specific "code, designs, or assets are
-not allowed" in a project entering partner prizes. The three references come from
-CODE_TANTRAFEST. Take the ideas (paper background, red accent, mono small-caps labels,
-left rail, big numerals, isometric scene) and draw and write everything fresh here. Do
-not copy its HTML, CSS, SVG or images into this repo.
+not allowed" in a project entering partner prizes. The reference designs live in
+CODE_TANTRAFEST, created Oct 25 2026, before the event (Nov 5-7), with commits by several
+people and no license. So no file from it is in this repo. The look was rebuilt from a
+screenshot in new code: the HTML, CSS and SVG here are all written for this project.
+Replacing them with the originals would put pre-event designs in the submission, which is
+the thing the rule forbids. If the look is judged too close, ask ETHGlobal before submitting.
 
 ## Server contract
 
