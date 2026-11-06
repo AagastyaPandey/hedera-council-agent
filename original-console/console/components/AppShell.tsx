@@ -9,6 +9,7 @@ import { JudgeMode } from "@/components/JudgeMode";
 import { SignerTag } from "@/components/SignerTag";
 
 const NAV = [
+  { href: "/council", label: "Council" },
   { href: "/trail", label: "Trail" },
   { href: "/intent", label: "Intent" },
   { href: "/graph", label: "Graph" },

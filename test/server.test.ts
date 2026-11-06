@@ -231,13 +231,13 @@ test("policy, audit verification and evidence bundles", async () => {
 });
 
 test("/original-console redirects to the original console app", async () => {
-  const app = await createApp({ statePath: null, env: { ORIGINAL_CONSOLE_URL: "http://example.test/trail" } });
+  const app = await createApp({ statePath: null, env: { ORIGINAL_CONSOLE_URL: "http://example.test/council" } });
   const server = app.listen(0, "127.0.0.1");
   await new Promise((r) => server.once("listening", r));
   try {
     const r = await fetch(`http://127.0.0.1:${(server.address() as AddressInfo).port}/original-console`, { redirect: "manual" });
     assert.equal(r.status, 302);
-    assert.equal(r.headers.get("location"), "http://example.test/trail");
+    assert.equal(r.headers.get("location"), "http://example.test/council");
   } finally {
     server.close();
   }

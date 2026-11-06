@@ -23,8 +23,8 @@
 
 `original-console/` is the original Next.js console, copied verbatim from CODE_TANTRAFEST (commit `a6c8497`) with only the
 Solidity contracts, Hardhat config and contract tests left out (it builds and runs without them). Run it with
-`npm run console:install` once, then `npm run console` (http://localhost:3380/trail). It shows that project's data, not this
-Hedera backend; `/original-console` on this server redirects to it. The project's own screens (`public/`) use the same
+`npm run console:install` once, then `npm run console` (http://localhost:3380/council). Its own screens show that project's data; the added `/council` screen (original components, `console/app/council/`) shows
+this project's live proposals, decisions, hashes and log verification from this server. `/original-console` redirects to it. The project's own screens (`public/`) use the same
 stylesheet and component markup.
 
 ## Where to work

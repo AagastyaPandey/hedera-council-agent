@@ -308,7 +308,7 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
 
   // Link to the original console app (run separately: npm run console).
   app.get("/original-console", (_req, res) => {
-    res.redirect((env.ORIGINAL_CONSOLE_URL ?? "").trim() || "http://localhost:3380/trail");
+    res.redirect((env.ORIGINAL_CONSOLE_URL ?? "").trim() || "http://localhost:3380/council");
   });
 
   app.get("/policy", (_req, res) => {
