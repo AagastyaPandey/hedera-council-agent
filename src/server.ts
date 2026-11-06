@@ -35,6 +35,7 @@ import { canonical, sha256, verifyChain, isChainedEntry } from "./auditlog.js";
 import { HederaChain, loadCouncilSetup } from "./chain.js";
 import { SimulatedCheckPayer, X402CheckPayer, type CheckPayer } from "./payment.js";
 import { isLargeProposal, proposalFingerprint, validateProposal, type Proposal } from "./proposal.js";
+import { DEMO_PAYEES, loadPayeeRegistry } from "./payee.js";
 import { buildPolicy } from "./policy.js";
 import { StateStore } from "./store.js";
 import {
@@ -76,11 +77,17 @@ export function buildAgent(env: NodeJS.ProcessEnv = process.env, port = Number(e
   const payer: CheckPayer =
     mode === "real"
       ? new X402CheckPayer(
-          { url: checkServiceUrl, accountId: config.accountId, privateKey: config.privateKey, network: x402Network },
+          { url: checkServiceUrl, accountId: config.accountId, privateKey: config.privateKey, network: x402Network, expectedPayTo: payTo },
           priceAtomic,
         )
-      : new SimulatedCheckPayer(hedera, priceAtomic);
+      : new SimulatedCheckPayer(hedera, priceAtomic, { expectedPayTo: payTo });
+  // The demo payees are accepted only in simulated mode, and say so.
+  const payees = loadPayeeRegistry(env, mode === "simulated" ? DEMO_PAYEES : []);
   return {
+    payees,
+    // Real mode fails closed without a 0G verdict; ALLOW_NO_0G=true overrides.
+    requireVerdict: mode === "real",
+    allowNo0G: (env.ALLOW_NO_0G ?? "").trim().toLowerCase() === "true",
     hedera,
     spendCapUsd: (env.AGENT_SPEND_CAP_USDC ?? "0.10").trim(),
     budget: new SpendingCap(usdcToAtomic((env.AGENT_SPEND_CAP_USDC ?? "0.10").trim())),
@@ -131,7 +138,9 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       threshold: agent.councilProposer ? "2 of 2 (agent and council member)" : agent.mode === "real" ? "set by the treasury key" : "simulated",
     },
     largeThresholdTinybars: agent.largeThresholdTinybars,
-    check: { via: agent.payer.via, priceUsdc: agent.priceUsd, spendCapUsdc: agent.spendCapUsd, decidedBy: "deterministic checker" },
+    check: { via: agent.payer.via, priceUsdc: agent.priceUsd, spendCapUsdc: agent.spendCapUsd, decidedBy: "deterministic checker", payTo: agent.payTo },
+    payees: agent.payees.summary(),
+    verdict: { zeroG: agent.zeroG.apiKey ? "configured" : "not configured", requireVerdict: agent.requireVerdict, allowNo0G: agent.allowNo0G },
     worldGate: { requiredForLarge: true, environment: agent.world.environment, approvalTtlMinutes: APPROVAL_TTL_MINUTES, singleUse: true },
     transferSource: agent.mode === "real" ? "hedera-mirror-node" : "request",
   });
@@ -215,6 +224,8 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       treasury: agent.hedera.config.treasuryAccountId || "simulated",
       councilProposer: agent.councilProposer ?? (agent.mode === "real" ? "none: proposals must name a scheduleId" : "simulated"),
       zeroG: agent.zeroG.apiKey ? "real" : "simulated",
+      zeroGFailClosed: agent.allowNo0G ? "off (ALLOW_NO_0G=true)" : agent.requireVerdict || agent.zeroG.apiKey ? "on: no 0G verdict, no signature" : "off in simulated mode with no key (labelled template verdict)",
+      payeeRegistry: payeeSummary(),
       world: worldOn ? `real (${agent.world.environment})` : "not configured, MOCKED approvals only",
       councilSeats: store.seats().length,
       note:
@@ -310,6 +321,16 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
   // Link to the original console app (run separately: npm run console).
   app.get("/original-console", (_req, res) => {
     res.redirect((env.ORIGINAL_CONSOLE_URL ?? "").trim() || "http://localhost:3380/council");
+  });
+
+  const payeeSummary = () => {
+    const sm = agent.payees.summary();
+    const name = sm.source === "demo registry" ? "demo registry" : sm.source;
+    return `${name}: ${sm.count} payee(s), ${sm.enforce ? "enforced" : "not enforced"}`;
+  };
+
+  app.get("/payees", (_req, res) => {
+    res.json({ ...agent.payees.summary(), payees: agent.payees.entries });
   });
 
   app.get("/policy", (_req, res) => {

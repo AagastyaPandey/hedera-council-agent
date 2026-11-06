@@ -20,10 +20,24 @@ export interface ChainedEntry {
   detail: string;
   at: string;
   policy: string;
+  // Optional anchors for a decision (0G request id and verdict hash, proposal
+  // hash, payee registry result). Part of the hash when present.
+  meta?: EntryMeta;
   hash: string;
 }
 
-export type EntryInput = Pick<ChainedEntry, "proposalId" | "event" | "detail" | "at" | "policy">;
+export interface EntryMeta {
+  zeroGRequestId?: string | null;
+  zeroGModel?: string | null;
+  verdictHash?: string;
+  proposalHash?: string;
+  payeeRegistry?: string;
+}
+
+export type EntryInput = Pick<ChainedEntry, "proposalId" | "event" | "detail" | "at" | "policy" | "meta">;
+
+// An HCS message is at most 1024 bytes; stay under this for every entry.
+export const MAX_ENTRY_BYTES = 1000;
 
 // JSON with sorted keys, so the same data always hashes the same.
 export function canonical(value: unknown): string {
@@ -51,18 +65,28 @@ export interface ChainHead {
 export const EMPTY_HEAD: ChainHead = { seq: 0, hash: GENESIS };
 
 export function sealEntry(head: ChainHead, input: EntryInput): ChainedEntry {
-  const body: Omit<ChainedEntry, "hash"> = {
-    v: 1,
-    seq: head.seq + 1,
-    prev: head.hash,
-    proposalId: input.proposalId,
-    event: input.event,
-    // HCS messages are 1024 bytes; keep every entry well inside one.
-    detail: input.detail.slice(0, 400),
-    at: input.at,
-    policy: input.policy,
+  const build = (detail: string): ChainedEntry => {
+    const body: Omit<ChainedEntry, "hash"> = {
+      v: 1,
+      seq: head.seq + 1,
+      prev: head.hash,
+      proposalId: input.proposalId,
+      event: input.event,
+      detail,
+      at: input.at,
+      policy: input.policy,
+      ...(input.meta ? { meta: input.meta } : {}),
+    };
+    return { ...body, hash: entryHash(body) };
   };
-  return { ...body, hash: entryHash(body) };
+  // Anchors take room too, so the detail gives way until the message fits.
+  let detail = input.detail.slice(0, 400);
+  let entry = build(detail);
+  while (detail.length > 0 && Buffer.byteLength(JSON.stringify(entry)) > MAX_ENTRY_BYTES) {
+    detail = detail.slice(0, Math.max(0, detail.length - 16));
+    entry = build(detail);
+  }
+  return entry;
 }
 
 export function isChainedEntry(x: unknown): x is ChainedEntry {
