@@ -33,14 +33,33 @@ async function prove(context, { onQr, onStatus }) {
   return { result: done.result };
 }
 
-export async function runWorldFlow({ proposalId, join = false, onQr = () => {}, onStatus = () => {} }) {
+export async function runWorldFlow({ proposalId, join = false, invite = null, onQr = () => {}, onStatus = () => {} }) {
   const proof = await prove(join ? { join: true } : { proposalId }, { onQr, onStatus });
   if (proof.error) return proof.error;
   const res = join
-    ? await api.join({ idkitResult: proof.result })
+    ? await api.join({ idkitResult: proof.result, ...(invite ? { invite } : {}) })
     : await api.verifyWorld({ proposalId, idkitResult: proof.result });
   if (res.ok) emit(join ? "council:joined" : "world:approved", { proposalId, ...res.data });
   else emit("world:denied", { proposalId, error: res.data.error });
+  return res;
+}
+
+// A seat holder issues an invite: proven under the join action, bound to the inviting seat.
+export async function runWorldInvite({ seat, onQr = () => {}, onStatus = () => {} }) {
+  const proof = await prove({ invite: true, seat }, { onQr, onStatus });
+  if (proof.error) return proof.error;
+  const res = await api.invite({ seat, idkitResult: proof.result });
+  if (res.ok) emit("council:invited", res.data);
+  else emit("world:denied", { seat, error: res.data.error });
+  return res;
+}
+
+// Leave the council (own seat) or propose removing another seat; the signal names the seat.
+export async function runWorldRevoke({ seat, onQr = () => {}, onStatus = () => {} }) {
+  const proof = await prove({ revoke: true, seat }, { onQr, onStatus });
+  if (proof.error) return proof.error;
+  const res = await api.revoke({ seat, idkitResult: proof.result });
+  if (!res.ok) emit("world:denied", { seat, error: res.data.error });
   return res;
 }
 
@@ -55,10 +74,10 @@ export async function runWorldBallot({ kind, subject, choice, onQr = () => {}, o
 }
 
 // Demo mode (World not configured): MOCKED approval, clearly labelled by the server.
-export async function runMockedFlow({ proposalId, join = false }) {
+export async function runMockedFlow({ proposalId, join = false, invite = null }) {
   const nullifier = `demo-${crypto.randomUUID()}`;
   const res = join
-    ? await api.join({ mocked: true, nullifier })
+    ? await api.join({ mocked: true, nullifier, ...(invite ? { invite } : {}) })
     : await api.verifyWorld({ proposalId, mocked: true });
   // The server stores mocked nullifiers with a "mock:" prefix and echoes it back; keep it for demo ballots.
   if (res.ok && join && typeof res.data.nullifier !== "string") res.data.nullifier = `mock:${nullifier}`;
