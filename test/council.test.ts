@@ -105,6 +105,7 @@ test("x402 payment failure refuses without signing", async () => {
   const agent = makeAgent();
   agent.payer = {
     via: "x402",
+    expectedPayTo: "0.0.0",
     priceAtomic: 10_000,
     payForCheck: async () => ({ ok: false, paymentId: null, via: "x402", error: "facilitator down" }),
   };
@@ -118,6 +119,7 @@ test("paid check that disagrees with the local check refuses", async () => {
   const agent = makeAgent();
   agent.payer = {
     via: "simulated",
+    expectedPayTo: "0.0.0",
     priceAtomic: 10_000,
     payForCheck: async (p) => ({
       ok: true,
@@ -319,6 +321,8 @@ test("audit chain: the simulated agent logs a verifiable chain that commits to t
     largeThresholdTinybars: 50_000_000,
     check: { via: "simulated", priceUsdc: "0.01", spendCapUsdc: "0.10", decidedBy: "deterministic checker" },
     worldGate: { requiredForLarge: true, environment: "production", approvalTtlMinutes: 5, singleUse: true },
+    payees: { count: 0, enforce: false, source: "empty" },
+    verdict: { zeroG: "not configured", requireVerdict: false, allowNo0G: false },
     transferSource: "request",
   });
   agent.hedera.setPolicy(hash);
@@ -347,6 +351,7 @@ test("policy hash is stable and changes with any rule", () => {
     network: "testnet", mode: "real" as const, treasury: "0.0.5", signers: { agent: "0.0.1", proposer: "0.0.2", threshold: "2 of 2" },
     largeThresholdTinybars: 1, check: { via: "x402" as const, priceUsdc: "0.01", spendCapUsdc: "0.10", decidedBy: "deterministic checker" },
     worldGate: { requiredForLarge: true, environment: "production", approvalTtlMinutes: 5, singleUse: true }, transferSource: "hedera-mirror-node" as const,
+    payees: { count: 0, enforce: false, source: "empty" }, verdict: { zeroG: "configured", requireVerdict: true, allowNo0G: false },
   };
   assert.equal(buildPolicy(base).hash, buildPolicy(structuredClone(base)).hash);
   assert.notEqual(buildPolicy(base).hash, buildPolicy({ ...base, largeThresholdTinybars: 2 }).hash);

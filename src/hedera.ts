@@ -13,7 +13,7 @@
 // ScheduleSign. If the treasury has a threshold key, the transfer runs
 // only once enough council members have signed.
 
-import { EMPTY_HEAD, isChainedEntry, sealEntry, type ChainedEntry, type ChainHead } from "./auditlog.js";
+import { EMPTY_HEAD, isChainedEntry, sealEntry, type ChainedEntry, type ChainHead, type EntryMeta } from "./auditlog.js";
 import { parsePrivateKey } from "./keys.js";
 import { fetchTopicMessages, parseMessages } from "./mirror.js";
 import type { Transfer } from "./proposal.js";
@@ -52,6 +52,7 @@ export interface AuditEntry {
   event: string;
   detail: string;
   at: string;
+  meta?: EntryMeta;
 }
 
 export interface ScheduleResult {

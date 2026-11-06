@@ -45,7 +45,7 @@ council member schedules the exact transfer out of a 2-of-2 treasury (Hedera Sch
 - `src/council.ts` - orchestration: pay, verdict, check, gate, sign or refuse
 - `src/server.ts` - HTTP server and API (below)
 - `src/preflight.ts` - checks every external dependency, one-time Hedera setup
-- `src/demo.ts` - demo rehearsal, 4 scenes
+- `src/demo.ts` - demo rehearsal, 7 scenes
 - `public/` - the UI: `index.html` (atlas), `report.html`, `console.html`, shared `assets/` (see `docs/ui-handoff.md`)
 
 ## Setup
@@ -54,9 +54,9 @@ council member schedules the exact transfer out of a 2-of-2 treasury (Hedera Sch
 npm install
 cp .env.example .env   # fill in the values below, never commit .env
 npm run css:console    # only after editing public/console.html
-npm test               # build + 54 tests (unit + HTTP level)
+npm test               # build + 78 tests (unit + HTTP level)
 npm run preflight      # check Hedera, x402, 0G, World ID; add -- --setup, --create-fee-account, --create-council for one-time Hedera setup
-npm run demo           # demo rehearsal, 4 scenes
+npm run demo           # demo rehearsal, 7 scenes
 npm start              # HTTP server on :3000 (PORT to change); UI at /
 ```
 
@@ -146,6 +146,10 @@ network, it is a council agent API, not a public one.
 | `CHECK_SERVICE_URL` | Paid check service the agent calls, default this server's `/check` |
 | `AGENT_SPEND_CAP_USDC` | Agent spending cap per run, default `0.10` |
 | `LARGE_PROPOSAL_TINYBARS` | Large threshold, World ID required at or above, default `50000000` (0.5 HBAR) |
+| `PAYEE_REGISTRY` | Payee accounts the council may pay: JSON array of `{account, label, validFrom?, validUntil?}` or a comma list of `0.0.x`. Non-empty turns enforcement on |
+| `PAYEE_REGISTRY_FILE` | Same, read from a JSON file |
+| `REQUIRE_REGISTERED_PAYEE` | `true` enforces the registry even when it is empty (refuses every payee) |
+| `ALLOW_NO_0G` | `true` lets the agent sign without a 0G verdict. Default off: no verdict, no signature |
 | `ZERO_G_API_KEY` | 0G Private Computer API key, `sk-` key from pc.0g.ai |
 | `ZERO_G_BASE_URL` | Default `https://router-api.0g.ai/v1` |
 | `ZERO_G_MODEL` | Default `0gm-1.0-35b-a3b` (verified slug; `0gm-1.0` on the prize page is shorthand) |
@@ -195,9 +199,26 @@ and in every outcome.
   logic runs in SIMULATED mode (`SIM-PAY-…`, `SIM-SCHED-…`, `SIM-HCS-…`). With
   them, the agent pays `/check` over real x402, creates or co-signs real
   Scheduled Transactions and writes real HCS messages.
-- 0G: without `ZERO_G_API_KEY` verdicts are labelled `[SIMULATED 0G verdict]`.
-  If 0G fails after a check was paid, the failure is recorded in the verdict
-  and the deterministic decision still stands.
+- 0G: without `ZERO_G_API_KEY` in simulated mode, verdicts are labelled
+  `[SIMULATED 0G verdict]`. The agent fails closed: if a key is set and the 0G
+  call fails, or in real Hedera mode with no key, it refuses (`REFUSED_NO_VERDICT`)
+  rather than signing without a verdict. `ALLOW_NO_0G=true` overrides this, and
+  the log entry says so. Every decision entry on HCS anchors the proposal hash,
+  the 0G request id and model, a hash of the verdict plus the proposal hash,
+  and the payee registry result.
+- Payee registry: the council keeps its own list of payee accounts (this
+  project's registry, not ERC-8004 or ERC-8478, and nothing is read from any
+  on-chain registry). When it has entries, or `REQUIRE_REGISTERED_PAYEE=true`,
+  a proposal whose transfer goes to an unregistered or expired account is refused
+  (`REFUSED_UNREGISTERED_PAYEE`) after the mismatch check and before the World ID
+  gate. Simulated mode with nothing configured uses a labelled demo registry
+  (0.0.1001-0.0.1004, 0.0.6666); real mode with an empty registry enforces
+  nothing, and `/policy` says so. `GET /payees` lists it.
+- x402 seller identity: the 402 response is untrusted. The agent pays only an
+  offer whose `payTo` equals the registered check service (`X402_PAY_TO`); a
+  swapped `payTo` is refused before anything is paid (`REFUSED_PAYEE_SWAP`).
+  Verified against a local seller with the real `@x402/fetch` client; not yet
+  against the live facilitator.
 - World ID: without `WORLD_RP_ID`, `WORLD_APP_ID` and `WORLD_SIGNING_KEY`, the
   approval page offers a MOCKED approval (testnet only). With them, only
   server-verified World ID proofs count and mocks are refused. `npm run demo`
@@ -216,12 +237,15 @@ missing.
 
 ## Demo rehearsal
 
-`npm run demo` runs 4 scenes:
+`npm run demo` runs 7 scenes (it prints `ALL 7 SCENES CORRECT` when every one behaves):
 
 1. Routine proposal, paid check, agent signs.
 2. Mismatched proposal (payee and amount differ), paid check, agent refuses.
 3. Large proposal, World ID approved, agent signs.
 4. Large proposal, World ID denied, agent does not sign.
+5. Reuse of yesterday's World approval is refused: an approval signs one payment and is spent.
+6. Same amount, same description, swapped recipient in the 402: refused before paying, nothing spent. "The amount was right. The recipient was a lie."
+7. 0G unavailable: the agent fails closed and does not sign.
 
 Each scene prints its decision, the check payment id, the 0G verdict
 and request id, the World ID gate result, the Scheduled Transaction id,
@@ -229,8 +253,9 @@ and the HCS audit id. In real mode the payment line also prints a
 HashScan link.
 
 Demo video: 2-3 minutes. ETHGlobal requires 2-4 minutes, 0G wants under
-3 minutes. Show scene 1, then scene 2 (the refusal), then scene 3 and 4
-(the World ID gate), in that order.
+3 minutes. Lead with the refusal (scene 2), then scenes 1, 3 and 4
+(the World ID gate), then 5, 6 and 7 (spent approval, swapped recipient,
+0G fails closed). See `docs/demo-script.md`.
 
 ## Track-by-track submission notes
 
