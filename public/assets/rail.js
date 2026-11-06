@@ -16,6 +16,9 @@ function node(tag, text, cls) {
 
 // el: a <header class="top">. meta: [{ label, value, dot?: "red"|"green"|"ink", end?: true }]
 export function mountRail(el, current, meta = []) {
+  const brand = node("a", undefined, "brand");
+  brand.href = "/";
+  brand.append(document.createTextNode("Council "), node("span", "Agent"));
   const menu = node("div", undefined, "col");
   menu.append(node("span", "Menu", "label"));
   const nav = node("nav");
@@ -38,7 +41,9 @@ export function mountRail(el, current, meta = []) {
     c.append(v);
     return c;
   });
-  el.replaceChildren(menu, ...cols);
+  const wrap = node("div", undefined, "cols");
+  for (const c of cols) wrap.append(c);
+  el.replaceChildren(brand, menu, wrap);
 }
 
 export function mountTicker(el, items) {

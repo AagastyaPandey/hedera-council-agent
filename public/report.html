@@ -4,13 +4,14 @@
 <title>Council Agent · Report</title><link rel="icon" href="data:,">
 <link rel="stylesheet" href="/assets/theme.css">
 </head><body data-page="report" data-state="loading">
+<div class="veil" aria-hidden="true"><span class="veil-ring"></span><span class="veil-word">Council Agent</span></div>
 <div class="frame">
   <aside class="vrail"><span>Council Agent</span></aside>
   <div class="stage">
     <header class="top" id="top"></header>
     <main>
       <!-- REPORT POSTER: left numeral = what the proposal said, right numeral = what the chain will do. They differ on a mismatch. -->
-      <div class="poster">
+      <div class="poster" data-reveal style="--i:0">
         <div>
           <p class="bignum" id="num-described" aria-label="Described amount"></p>
           <div class="numcap">Described · <b id="payee-described"></b></div>
@@ -25,20 +26,20 @@
           <div class="numcap">Actual transfer · <b id="payee-actual"></b></div>
         </div>
       </div>
-      <div class="verdict-row" style="display:grid;grid-template-columns:1fr 1fr;gap:28px;padding:8px 0 16px">
+      <div class="verdict-row" data-reveal style="--i:1;display:grid;grid-template-columns:1fr 1fr;gap:28px;padding:8px 0 16px">
         <div><h1 class="shout lg" id="verdict"></h1></div>
         <div><p class="shout lg" id="reason" style="font-size:12px"></p><p class="actions" style="margin:0"><a class="btn secondary" id="open-console" href="/console.html">Open in console</a> <a class="btn secondary" href="/">Back to atlas</a></p></div>
       </div>
     </main>
     <div class="ticker" id="ticker"></div>
-    <section class="cols4" id="cols" style="padding:14px 28px 22px"></section>
+      <section class="cols4" id="cols" data-reveal style="--i:2;padding:14px 0 26px"></section>
   </div>
 </div>
 <script type="module">
 import { api, hbar, qs } from "/assets/api.js";
 import { mountRail, mountTicker } from "/assets/rail.js";
 import { pixelIsland, el, hashSeed } from "/assets/scene.js";
-import { countUp } from "/assets/motion.js";
+import { countUp, reveal } from "/assets/motion.js";
 const $ = (x) => document.getElementById(x);
 const id = qs("proposal");
 const [r, health] = await Promise.all([id ? api.proposal(id) : Promise.resolve({ ok: false, data: { error: "Add ?proposal=<id> to the URL, or pick one on the atlas." } }), api.health()]);
@@ -48,6 +49,7 @@ if (!r.ok) {
   $("verdict").textContent = r.data.error;
   $("scene").append(pixelIsland({ cx: 150, cy: 120, seed: 3 }));
   document.body.dataset.state = "error";
+  reveal(document);
 } else {
   const { proposal: p, check, lastOutcome: o, large } = r.data;
   const decision = o?.decision ?? "PENDING";
@@ -81,6 +83,7 @@ if (!r.ok) {
   );
   document.body.dataset.state = "ready";
   document.body.dataset.decision = decision;
+  reveal(document);
 }
 </script>
 </body></html>

@@ -4,6 +4,7 @@
 <title>Council Agent · Console</title><link rel="icon" href="data:,">
 <link rel="stylesheet" href="/assets/theme.css">
 </head><body data-page="console" data-state="loading">
+<div class="veil" aria-hidden="true"><span class="veil-ring"></span><span class="veil-word">Council Agent</span></div>
 <div class="frame" style="grid-template-columns:34px 1fr">
   <aside class="vrail"><span>Council Agent</span></aside>
   <div class="stage">
@@ -19,12 +20,12 @@
         <div id="banner" class="banner" hidden></div>
         <div class="kicker" id="kicker">Council console</div>
         <h1 class="h1" id="title">Console</h1>
-        <p class="prose" id="lede" style="max-width:62ch">Submit a proposal, watch the agent check it against the chain, approve large ones with World ID, and join the council. Pick a proposal below to open its record.</p>
+        <p class="prose lg" id="lede" style="max-width:62ch">Submit a proposal, watch the agent check it against the chain, approve large ones with World ID, and join the council. Pick a proposal below to open its record.</p>
         <div class="actions" id="head-actions"></div>
 
         <section id="record" aria-label="Selected proposal"></section>
 
-        <section class="sec" id="new" aria-label="New proposal">
+        <section class="sec" id="new" data-reveal style="--i:1" aria-label="New proposal">
           <h2>New proposal <small>description vs actual transfer</small></h2>
           <form id="new-form">
             <div class="formgrid">
@@ -39,9 +40,9 @@
           </form>
         </section>
 
-        <section class="sec" id="proposals" aria-label="Proposals"></section>
+        <section class="sec" id="proposals" data-reveal style="--i:2" aria-label="Proposals"></section>
 
-        <section class="sec" id="join" aria-label="Join the council">
+        <section class="sec" id="join" data-reveal style="--i:3" aria-label="Join the council">
           <h2>Council seats <small>one person, one seat</small></h2>
           <p id="seats"></p>
           <button id="join-btn" class="secondary">Join the council (World ID)</button>
@@ -57,7 +58,7 @@
 <script type="module">
 import { api, bus, hbar, qs } from "/assets/api.js";
 import { runWorldFlow, runMockedFlow } from "/assets/world-flow.js";
-import { replay, reduced } from "/assets/motion.js";
+import { replay, reduced, reveal } from "/assets/motion.js";
 const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
 const status = (t, cls = "") => { const s = $("status"); s.textContent = t; s.className = cls; if (t) replay(s); };
@@ -177,6 +178,7 @@ async function select(id) {
   row("HCS audit", o?.auditTxId ?? "none yet", "", true);
   row("World ID gate", o?.worldGateReason ?? (large ? "required for this size" : "not required"), o?.worldGateReason && decision === "REFUSED" ? "red" : "");
   const sec1 = el("div", undefined, "sec"); sec1.append(el("h2", "Record"), rec);
+  sec1.dataset.reveal = ""; sec1.style.setProperty("--i", "4");
 
   const gate = !check.matches ? ["wait", "skipped", "Not reached: the check failed first, so the agent refuses whatever the owner approves."]
     : !large ? ["pass", "n/a", "Below the large threshold, no World ID needed."]
@@ -190,10 +192,12 @@ async function select(id) {
     step(4, "Sign", decision === "SIGNED" ? "pass" : decision === "REFUSED" ? "fail" : "wait", decision ? decision.toLowerCase() : "pending", o ? (decision === "SIGNED" ? `Scheduled ${o.scheduledTxId}.` : "No signature added.") : "Waiting for the agent."),
   );
   const sec2 = el("div", undefined, "sec"); sec2.dataset.proposal = id; sec2.dataset.decision = decision ?? "PENDING";
+  sec2.dataset.reveal = ""; sec2.style.setProperty("--i", "5");
   const h2 = el("h2", "Process"); h2.append(el("small", `claim → check → gate → sign`));
   sec2.append(h2, steps);
   box.replaceChildren(sec1, sec2);
   playTrail(sec2, b, o);
+  reveal(box);
   await refreshList();
 }
 
@@ -273,6 +277,7 @@ world = (await api.worldConfig()).data;
 await Promise.all([refreshList(), refreshSeats()]);
 if (selected) await select(selected);
 if (location.hash === "#join") $("join").scrollIntoView();
+reveal(document);
 document.body.dataset.state = "ready";
 </script>
 </body></html>

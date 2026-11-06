@@ -48,7 +48,7 @@ export function island({ cx, cy, cols = 8, rows = 6, seed = 1, accent = "#df3d2a
   const r = rng(seed);
   const tw = 12, th = 6;
   const g = el("g", { class: "island-body" });
-  const shades = ["#101010", "#181818", "#212121", "#2b2b2b"];
+  const shades = ["#221e19", "#2a251f", "#322c24", "#3b342b"];
   const cells = [];
   for (let i = 0; i < cols; i++) {
     for (let j = 0; j < rows; j++) {
@@ -62,15 +62,15 @@ export function island({ cx, cy, cols = 8, rows = 6, seed = 1, accent = "#df3d2a
   const pos = ([i, j]) => [cx + (i - j) * (tw / 2), cy + (i + j) * (th / 2) - ((cols + rows) * th) / 4];
   for (const c of cells) {
     const [x, y] = pos(c);
-    g.append(cube(x, y, tw, th, 4 + Math.floor(r() * 3), shades[Math.floor(r() * shades.length)], "#050505", "#0c0c0c"));
+    g.append(cube(x, y, tw, th, 4 + Math.floor(r() * 3), shades[Math.floor(r() * shades.length)], "#14100c", "#1c1813"));
   }
-  const palette = ["#ffffff", "#3f9b45", accent, "#ffffff", "#3f9b45"];
+  const palette = ["#ffe9c4", "#4ade80", accent, "#ffe9c4", "#5cc8ff"];
   const n = Math.max(3, Math.floor(cells.length / 9));
   for (let k = 0; k < n; k++) {
     const c = cells[Math.floor(r() * cells.length)];
     const [x, y] = pos(c);
     const col = k === 0 ? accent : palette[Math.floor(r() * palette.length)];
-    g.append(cube(x, y - 6, 5, 2.5, 3 + Math.floor(r() * 5), col, "#bfbab0", "#9d988d"));
+    g.append(cube(x, y - 6, 5, 2.5, 3 + Math.floor(r() * 5), col, "#9b8f77", "#776d59"));
   }
   return g;
 }
@@ -89,7 +89,7 @@ export function pixelIsland({ cx, cy, seed = 7 }) {
     if (d > 1.15) continue;
     const [x, y] = pos(i, j);
     if (d > 0.82) {
-      g.append(el("polygon", { points: diamond(x, y + 3, tw, th), fill: r() > 0.5 ? "#6fb0d6" : "#82bddf" }));
+      g.append(el("polygon", { points: diamond(x, y + 3, tw, th), fill: r() > 0.5 ? "#5cc8ff" : "#7ed3ff" }));
     } else {
       const grass = ["#4c9a3f", "#56a548", "#448b38"][Math.floor(r() * 3)];
       g.append(cube(x, y, tw, th, 7, grass, "#7a5230", "#5f3f24"));
@@ -130,11 +130,39 @@ export function bridge(a, b, { id = "", delay = 0, dur = 7 } = {}) {
 
 export function sky({ width = 800 } = {}) {
   const g = el("g", { class: "sky" });
-  g.append(el("circle", { class: "sun-halo", cx: width * 0.46, cy: 70, r: 14, fill: "#f2b233", opacity: 0.18 }), el("circle", { cx: width * 0.46, cy: 70, r: 9, fill: "#f2b233" }));
-  for (const [x, y, w] of [[120, 76, 30], [330, 60, 26], [610, 96, 34]]) {
-    const cloud = el("g", { class: "cloud", style: `--dx:${Math.round(14 + w * 0.7)}px` });
-    cloud.append(el("rect", { x, y, width: w, height: 5, fill: "#d9d4c6" }), el("rect", { x: x + 5, y: y - 4, width: w - 12, height: 5, fill: "#d9d4c6" }));
-    g.append(cloud);
+  const defs = el("defs");
+  const grad = el("linearGradient", { id: "sky-grad", x1: "0", y1: "0", x2: "0", y2: "1" });
+  grad.append(
+    el("stop", { offset: "0%", "stop-color": "#14112e" }),
+    el("stop", { offset: "55%", "stop-color": "#2e1c3c" }),
+    el("stop", { offset: "100%", "stop-color": "#55262f" }),
+  );
+  const glow = el("radialGradient", { id: "horizon-glow", cx: "50%", cy: "100%", r: "75%" });
+  glow.append(
+    el("stop", { offset: "0%", "stop-color": "#ff8a3d", "stop-opacity": "0.4" }),
+    el("stop", { offset: "100%", "stop-color": "#ff8a3d", "stop-opacity": "0" }),
+  );
+  const moon = el("radialGradient", { id: "moon-glow" });
+  moon.append(
+    el("stop", { offset: "0%", "stop-color": "#ffd9a0", "stop-opacity": "0.5" }),
+    el("stop", { offset: "100%", "stop-color": "#ffd9a0", "stop-opacity": "0" }),
+  );
+  defs.append(grad, glow, moon);
+  g.append(defs, el("rect", { x: -10, y: -10, width: width + 20, height: 480, fill: "url(#sky-grad)" }));
+  const r = rng(99);
+  for (let i = 0; i < 34; i++) {
+    g.append(el("circle", {
+      class: "star", cx: (r() * width).toFixed(1), cy: (r() * 270).toFixed(1),
+      r: (r() * 1.3 + 0.5).toFixed(2), fill: "#f4efe4",
+      opacity: (0.35 + r() * 0.6).toFixed(2), style: `--d:${(r() * 3).toFixed(2)}s`,
+    }));
   }
+  g.append(
+    el("circle", { class: "halo", cx: width * 0.78, cy: 84, r: 40, fill: "url(#moon-glow)" }),
+    el("circle", { cx: width * 0.78, cy: 84, r: 13, fill: "#ffe9c4" }),
+    el("circle", { cx: width * 0.78 - 5, cy: 80, r: 3, fill: "#e8cba0", opacity: 0.7 }),
+    el("circle", { cx: width * 0.78 + 4, cy: 88, r: 2, fill: "#e8cba0", opacity: 0.6 }),
+  );
+  g.append(el("ellipse", { cx: width / 2, cy: 440, rx: width * 0.62, ry: 95, fill: "url(#horizon-glow)" }));
   return g;
 }

@@ -4,46 +4,104 @@
 <title>Council Agent · Atlas</title><link rel="icon" href="data:,">
 <link rel="stylesheet" href="/assets/theme.css">
 </head><body data-page="atlas" data-state="loading">
+<div class="veil" aria-hidden="true"><span class="veil-ring"></span><span class="veil-word">Council Agent</span></div>
 <div class="frame">
   <aside class="vrail"><span>Atlas</span></aside>
   <div class="stage">
     <header class="top" id="top"></header>
     <main>
-      <div class="atlas">
-        <figure style="margin:0">
-          <!-- ATLAS SCENE: one island per proposal, the treasury in the middle. Islands carry data-proposal, data-decision, data-large. -->
-          <svg class="scene" id="scene" viewBox="0 0 800 440" role="img" aria-label="The council treasury and its proposals as islands"></svg>
-          <div class="timeline"><span id="tl-label">0 / 0 signed</span><span class="track"><span class="fill" id="tl-fill"></span></span><span id="tl-right"></span></div>
-          <figcaption class="figcap" style="margin-top:8px">Fig. 01 · the council, generated in code</figcaption>
-        </figure>
-        <section>
-          <h1 class="shout lg">A council is not a signature. It is a check.</h1>
-          <p class="prose">One agent holds one seat on a Hedera treasury council. Every proposal is a transfer plus a description of it. The agent pays for a check, reads the real transfer back from the chain, and signs only when the two agree. Large ones wait for its owner's fresh World ID.</p>
-          <ul class="legend">
-            <li><i class="sq green"></i>Signed</li>
-            <li><i class="sq red"></i>Refused</li>
-            <li><i class="sq ink"></i>Not yet submitted</li>
-            <li><i class="sq blue"></i>Large · World ID gate</li>
-            <li><i class="sq flight"></i>Paid check travelling</li>
-          </ul>
-          <p class="prose" style="margin-top:12px;font-size:9px;color:var(--ink-3)">Click an island to open its report. Submit new proposals in the console.</p>
-        </section>
-      </div>
+      <section class="hero">
+        <p class="eyebrow" data-reveal><i class="pulse"></i>Hedera × World × 0G · one agent, one signing seat</p>
+        <h1 class="display" data-reveal style="--i:1">A council is not a signature. <span class="grad">It is a check.</span></h1>
+        <p class="prose lg" data-reveal style="--i:2">Every proposal is a transfer plus a description of that transfer. The agent pays for an independent check, reads the real transfer back from the chain, and signs only when the two agree. Large ones wait for a fresh World ID from its owner.</p>
+        <div class="actions hero-actions" data-reveal style="--i:3">
+          <a class="btn-primary" href="/console.html">Open the console</a>
+          <a class="btn-ghost" href="#how">How it decides</a>
+        </div>
+      </section>
+
+      <figure class="scene-card" data-reveal style="--i:2">
+        <!-- ATLAS SCENE: one island per proposal, the treasury in the middle. Islands carry data-proposal, data-decision, data-large. -->
+        <svg class="scene" id="scene" viewBox="0 0 800 440" role="img" aria-label="The council treasury and its proposals as islands"></svg>
+        <div class="timeline"><span id="tl-label">0 / 0 signed</span><span class="track"><span class="fill" id="tl-fill"></span></span><span id="tl-right"></span></div>
+        <figcaption class="figcap">Fig. 01 · the council, generated in code · click an island for its report</figcaption>
+      </figure>
+
+      <ul class="legend" data-reveal style="--i:3">
+        <li><i class="sq green"></i>Signed</li>
+        <li><i class="sq red"></i>Refused</li>
+        <li><i class="sq ink"></i>Not yet submitted</li>
+        <li><i class="sq blue"></i>Large · World ID gate</li>
+        <li><i class="sq flight"></i>Paid check travelling</li>
+      </ul>
+
+      <section class="stats" aria-label="Council numbers">
+        <div class="stat" data-reveal style="--i:0"><span class="label">Signed</span><b class="num" id="st-signed">0</b><span class="sub">council signatures added</span></div>
+        <div class="stat" data-reveal style="--i:1"><span class="label">Refused</span><b class="num red" id="st-refused">0</b><span class="sub">transfers that lied</span></div>
+        <div class="stat" data-reveal style="--i:2"><span class="label">Seats held</span><b class="num" id="st-seats">0</b><span class="sub">one person, one seat</span></div>
+        <div class="stat" data-reveal style="--i:3"><span class="label">Check price</span><b class="num" id="st-price">—</b><span class="sub">paid over x402, no human</span></div>
+      </section>
+
+      <section class="how" id="how">
+        <h2 class="sect" data-reveal>How it decides</h2>
+        <div class="how-grid">
+          <div class="how-card" data-reveal style="--i:0">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="12" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+            <h3>01 · Claim</h3><p>A proposal arrives claiming a transfer: an amount, a payee, a purpose.</p>
+          </div>
+          <div class="how-card" data-reveal style="--i:1">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5M9.5 11h3M11 9.5v3"/></svg>
+            <h3>02 · Paid check</h3><p>The agent pays for an independent check, then reads the real transfer back from Hedera.</p>
+          </div>
+          <div class="how-card" data-reveal style="--i:2">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><circle cx="12" cy="10.5" r="1.6"/><path d="M12 12.2v3"/></svg>
+            <h3>03 · Human gate</h3><p>Large transfers pause until the owner passes a fresh World ID check for that exact proposal.</p>
+          </div>
+          <div class="how-card" data-reveal style="--i:3">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l3.5-.8L19 7.7a2 2 0 0 0-2.8-2.8L4.8 16.4z"/><path d="M13.5 6.5l4 4"/></svg>
+            <h3>04 · Sign or refuse</h3><p>Only an exact match gets a council signature. Every decision lands in the HCS log.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="partners">
+        <h2 class="sect" data-reveal>Built for three partner tracks</h2>
+        <div class="p-grid">
+          <div class="p-card hedera" data-reveal style="--i:0">
+            <span class="p-chip hedera">H</span>
+            <h3>Hedera</h3>
+            <p>x402 pays for every check with no human. Proposals are Scheduled Transactions plus HCS — no Solidity anywhere.</p>
+            <span class="p-tag">AI Agents That Pay · No Solidity Allowed</span>
+          </div>
+          <div class="p-card world" data-reveal style="--i:1">
+            <span class="p-chip world">W</span>
+            <h3>World</h3>
+            <p>Large signings pause until the owner passes a fresh World ID proof of human, tied to that exact transfer.</p>
+            <span class="p-tag">World ID Agent Pass</span>
+          </div>
+          <div class="p-card zerog" data-reveal style="--i:2">
+            <span class="p-chip zerog">0G</span>
+            <h3>0G</h3>
+            <p>0G Private Computer writes the plain-language verdict on every check, with its request id shown.</p>
+            <span class="p-tag">Build with 0G Private Computer</span>
+          </div>
+        </div>
+      </section>
     </main>
     <div class="ticker" id="ticker"></div>
-    <section class="cols4" id="cols" style="padding:14px 28px 22px"></section>
   </div>
 </div>
 <script type="module">
 import { api } from "/assets/api.js";
 import { mountRail, mountTicker } from "/assets/rail.js";
 import { el, island, bridge, sky, hashSeed } from "/assets/scene.js";
+import { countUp, reveal } from "/assets/motion.js";
 
 let h = (await api.health()).data;
 let rows = (await api.proposals()).data.proposals ?? [];
 let seats = (await api.seats()).data;
 
-const accentFor = (p) => (p.decision === "SIGNED" ? "#3f9b45" : p.decision === "REFUSED" ? "#df3d2a" : "#9b978b");
+const accentFor = (p) => (p.decision === "SIGNED" ? "#4ade80" : p.decision === "REFUSED" ? "#ff4d3d" : "#847c6d");
 
 function render() {
   const signed = rows.filter((p) => p.decision === "SIGNED").length;
@@ -58,11 +116,11 @@ function render() {
   const svg = document.getElementById("scene");
   svg.replaceChildren();
   svg.append(sky({ width: 800 }));
-  const C = [400, 238];
+  const C = [400, 250];
   const n = rows.length;
   const spots = rows.map((_, i) => {
     const a = (-150 + (360 / Math.max(n, 1)) * i) * (Math.PI / 180);
-    return [C[0] + Math.cos(a) * 285, C[1] + Math.sin(a) * 135];
+    return [C[0] + Math.cos(a) * 280, C[1] + Math.sin(a) * 128];
   });
   const bridges = el("g"); svg.append(bridges);
   // The travelling dot IS the paid check: it flies treasury → island and is
@@ -72,7 +130,7 @@ function render() {
     g.querySelector(".packet")?.setAttribute("fill", accentFor(rows[i]));
     bridges.append(g);
   });
-  const treasury = el("g", { class: "island", style: "--i:0", "data-treasury": "true" }, [island({ cx: C[0], cy: C[1], cols: 14, rows: 10, seed: 11, accent: "#df3d2a" })]);
+  const treasury = el("g", { class: "island", style: "--i:0", "data-treasury": "true" }, [island({ cx: C[0], cy: C[1], cols: 14, rows: 10, seed: 11, accent: "#ff8a3d" })]);
   const tl = el("text", { class: "island-label", x: C[0], y: C[1] + 62, "text-anchor": "middle" }); tl.textContent = "Treasury";
   treasury.append(tl); svg.append(treasury);
   rows.forEach((p, i) => {
@@ -83,7 +141,7 @@ function render() {
     ]);
     const t = el("text", { class: "island-label", x, y: y + 44, "text-anchor": "middle" }); t.textContent = `${p.id}${p.large ? " · large" : ""}`;
     a.append(t);
-    if (p.large) a.append(el("rect", { x: x - 3, y: y - 46, width: 6, height: 6, fill: "#6fb0d6" }));
+    if (p.large) a.append(el("rect", { x: x - 3, y: y - 46, width: 6, height: 6, fill: "#5cc8ff" }));
     svg.append(a);
   });
   if (!n) {
@@ -95,22 +153,21 @@ function render() {
   document.getElementById("tl-right").textContent = `${refused} refused`;
   document.getElementById("tl-fill").style.width = rows.length ? `${(signed / rows.length) * 100}%` : "0";
 
+  const whole = (v) => String(Math.round(v));
+  countUp(document.getElementById("st-signed"), signed, { format: whole });
+  countUp(document.getElementById("st-refused"), refused, { format: whole });
+  countUp(document.getElementById("st-seats"), seats.count, { format: whole });
+  document.getElementById("st-price").textContent = h.checkPrice;
+
   mountTicker(document.getElementById("ticker"), [
     `Mode ${h.mode}`, `Network ${h.network}`, `x402 ${h.x402Buyer.startsWith("real") ? "real" : "simulated"}`, `Check price ${h.checkPrice}`,
     `0G ${h.zeroG}`, `World ${h.world.startsWith("real") ? "real" : "mocked"}`, `Seats ${seats.count}`, `${rows.length} proposals`,
   ]);
-
-  const col = (title, lines) => { const d = document.createElement("div"); const l = document.createElement("span"); l.className = "label"; l.textContent = title; const p = document.createElement("p"); p.textContent = lines.join("\n"); p.style.whiteSpace = "pre-line"; d.append(l, p); return d; };
-  document.getElementById("cols").replaceChildren(
-    col("Council", [`Proposals ${rows.length}`, `Signed ${signed}`, `Refused ${refused}`, `Seats ${seats.count}`]),
-    col("Traffic", [`Check price ${h.checkPrice}`, `Spend cap left ${h.spendCapRemaining}`, `Buyer ${h.x402Buyer}`]),
-    col("Rails", [`HCS ${h.hcsTopic}`, `Treasury ${h.treasury}`, `0G ${h.zeroG}`, `World ${h.world}`]),
-    col("Note", [h.note]),
-  );
 }
 
 let stamp = JSON.stringify([h, rows, seats]);
 render();
+reveal(document);
 document.body.dataset.state = "ready";
 
 // Keep the poster honest: re-render only when something actually changed.

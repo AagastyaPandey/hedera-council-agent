@@ -27,3 +27,23 @@ export function countUp(node, target, { duration = 1100, format = (v) => String(
   };
   requestAnimationFrame(frame);
 }
+
+// Scroll reveal: elements with [data-reveal] slide in when they enter the
+// viewport; --i staggers siblings. Without IO (or with reduced motion)
+// everything is shown immediately.
+export function reveal(root = document) {
+  const nodes = [...root.querySelectorAll("[data-reveal]:not(.in)")];
+  if (typeof IntersectionObserver === "undefined" || reduced()) {
+    for (const n of nodes) n.classList.add("in");
+    return;
+  }
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) {
+        e.target.classList.add("in");
+        io.unobserve(e.target);
+      }
+    }
+  }, { threshold: 0.12 });
+  for (const n of nodes) io.observe(n);
+}
