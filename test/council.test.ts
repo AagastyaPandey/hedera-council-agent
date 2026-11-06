@@ -5,24 +5,27 @@ import { SpendingCap } from "../src/budget.js";
 import { checkProposal } from "../src/checker.js";
 import { processProposal } from "../src/council.js";
 import { HederaClient } from "../src/hedera.js";
-import { loadZeroGConfig } from "../src/zeroG.js";
+import { SimulatedCheckPayer, type CheckPayer } from "../src/payment.js";
+import { validateProposal } from "../src/proposal.js";
+import { loadZeroGConfig, zeroGVerdict } from "../src/zeroG.js";
 import { mockedWorldCheck, worldGate } from "../src/world.js";
 import type { Proposal } from "../src/proposal.js";
 
 const simHedera = () =>
   new HederaClient(
-    { network: "testnet", accountId: "", privateKey: "", topicId: "", checkPriceTinybars: 100000 },
+    { network: "testnet", accountId: "", privateKey: "", topicId: "", treasuryAccountId: "" },
     "simulated",
   );
 
+// Prices are USDC atomic units: $0.01 = 10000, cap $0.10.
 function makeAgent() {
+  const hedera = simHedera();
   return {
-    hedera: simHedera(),
-    budget: new SpendingCap(1_000_000),
+    hedera,
+    budget: new SpendingCap(100_000),
     zeroG: loadZeroGConfig({}),
     largeThresholdTinybars: 50_000_000,
-    checkPriceTinybars: 100000,
-    payTo: "0.0.1000",
+    payer: new SimulatedCheckPayer(hedera, 10_000) as CheckPayer,
   };
 }
 
@@ -91,9 +94,63 @@ test("World ID check for a different proposal refuses", async () => {
 
 test("spending cap blocks an over-budget payment", async () => {
   const agent = makeAgent();
-  agent.budget = new SpendingCap(50000);
+  agent.budget = new SpendingCap(5_000);
   const o = await processProposal(agent, prop("T-10", 10_000_000), null);
   assert.equal(o.decision, "REFUSED");
   assert.match(o.reason, /Spending cap/);
   assert.equal(o.paidTxId, null);
+});
+
+test("x402 payment failure refuses without signing", async () => {
+  const agent = makeAgent();
+  agent.payer = {
+    via: "x402",
+    priceAtomic: 10_000,
+    payForCheck: async () => ({ ok: false, paymentId: null, via: "x402", error: "facilitator down" }),
+  };
+  const o = await processProposal(agent, prop("T-11", 10_000_000), null);
+  assert.equal(o.decision, "REFUSED");
+  assert.match(o.reason, /facilitator down/);
+  assert.equal(agent.budget.spentAtomic, 0);
+});
+
+test("paid check that disagrees with the local check refuses", async () => {
+  const agent = makeAgent();
+  agent.payer = {
+    via: "simulated",
+    priceAtomic: 10_000,
+    payForCheck: async (p) => ({
+      ok: true,
+      paymentId: agent.hedera.simId("PAY"),
+      via: "simulated",
+      remoteCheck: { proposalId: p.id, matches: false, mismatches: [], verdict: "remote says no" },
+    }),
+  };
+  const o = await processProposal(agent, prop("T-12", 10_000_000), null);
+  assert.equal(o.decision, "REFUSED");
+  assert.match(o.reason, /disagrees/);
+});
+
+test("0G outage is recorded, not fatal", async () => {
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (async () => {
+    throw new Error("network down");
+  }) as typeof fetch;
+  try {
+    const v = await zeroGVerdict(loadZeroGConfig({ ZERO_G_API_KEY: "sk-test" }), {
+      proposalId: "T-13", checkVerdict: "ok", matches: true, amountTinybars: 1, payee: "0.0.1",
+    });
+    assert.equal(v.source, "unavailable");
+    assert.equal(v.requestId, null);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+test("validateProposal rejects malformed input", () => {
+  assert.equal(validateProposal(null).ok, false);
+  assert.equal(validateProposal({ ...prop("T-14", 1), id: "bad id!" }).ok, false);
+  assert.equal(validateProposal({ ...prop("T-14", 1), transfer: { payee: "alice", amountTinybars: 1, token: "HBAR" } }).ok, false);
+  assert.equal(validateProposal({ ...prop("T-14", 0) }).ok, false);
+  assert.equal(validateProposal(prop("T-14", 5)).ok, true);
 });
