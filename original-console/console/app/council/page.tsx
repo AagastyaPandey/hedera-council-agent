@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { HashLine, StatusPill } from "@/components/ui";
+import { AutoRefresh } from "@/components/AutoRefresh";
 import { getCouncil } from "@/lib/council";
+
+const delay = (i: number) => ({ animationDelay: `${(0.08 * i).toFixed(2)}s` });
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Council" };
@@ -26,9 +29,10 @@ export default async function CouncilPage() {
       </aside>
 
       <div className="doc-body">
-        <header className="mb-7 border-b border-edge pb-6">
+        <header className="fade-up mb-7 border-b border-edge pb-6">
           <div className="mb-3 flex flex-wrap items-center gap-3">
             <span className="mono-label">Hedera treasury council</span>
+            <AutoRefresh />
             <StatusPill status={c.online ? "OK" : "RED"}>{c.online ? "connected" : "offline"}</StatusPill>
           </div>
           <h1 className="doc-title text-body">One agent. One signing seat.</h1>
@@ -46,17 +50,17 @@ export default async function CouncilPage() {
           </p>
         ) : (
           <>
-            <section className="mb-10">
+            <section className="fade-up mb-10" style={delay(3)}>
               <div className="mb-4"><h2 className="doc-section-title text-body">Proposals</h2></div>
               <div className="panel p-5">
                 {c.proposals.length === 0 ? (
                   <p className="text-[12px] text-dim">No proposals yet. Submit one in the project console.</p>
                 ) : (
-                  c.proposals.map((p) => {
+                  c.proposals.map((p, i) => {
                     const d = c.detail[p.id];
                     const o = d?.outcome ?? {};
                     return (
-                      <div key={p.id} className="border-b border-edge/70 py-4 last:border-0">
+                      <div key={`${p.id}-${p.decision}`} className="fade-up border-b border-edge/70 py-4 last:border-0" style={delay(4 + i)}>
                         <div className="flex flex-wrap items-baseline justify-between gap-3">
                           <span className="text-[13px] font-medium text-body">{p.id}: {p.purpose}{p.large ? " (large)" : ""}</span>
                           <span className="flex gap-4">
@@ -82,7 +86,7 @@ export default async function CouncilPage() {
               </div>
             </section>
 
-            <section className="mb-10">
+            <section className="fade-up mb-10" style={delay(6 + c.proposals.length)}>
               <div className="mb-4"><h2 className="doc-section-title text-body">Verifiable log</h2></div>
               <div className="panel p-5">
                 <div className="mb-2">

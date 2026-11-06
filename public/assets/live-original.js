@@ -2,6 +2,7 @@
 // server. The pages' own markup, CSS and animation are untouched; this
 // module only sets text, so replacing a page needs no backend change.
 import { api, hbar, qs } from "/assets/api.js";
+import { runFlow, replay, reduced } from "/assets/motion.js";
 
 const $ = (id) => document.getElementById(id);
 const short = (h, n = 10) => (h ? `${h.slice(0, n)}…` : "—");
@@ -81,35 +82,64 @@ if (document.body.querySelector(".hero .scene")) {
   // ---------------- Atlas ----------------
   text($("sourceChip"), h.mode === "real" ? "Live" : "Simulated");
   if (h.mode === "real") $("sourceChip").classList.add("on");
-  window.LIVE_TICKER = `COUNCIL ${signed} SIGNED \u00b7 ${refused} REFUSED \u00b7 ${rows.length} PROPOSALS \u00b7 LOG ${logLine.toUpperCase()}`;
-  if (latest) {
-    const href = `/report.html?from=atlas&proposal=${encodeURIComponent(latest.id)}`;
-    $("ctaReport").href = href;
-    $("navReport").href = `/report.html?proposal=${encodeURIComponent(latest.id)}`;
-  }
-  // Drive the replay timeline from the real proposals. Links: b1 treasury-agent, b2 treasury-council, b3 treasury-World ID.
-  if (window.ATLAS_MODEL && rows.length) {
-    const mismatch = rows.find((p) => p.decision === "REFUSED" && !p.matches);
-    const worldBlocked = rows.find((p) => p.decision === "REFUSED" && p.matches && p.large);
-    const firstSigned = rows.find((p) => p.decision === "SIGNED");
-    const all = { b1: "open", b2: "open", b3: "open" };
-    const phases = [
-      { t: 0, chains: {}, links: {}, note: `Genesis · ${rows.length} proposals` },
-      { t: 3, chains: {}, links: { b1: "open" }, note: "Treasury scheduled" },
-      { t: 6, chains: {}, links: { b1: "open", b2: "open" }, note: "Check paid over x402" },
-      { t: 9, chains: {}, links: all, note: "All nodes linked" },
-      { t: 13, chains: { rollup: "degraded" }, links: all, note: firstSigned ? `Agent checking · ${firstSigned.id} matches` : "Agent checking" },
-    ];
-    if (mismatch) phases.push({ t: 17, chains: { rollup: "degraded" }, links: { ...all, b2: "severed" }, note: `${mismatch.id} refused · transfer mismatch` });
-    if (worldBlocked) phases.push({ t: 21, chains: { rollup: "degraded", outpost: "dark" }, links: { ...all, ...(mismatch ? { b2: "severed" } : {}) }, note: `${worldBlocked.id} waits · World ID required` });
-    phases.push({ t: 25, chains: {}, links: all, note: `${signed} signed · ${refused} refused · log ${logLine}` });
-    window.ATLAS_MODEL.phases.length = 0;
-    window.ATLAS_MODEL.phases.push(...phases);
-  }
-  const cols = document.querySelectorAll(".footer .col");
-  col(cols[0], "Council", [["Proposals", String(rows.length).padStart(2, "0")], ["Signed", String(signed).padStart(2, "0")], ["Refused", String(refused).padStart(2, "0")], ["Seats", String(seats.data.count).padStart(2, "0")]]);
-  col(cols[1], "Traffic", [["Check price", h.checkPrice], ["Spend left", h.spendCapRemaining], ["Mode", h.mode], ["Buyer", h.x402Buyer.startsWith("real") ? "x402" : "sim"]]);
-  col(cols[2], "Reading", [["policy", short(policy.hash, 8), "/policy"], ["log", logLine, "/audit/verify"], ["topic", String(h.hcsTopic).slice(0, 14)], ["treasury", String(h.treasury).slice(0, 14)]]);
+
+  // Everything on the page that depends on proposals, so it can be re-applied when a new decision arrives.
+  const applyAtlas = (rows, seatCount, h, verify, policy) => {
+    const signed = rows.filter((p) => p.decision === "SIGNED").length;
+    const refused = rows.filter((p) => p.decision === "REFUSED").length;
+    const latest = rows.at(-1);
+    const logLine = verify.ok ? `verified, ${verify.checked} entries` : verify.checked === 0 ? "empty" : "BROKEN";
+    window.LIVE_TICKER = `COUNCIL ${signed} SIGNED \u00b7 ${refused} REFUSED \u00b7 ${rows.length} PROPOSALS \u00b7 LOG ${logLine.toUpperCase()}`;
+    if (latest) {
+      $("ctaReport").href = `/report.html?from=atlas&proposal=${encodeURIComponent(latest.id)}`;
+      $("navReport").href = `/report.html?proposal=${encodeURIComponent(latest.id)}`;
+    }
+    // Replay timeline from the real proposals. Links: b1 treasury-agent, b2 treasury-council, b3 treasury-World ID.
+    if (window.ATLAS_MODEL && rows.length) {
+      const mismatch = rows.find((p) => p.decision === "REFUSED" && !p.matches);
+      const worldBlocked = rows.find((p) => p.decision === "REFUSED" && p.matches && p.large);
+      const firstSigned = rows.find((p) => p.decision === "SIGNED");
+      const all = { b1: "open", b2: "open", b3: "open" };
+      const phases = [
+        { t: 0, chains: {}, links: {}, note: `Genesis \u00b7 ${rows.length} proposals` },
+        { t: 3, chains: {}, links: { b1: "open" }, note: "Treasury scheduled" },
+        { t: 6, chains: {}, links: { b1: "open", b2: "open" }, note: "Check paid over x402" },
+        { t: 9, chains: {}, links: all, note: "All nodes linked" },
+        { t: 13, chains: { rollup: "degraded" }, links: all, note: firstSigned ? `Agent checking \u00b7 ${firstSigned.id} matches` : "Agent checking" },
+      ];
+      if (mismatch) phases.push({ t: 17, chains: { rollup: "degraded" }, links: { ...all, b2: "severed" }, note: `${mismatch.id} refused \u00b7 transfer mismatch` });
+      if (worldBlocked) phases.push({ t: 21, chains: { rollup: "degraded", outpost: "dark" }, links: { ...all, ...(mismatch ? { b2: "severed" } : {}) }, note: `${worldBlocked.id} waits \u00b7 World ID required` });
+      phases.push({ t: 25, chains: {}, links: all, note: `${signed} signed \u00b7 ${refused} refused \u00b7 log ${logLine}` });
+      window.ATLAS_MODEL.phases.length = 0;
+      window.ATLAS_MODEL.phases.push(...phases);
+    }
+    const cols = document.querySelectorAll(".footer .col");
+    col(cols[0], "Council", [["Proposals", String(rows.length).padStart(2, "0")], ["Signed", String(signed).padStart(2, "0")], ["Refused", String(refused).padStart(2, "0")], ["Seats", String(seatCount).padStart(2, "0")]]);
+    col(cols[1], "Traffic", [["Check price", h.checkPrice], ["Spend left", h.spendCapRemaining], ["Mode", h.mode], ["Buyer", h.x402Buyer.startsWith("real") ? "x402" : "sim"]]);
+    col(cols[2], "Reading", [["policy", short(policy.hash, 8), "/policy"], ["log", logLine, "/audit/verify"], ["topic", String(h.hcsTopic).slice(0, 14)], ["treasury", String(h.treasury).slice(0, 14)]]);
+  };
+  applyAtlas(rows, seats.data.count, h, verify, policy);
+
+  // Live: while the page is open, a new decision flashes the dot, shows a toast and replays to the new state.
+  const toast = document.createElement("div"); toast.id = "toast"; toast.setAttribute("role", "status"); document.body.append(toast);
+  const known = new Map(rows.map((p) => [p.id, p.decision]));
+  let hideT;
+  setInterval(async () => {
+    const [l, sv, v, pol, hh] = await Promise.all([api.proposals(), api.seats(), fetch("/audit/verify").then((r) => r.json()).catch(() => ({})), fetch("/policy").then((r) => r.json()).catch(() => ({})), api.health()]);
+    if (!l.ok) return;
+    const now = l.data.proposals ?? [];
+    const changed = now.filter((p) => !known.has(p.id) || known.get(p.id) !== p.decision);
+    if (!changed.length) return;
+    changed.forEach((p) => known.set(p.id, p.decision));
+    applyAtlas(now, sv.data.count, hh.data, v, pol);
+    const n = changed.at(-1);
+    const dot = document.querySelector(".topval .live"); if (dot) { dot.classList.remove("flash"); void dot.offsetWidth; dot.classList.add("flash"); }
+    toast.className = n.decision === "SIGNED" ? "pass" : "";
+    toast.innerHTML = ""; const b = document.createElement("b"); b.textContent = n.decision ?? "NEW";
+    toast.append(b, document.createTextNode(` ${n.id} \u00b7 ${n.purpose}${n.decision === "REFUSED" && !n.matches ? " \u00b7 transfer mismatch" : ""}`));
+    requestAnimationFrame(() => toast.classList.add("on")); clearTimeout(hideT); hideT = setTimeout(() => toast.classList.remove("on"), 5200);
+    const sc = $("scrub"); if (sc) { sc.value = sc.max; sc.dispatchEvent(new Event("input", { bubbles: true })); }
+  }, 4000);
 } else {
   // ---------------- Report ----------------
   const id = qs("proposal") ?? latest?.id;
@@ -146,6 +176,22 @@ if (document.body.querySelector(".hero .scene")) {
       : ["The description said", `${d} to ${p.description.payee}.`, "The transfer does", "something else:", `${a} to ${p.transfer.payee}.`, "The agent refused."]);
     lines(st[1], ["Binding decisions to", "what is on Hedera,", "with a paid check,", "a published policy", "and a log you can", "verify yourself.", `Policy ${short(policy.hash, 8)}`], 1.6);
     window.LIVE_STATUSES.push(`${p.id} ${decision}`);
+    // The decision path: a packet runs from the claim and stops at the stage that decided it.
+    const gateState = !check.matches ? ["wait", "skipped"] : !large ? ["pass", "not required"] : o?.worldGateReason && decision === "REFUSED" ? ["fail", "blocked"] : decision === "SIGNED" ? ["pass", "approved"] : ["wait", "pending"];
+    const nodes = [
+      ["pass", "Claim", `${d} to ${p.description.payee}`],
+      [check.matches ? "pass" : "fail", "Check", check.matches ? "payee, amount, token agree" : check.mismatches.map((m) => m.field).join(", ") + " differ"],
+      [gateState[0], "World ID", gateState[1]],
+      [decision === "SIGNED" ? "pass" : decision === "REFUSED" ? "fail" : "wait", "Signature", decision === "SIGNED" ? `co-signed ${o?.scheduledTxId ?? ""}` : decision === "REFUSED" ? "not signed" : "waiting"],
+    ];
+    const flow = $("flow"); flow.hidden = false;
+    $("flowNodes").replaceChildren(...nodes.map(([st, name, sub]) => { const n = document.createElement("div"); n.className = `node ${st}`; n.innerHTML = "<i></i><b></b><span></span>"; n.querySelector("b").textContent = name; n.querySelector("span").textContent = sub; return n; }));
+    text($("flowCap"), decision === "SIGNED" ? "reached the signature" : decision === "REFUSED" ? `stopped at ${!check.matches ? "the check" : "the gate"}` : "not yet decided");
+    const stop = decision === "SIGNED" ? 3 : decision === "REFUSED" ? (!check.matches ? 1 : 2) : 0;
+    // start when the poster has landed
+    setTimeout(() => runFlow(flow, { stop, ok: decision === "SIGNED" }), reduced() ? 0 : 2600);
+    if (decision === "SIGNED") { const sc = $("stampText").closest(".stamp"); sc.style.color = "#3f9b45"; sc.style.borderColor = "#3f9b45"; }
+    if (!check.matches) replay($("numR"), "m-shake", 3.3);
     col(foot[1], "Check", [["Result", check.matches ? "matches" : "mismatch"], ["Paid via", o?.paidVia ?? "—"], ["Price", h.checkPrice], ["Gate", o?.worldGateReason ? "blocked" : large ? "required" : "none"]]);
     col(foot[2], "Commitment", [["policy", short(policy.hash, 12)], ["entry", short(o?.auditHash, 12)], ["schedule", o?.scheduledTxId ?? "—"], ["0G", o?.zeroGRequestId ? short(o.zeroGRequestId, 12) : o?.zeroGSource ?? "—"]]);
   }

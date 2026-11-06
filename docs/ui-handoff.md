@@ -27,14 +27,19 @@ Solidity contracts, Hardhat config and contract tests left out (it builds and ru
 this project's live proposals, decisions, hashes and log verification from this server. `/original-console` redirects to it. The project's own screens (`public/`) use the same
 stylesheet and component markup.
 
-## Animations (Atlas and report)
+## Animations, each tied to the logic of its page
 
-- Atlas: the original page never applied its polygon `fill` (its `poly()` helper dropped the argument, so every island rendered black);
-  fixed in one line. The replay timeline is driven by the real proposals (`window.ATLAS_MODEL.phases`, rewritten in
-  `public/assets/live-original.js`): a refused mismatch severs the council bridge, a large proposal waiting for World ID darkens the
-  World ID shore, and the ticker and state label carry the real ids.
-- Report: the numerals count up from 0 to the described and actual amounts (same ease as the original, with decimals) and the stamp
-  scrambles in. Both respect `prefers-reduced-motion`.
+Shared layer: `public/assets/motion.css` and `motion.js` (count-up, typewriter, stagger, the agent-working run, the flow packet).
+Every effect is off under `prefers-reduced-motion`, and the final state is shown instead.
+
+| Page | What animates | What it means |
+| --- | --- | --- |
+| Atlas (`index.html`) | Replay timeline driven by the real proposals. A refused mismatch severs the council bridge, a large proposal waiting on World ID darkens the World ID shore. Polls every 4s: a new decision flashes the dot, shows a toast, updates the counts and replays to the new state | The map is the council's real history, and it stays live |
+| Report (`report.html`) | Numerals count up to the described and actual amounts, the actual one shakes on a mismatch, the stamp scrambles in (green when signed). A decision-path strip runs a packet from the claim and stops at the stage that decided it, with a pulsing red ring on a failure | You can see where and why the agent stopped |
+| Console (`console.html`) | Submitting runs an "agent working" strip in the server's real step order (read transfer, pay check, 0G verdict, compare, World ID and sign; at least 1.5s so it is readable when the simulated agent answers instantly). The decision then lands in order: record rows, each stage in turn with its score counting up, the stage that decided it flashes (red and shaking, or green), then the alert wipes in, the stamp slams and mismatched fields shake | The decision is replayed in the order it was made |
+| `/council` (original console app) | The original `fade-up` stagger, plus live refresh every 5s: a decision made in the project console appears with no reload | The original design showing this project's live state |
+
+Also: the original Atlas never applied its polygon fill (its `poly()` helper dropped the argument, so every island rendered black); that is fixed in one line.
 
 ## Where to work
 

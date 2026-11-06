@@ -4,6 +4,7 @@
 <meta name="color-scheme" content="light">
 <title>Council Agent · Console</title><link rel="icon" href="data:,">
 <link rel="stylesheet" href="/assets/console-original.css">
+<link rel="stylesheet" href="/assets/motion.css">
 </head><body data-page="console" data-state="loading">
 <div class="app-shell">
   <aside class="app-rail" aria-hidden="true">
@@ -51,6 +52,10 @@
           <h1 class="doc-title mt-2 text-body" id="title">One agent. One signing seat.</h1>
           <p class="doc-deck mt-4" id="lede">Every proposal is a transfer plus a description of it. Pick a proposal to see its record, its process and what the transfer actually does.</p>
           <div class="mt-5 flex flex-wrap gap-2" id="head-actions"></div>
+          <div id="workingBar" role="status" aria-live="polite">
+            <ol><li>Read the transfer</li><li>Pay for the check</li><li>0G verdict</li><li>Compare fields</li><li>World ID, then sign</li></ol>
+            <div class="cap">The agent is working. Steps run in the order the server runs them.</div>
+          </div>
         </header>
 
         <div id="selected" hidden>
@@ -113,6 +118,7 @@
 <script type="module">
 import { api, bus, hbar, qs } from "/assets/api.js";
 import { runWorldFlow, runMockedFlow } from "/assets/world-flow.js";
+import { countTo, typewrite, replay, stagger, whileWorking, reduced } from "/assets/motion.js";
 const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
 const status = (t, tone = "") => { $("status").textContent = t; $("status").className = `mt-4 text-[12px] ${tone === "ok" ? "text-safe" : tone === "bad" ? "text-danger" : "text-dim"}`; };
@@ -197,7 +203,7 @@ async function select(id) {
 
   const actions = $("head-actions"); actions.replaceChildren();
   const sub = el("button", o ? "Submit again" : "Submit to the agent", "btn btn-primary");
-  sub.onclick = async () => { sub.disabled = true; const res = await api.submit(p); show(res.data); status(res.data.decision === "SIGNED" ? `Agent signed. Scheduled tx ${res.data.scheduledTxId}.` : `Agent refused: ${res.data.reason}`, res.data.decision === "SIGNED" ? "ok" : "bad"); await select(id); };
+  sub.onclick = async () => { sub.disabled = true; const res = await whileWorking($("workingBar"), () => api.submit(p)); show(res.data); status(res.data.decision === "SIGNED" ? `Agent signed. Scheduled tx ${res.data.scheduledTxId}.` : `Agent refused: ${res.data.reason}`, res.data.decision === "SIGNED" ? "ok" : "bad"); await select(id); };
   actions.append(sub);
   if (large && check.matches) {
     const ap = el("button", approval ? `World ID approved (${approval.source}), valid to ${new Date(approval.expiresAt).toLocaleTimeString()}` : world.configured ? "Approve with World ID" : "Approve (MOCKED demo)", "btn");
@@ -240,7 +246,33 @@ async function select(id) {
   tbd.append(ledgerRow("Field", "described / actual")); tb.append(tbd);
   for (const [f, d, a] of [["Payee", p.description.payee, p.transfer.payee], ["Amount", String(p.description.amountTinybars), String(p.transfer.amountTinybars)], ["Token", p.description.token, p.transfer.token]]) tbd.append(ledgerRow(f, `${d} / ${a}`, d === a ? "font-mono text-[11px]" : "font-mono text-[11px] text-danger"));
   rr.append(tb); S.append(l, rr);
+  choreograph({ decision, check, large, approval, o });
   await refreshList();
+}
+
+// Land a decision in the order it was made: record rows, then each stage in turn, then the verdict (stamp, alert, shaking fields).
+function choreograph({ decision, check, o }) {
+  if (reduced()) return;
+  stagger($("ledger").querySelectorAll("tr"), 0.05, 0.07);
+  stagger($("hashes").children, 0.45, 0.1);
+  [...$("hashes").querySelectorAll("code")].forEach((c, i) => { const t = c.textContent; if (t !== "none yet") typewrite(c, t, { delay: 600 + i * 120, cps: 220 }); });
+  const stages = [...$("process").children];
+  const T = 0.5;
+  stages.forEach((st, i) => { st.style.setProperty("--d", `${(T + i * 0.55).toFixed(2)}s`); st.classList.remove("m-reveal"); void st.offsetWidth; st.classList.add("m-reveal"); });
+  stages.forEach((st, i) => { const sc = st.querySelector(".doc-score"); if (!sc) return; const v = parseFloat(sc.textContent); if (Number.isFinite(v)) countTo(sc, v, { delay: (T + i * 0.55) * 1000 + 250, decimals: 2, duration: 900 }); });
+  const end = T + stages.length * 0.55;
+  // the stage that decided it flashes: the failed check, or the blocked gate, or the signature
+  const decided = !check.matches ? 1 : decision === "REFUSED" ? 2 : 3;
+  if (decision) {
+    const st = stages[decided];
+    const cls = decision === "SIGNED" ? "m-flash-green" : "m-flash-red";
+    st.style.setProperty("--d", `${end.toFixed(2)}s`); st.classList.add(cls);
+    if (decision === "REFUSED") { st.classList.add("m-shake"); }
+  }
+  [...$("ledger").querySelectorAll("td.text-danger")].forEach((td, i) => replay(td, "m-shake", end + 0.1 + i * 0.12));
+  replay($("alert"), "m-wipe", end + 0.05);
+  replay($("mStamp"), "m-slam", end);
+  replay($("topPill"), "m-reveal", end + 0.3);
 }
 
 async function approve(proposalId) {
@@ -255,7 +287,7 @@ $("new-form").onsubmit = async (e) => {
   e.preventDefault();
   const f = Object.fromEntries(new FormData(e.target));
   const proposal = { id: f.id, description: { payee: f.payee, amountTinybars: toTiny(f.amount), token: "HBAR", purpose: f.purpose }, transfer: { payee: f.tpayee, amountTinybars: toTiny(f.tamount), token: "HBAR" } };
-  const res = await api.submit(proposal);
+  const res = await whileWorking($("workingBar"), () => api.submit(proposal));
   if (res.status >= 400) { status(res.data.error, "bad"); return; }
   show(res.data);
   status(res.data.decision === "SIGNED" ? `Agent signed. Scheduled tx ${res.data.scheduledTxId}.` : `Agent refused: ${res.data.reason}`, res.data.decision === "SIGNED" ? "ok" : "bad");

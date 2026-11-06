@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <link rel="icon" href="data:," />
+<link rel="stylesheet" href="/assets/motion.css" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="description" content="Council Agent — one proposal, described against the transfer that is actually on Hedera." />
 <meta name="color-scheme" content="light" />
@@ -477,6 +478,12 @@
 
     <div class="stamp" aria-hidden="true"><span id="stampText">Pending</span><i id="stampSub">&mdash;</i></div>
   </main>
+
+  <section class="flow" id="flow" aria-label="Decision path" hidden>
+    <div class="cap"><span>Decision path</span><span id="flowCap">&mdash;</span></div>
+    <div class="line"><span class="fill"></span><span class="packet"></span></div>
+    <div class="nodes" id="flowNodes"></div>
+  </section>
 
   <div class="statusbar">
     <span class="dot"></span>
