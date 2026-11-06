@@ -10,7 +10,7 @@ Show the repo README and the proposal list.
 
 ## 0:15-0:50, Scene 1, routine proposal signs
 Run `npm run demo`, show Scene 1 only, or run the server and POST a routine proposal.
-Say: "Proposal P-001, 0.1 HBAR to the venue. The agent pays $0.01 for the check, 0G writes the verdict, the transfer matches, the agent signs."
+Say: "Proposal P-001, 0.1 HBAR to the venue. The agent pays $0.01 for the check, 0G writes the verdict, the transfer on Hedera matches, the agent signs."
 Show on screen: the 402 payment, the 0G request id, the Scheduled Transaction id, and the HashScan link if real. If simulated, say "simulated, no real chain ids yet" out loud.
 
 ## 0:50-1:20, Scene 2, mismatch refuses
@@ -28,7 +28,7 @@ Say: "Hedera x402 pays for the check, Scheduled Transactions fix the transfer, H
 Show the repo URL, https://github.com/BeastAyyG/hedera-council-agent, and the track list.
 
 ## Checklist before recording
-- `npm test` green, 25/25
+- `npm test` green, 34/34
 - `npm run demo` green, all 4 scenes correct
 - If real mode: .env filled, one real x402 payment settled, HashScan link copied into the README "Hedera transaction IDs" section
 - Close other windows, use a clean terminal, 720p or better

@@ -27,7 +27,8 @@
     "demo": "npm run build && node --import ./dist/src/env.js dist/src/demo.js",
     "preflight": "npm run build && node --import ./dist/src/env.js dist/src/preflight.js",
     "start": "node --import ./dist/src/env.js dist/src/server.js",
-    "test": "npm run build && node --test dist/test/*.test.js"
+    "test": "npm run build && node --test dist/test/*.test.js",
+    "propose": "npm run build --silent && node --import ./dist/src/env.js dist/src/propose.js"
   },
   "type": "module",
   "version": "0.1.0"

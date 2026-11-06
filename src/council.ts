@@ -8,6 +8,7 @@ import { SpendingCap } from "./budget.js";
 import { checkProposal } from "./checker.js";
 import { HederaClient, hashscanUrl } from "./hedera.js";
 import type { CheckPayer } from "./payment.js";
+import { scheduleProblem, type ChainPort } from "./chain.js";
 import type { Proposal } from "./proposal.js";
 import { isLargeProposal } from "./proposal.js";
 import { worldGate, type WorldCheck } from "./world.js";
@@ -34,6 +35,10 @@ export interface CouncilOutcome {
   // True when a large proposal was signed on the strength of a World ID
   // approval; the caller must then spend that approval.
   usedWorldApproval: boolean;
+  // Where the transfer that was checked came from.
+  transferSource: "request" | "hedera-mirror-node";
+  // The proposal as checked: with the on-chain transfer and schedule id filled in.
+  proposal: Proposal;
   mode: "real" | "simulated";
 }
 
@@ -43,21 +48,76 @@ export interface CouncilAgent {
   zeroG: ZeroGConfig;
   largeThresholdTinybars: number;
   payer: CheckPayer;
+  // Real mode: the Hedera side of the council. Absent in simulated mode.
+  chain?: ChainPort;
 }
 
-// Deterministic so every council member signing the same proposal
-// produces the identical schedule.
-export function scheduleMemo(p: Proposal): string {
-  return `council proposal ${p.id}`;
+function emptyOutcome(proposal: Proposal, mode: "real" | "simulated", paidVia: "x402" | "simulated", transferSource: CouncilOutcome["transferSource"]): CouncilOutcome {
+  return {
+    proposalId: proposal.id,
+    decision: "REFUSED",
+    reason: "",
+    checkMatches: false,
+    paidVia,
+    paidTxId: null,
+    paidHashscan: null,
+    auditTxId: null,
+    auditError: null,
+    scheduledTxId: null,
+    scheduleAction: null,
+    zeroGRequestId: null,
+    zeroGSource: "none",
+    zeroGVerdictText: "",
+    worldGateReason: null,
+    usedWorldApproval: false,
+    transferSource,
+    proposal,
+    mode,
+  };
 }
 
 export async function processProposal(
   agent: CouncilAgent,
-  proposal: Proposal,
+  submitted: Proposal,
   worldCheck: WorldCheck | null,
 ): Promise<CouncilOutcome> {
   const mode = agent.hedera.mode;
   const network = agent.hedera.config.network;
+  let proposal = submitted;
+  let transferSource: CouncilOutcome["transferSource"] = "request";
+  const auditEarly = async (event: string, detail: string) => {
+    try {
+      return { auditTxId: await agent.hedera.audit({ proposalId: submitted.id, event, detail, at: new Date().toISOString() }), auditError: null };
+    } catch (err) {
+      return { auditTxId: null, auditError: `HCS audit failed: ${err instanceof Error ? err.message : String(err)}` };
+    }
+  };
+
+  // 0. Real mode: the transfer to check is the one on Hedera, read back
+  // from the mirror node, never the one that came with the request.
+  if (agent.chain) {
+    try {
+      const onChain = await agent.chain.resolve(submitted);
+      const problem = scheduleProblem(onChain, agent.hedera.config.treasuryAccountId);
+      proposal = { ...submitted, scheduleId: onChain.scheduleId, transferFromChain: undefined };
+      if (onChain.transfer) {
+        proposal = { ...proposal, transfer: { payee: onChain.transfer.payee, amountTinybars: onChain.transfer.amountTinybars, token: "HBAR" } };
+        transferSource = "hedera-mirror-node";
+      }
+      if (problem) {
+        const reason = `Schedule ${onChain.scheduleId} cannot be signed: ${problem}`;
+        return { ...emptyOutcome(proposal, mode, agent.payer.via, transferSource), reason, ...(await auditEarly("REFUSED_SCHEDULE", reason)) };
+      }
+    } catch (err) {
+      const reason = `Could not read the proposal's Scheduled Transaction from Hedera: ${err instanceof Error ? err.message : String(err)}`;
+      return { ...emptyOutcome(proposal, mode, agent.payer.via, transferSource), reason };
+    }
+  } else if (submitted.transferFromChain) {
+    return {
+      ...emptyOutcome(proposal, mode, agent.payer.via, transferSource),
+      reason: "The request names a scheduleId but gives no transfer, and this agent has no Hedera access to read it. The agent does not sign.",
+    };
+  }
   const check = checkProposal(proposal);
   const base: CouncilOutcome = {
     proposalId: proposal.id,
@@ -76,6 +136,8 @@ export async function processProposal(
     zeroGVerdictText: "",
     worldGateReason: null,
     usedWorldApproval: false,
+    transferSource,
+    proposal,
     mode,
   };
 
@@ -142,10 +204,10 @@ export async function processProposal(
     }
   }
 
-  // 5. Sign: create (or co-sign) the Scheduled Transaction for the exact transfer.
+  // 5. Sign: co-sign the Scheduled Transaction that was just checked.
   let schedule;
   try {
-    schedule = await agent.hedera.signScheduledTransfer(proposal.transfer, scheduleMemo(proposal));
+    schedule = agent.chain && proposal.scheduleId ? await agent.chain.sign(proposal.scheduleId) : agent.hedera.simulateSign();
   } catch (err) {
     const msg = `Scheduled Transaction failed: ${err instanceof Error ? err.message : String(err)}`;
     return { ...afterVerdict, reason: msg, worldGateReason, ...(await audit("SIGN_FAILED", msg)) };

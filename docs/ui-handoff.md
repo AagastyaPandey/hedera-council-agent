@@ -37,8 +37,8 @@ All JSON. Base URL is the same origin. Use `api` from `assets/api.js`.
 | `api.seats()` | `{ count, seats[] }` |
 | `api.worldConfig()` | `{ configured, appId, environment, mockedAllowed }` |
 
-Outcome: `{ decision: "SIGNED"|"REFUSED", reason, checkMatches, paidVia, paidTxId, paidHashscan, auditTxId, scheduledTxId, scheduleAction, zeroGSource, zeroGRequestId, zeroGVerdictText, worldGateReason, approveUrl?, mode }`.
-`mode: "simulated"` means ids start with `SIM-`: the UI must label them SIMULATED, never present them as real.
+Outcome: `{ proposal, transferSource: "request"|"hedera-mirror-node", decision: "SIGNED"|"REFUSED", reason, checkMatches, paidVia, paidTxId, paidHashscan, auditTxId, scheduledTxId, scheduleAction, zeroGSource, zeroGRequestId, zeroGVerdictText, worldGateReason, approveUrl?, mode }`.
+`outcome.proposal` is the proposal as checked (real mode: with the transfer read from Hedera and its `scheduleId`); show that, not what was typed. `mode: "simulated"` means ids start with `SIM-`: the UI must label them SIMULATED, never present them as real.
 `zeroGSource: "simulated"` and World `source: "mocked"` must likewise be labelled.
 
 Money: amounts are tinybars; `hbar()` in `api.js` formats them.

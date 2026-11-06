@@ -21,12 +21,13 @@ the code here is new.
 ## Architecture
 
 ```
-proposal (description vs exact transfer)
+council member schedules the exact transfer out of a 2-of-2 treasury (Hedera Scheduled Transaction)
+  -> agent reads the schedule back from the mirror node: the transfer to check is the one on Hedera
   -> x402 paid check (402, pay, verify settlement)
   -> 0G Private Computer writes the plain-language verdict (request id logged)
   -> deterministic mismatch checker (exact payee / amount / token, no LLM in the decision path)
   -> large proposal? World ID Agent Pass gate (fresh check, this exact proposal)
-  -> sign: Hedera Scheduled Transaction for the exact transfer
+  -> sign: ScheduleSign adds the agent's signature, the second of two, and the transfer executes
   -> audit: every decision logged to an HCS topic
 ```
 
@@ -36,6 +37,8 @@ proposal (description vs exact transfer)
 - `src/x402.ts` - plain 402 shape used in simulated mode
 - `src/x402Client.ts`, `src/payment.ts` - the agent pays for checks over real x402
 - `src/hedera.ts` - Hedera client, env-gated real / simulated; schedules, HCS, setup helpers
+- `src/chain.ts`, `src/mirror.ts` - the council on Hedera: propose, read back from the mirror node, check, co-sign
+- `src/propose.ts` - `npm run propose`: a council member schedules a transfer
 - `src/zeroG.ts` - 0G Private Computer client (OpenAI-compatible)
 - `src/world.ts` - World ID: RP-signed requests, server-side verification, approval store, gate
 - `src/store.ts` - durable council seats and spent approvals (`.data/state.json`)
@@ -50,8 +53,8 @@ proposal (description vs exact transfer)
 ```bash
 npm install
 cp .env.example .env   # fill in the values below, never commit .env
-npm test               # build + 25 tests (unit + HTTP level)
-npm run preflight      # check Hedera, x402, 0G, World ID; add -- --setup to do one-time Hedera setup
+npm test               # build + 34 tests (unit + HTTP level)
+npm run preflight      # check Hedera, x402, 0G, World ID; add -- --setup, --create-fee-account, --create-council for one-time Hedera setup
 npm run demo           # demo rehearsal, 4 scenes
 npm start              # HTTP server on :3000 (PORT to change); UI at /
 ```
@@ -73,6 +76,21 @@ Node 20.12 or newer.
 | `GET /council/seats` | current seats |
 | `GET /`, `/console.html`, `/report.html?proposal=<id>` | the UI |
 
+## Real-mode council setup
+
+```bash
+npm run preflight -- --setup --create-fee-account --create-council
+# set X402_PAY_TO from the output; the treasury and member are saved to .data/council.json
+npm run propose -- 0.0.<payee> 0.1 "Pay the venue deposit"   # a member schedules the transfer
+# POST the printed JSON to /proposals: the agent reads the schedule back from Hedera,
+# compares it to the description, pays for the check over x402, and co-signs if it matches.
+```
+
+The treasury needs two signatures (agent and member), so a proposal does nothing until
+the agent signs, and the agent never signs a schedule whose on-chain transfer differs from
+its description, even when the request body says it matches. A proposal without a
+`scheduleId` makes the server act as the member and schedule it, which keeps the demo to one command.
+
 Authorization rules the tests enforce: a client-supplied World ID "check" in the
 request body is ignored; only approvals the server verified itself count. An
 approval is bound to one proposal id, expires after 5 minutes, and is spent
@@ -90,7 +108,8 @@ network, it is a council agent API, not a public one.
 | `HEDERA_NETWORK` | `testnet` (default) or `mainnet` |
 | `HEDERA_ACCOUNT_ID` | Agent's Hedera account id, e.g. `0.0.123456`, from portal.hedera.com |
 | `HEDERA_PRIVATE_KEY` | Its private key. Raw hex is read as ECDSA (required for x402); DER keeps its own type; `HEDERA_KEY_TYPE=ed25519` for raw ED25519 |
-| `HEDERA_TREASURY_ACCOUNT_ID` | Account the proposals pay out of, default the agent account. Use a threshold-key account for a real multi-member council |
+| `HEDERA_TREASURY_ACCOUNT_ID` | Account the proposals pay out of. `--create-council` makes a 2-of-2 treasury and saves it; the agent refuses schedules that pay out of any other account |
+| `COUNCIL_PROPOSER_ACCOUNT_ID`, `COUNCIL_PROPOSER_PRIVATE_KEY` | The council member that schedules proposals. Default: read from `.data/council.json` (written by `--create-council`) |
 | `HEDERA_TOPIC_ID` | HCS topic for the audit log. Created on first audit if unset (printed in the log) |
 | `X402_PAY_TO` | Account that receives check fees. Defaults to the agent, which pays itself: use `npm run preflight -- --create-fee-account` |
 | `X402_PRICE_USDC` | Price of one check, default `0.01` |
@@ -193,12 +212,12 @@ Demo video: 2-3 minutes. ETHGlobal requires 2-4 minutes, 0G wants under
 2. **Hedera, "No Solidity Allowed": Build with Hedera SDKs, $2,000.**
    `@hiero-ledger/sdk`, no Solidity anywhere in this repo. HTS (the USDC
    transfer inside each x402 payment), HCS (audit topic, created on first
-   use) and Scheduled Transactions (`src/hedera.ts`). The agent creates the
-   schedule for the exact transfer, or adds its signature with
-   `ScheduleSign` when another member already created the identical one.
-   With a threshold-key treasury (`HEDERA_TREASURY_ACCOUNT_ID`) the transfer
-   executes once enough council members have signed. With the default
-   single-key treasury, the agent's one signature executes it.
+   use) and Scheduled Transactions (`src/hedera.ts`, `src/chain.ts`). A
+   council member schedules the exact transfer out of a 2-of-2 threshold-key
+   treasury, which fixes it on Hedera before anyone signs. The agent reads
+   the schedule back from the mirror node (`src/mirror.ts` decodes the
+   scheduled transaction body), compares what it will really execute with the
+   description, and adds its signature with `ScheduleSign` only if they match.
 3. **World, World ID Agent Pass, $5,000.**
    Before signing a large proposal the owner must pass a fresh World ID
    check for that exact proposal. The server signs the IDKit request

@@ -5,8 +5,11 @@
 //   npm run preflight -- --setup              -> also associate testnet USDC
 //                                                and create the HCS topic
 //   npm run preflight -- --create-fee-account -> also create the x402 fee account
+//   npm run preflight -- --create-council     -> also create the council: a member
+//                                                account and a 2-of-2 treasury, saved to .data/council.json
 // Prints what to put in .env. Never prints private keys.
 import { atomicToUsd } from "./budget.js";
+import { loadCouncilSetup, saveCouncilSetup } from "./chain.js";
 import { buildAgent } from "./server.js";
 import { isWorldConfigured, rpContextFor } from "./world.js";
 import { X402_FACILITATOR_URL, X402_TESTNET_USDC } from "./x402.js";
@@ -15,6 +18,7 @@ import { zeroGVerdict } from "./zeroG.js";
 const args = new Set(process.argv.slice(2));
 const setup = args.has("--setup");
 const createFee = args.has("--create-fee-account");
+const createCouncil = args.has("--create-council");
 let failures = 0;
 const ok = (m: string) => console.log(`  OK    ${m}`);
 const warn = (m: string) => console.log(`  TODO  ${m}`);
@@ -54,11 +58,19 @@ if (!h.isReal()) {
       const fb = await h.balances(agent.payTo);
       ok(`x402 fee account ${agent.payTo}: ${fb.hbar} HBAR, USDC ${fb.tokens[usdc] ?? "not associated (auto-association needed)"}`);
     }
-    if (h.config.treasuryAccountId !== h.config.accountId) {
-      const tb = await h.balances(h.config.treasuryAccountId);
-      ok(`treasury ${h.config.treasuryAccountId}: ${tb.hbar} HBAR`);
+    let council = loadCouncilSetup(process.env);
+    if (!council && createCouncil) {
+      const made = await h.createCouncil();
+      saveCouncilSetup(made);
+      council = made;
+      ok(`created council: member ${made.memberAccountId}, 2-of-2 treasury ${made.treasuryAccountId}. Saved to .data/council.json (member key inside, keep it private).`);
+    }
+    const treasury = (process.env.HEDERA_TREASURY_ACCOUNT_ID ?? "").trim() || council?.treasuryAccountId || "";
+    if (council && treasury) {
+      const tb = await h.balances(treasury);
+      ok(`treasury ${treasury} (2-of-2 with member ${council.memberAccountId}): ${tb.hbar} HBAR`);
     } else {
-      warn("treasury is the agent's own account: a single signature executes each schedule. Set HEDERA_TREASURY_ACCOUNT_ID to a threshold-key account for a real council.");
+      warn("no council: proposals must name a scheduleId created by a council member. Rerun with --create-council for the full demo.");
     }
     if (h.config.topicId) ok(`HCS audit topic ${h.config.topicId}`);
     else if (setup) {

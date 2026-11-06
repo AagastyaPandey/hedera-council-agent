@@ -185,3 +185,86 @@ test("mirror decoder reads the transfer an SDK-built schedule will execute", asy
     .addHbarTransfer("0.0.9999", sdk.Hbar.fromTinybars(2_500));
   assert.match(decodeScheduledTransfer(body(split)).problem ?? "", /exactly one sender/);
 });
+
+// --- real-mode council logic against an injected chain (no network) ---
+import type { ChainPort } from "../src/chain.js";
+import { scheduleProblem } from "../src/chain.js";
+import type { OnChainSchedule } from "../src/mirror.js";
+
+const chainSchedule = (over: Partial<OnChainSchedule> = {}, transfer = { from: "0.0.5000", payee: "0.0.1001", amountTinybars: 10_000_000 }): OnChainSchedule => ({
+  scheduleId: "0.0.7777", memo: "", creator: "0.0.6000", payer: "0.0.6000", executed: false, deleted: false, signedBy: 1,
+  hbarTransfers: [], transfer: { ...transfer, token: "HBAR" }, problem: null, ...over,
+});
+
+function agentWithChain(schedule: OnChainSchedule | Error) {
+  const signed: string[] = [];
+  const chain: ChainPort = {
+    resolve: async () => { if (schedule instanceof Error) throw schedule; return schedule; },
+    sign: async (id) => { signed.push(id); return { scheduleId: id, action: "signed" }; },
+  };
+  const agent = { ...makeAgent(), chain };
+  agent.hedera.config.treasuryAccountId = "0.0.5000";
+  return { agent, signed };
+}
+
+test("chain: the agent checks the transfer on Hedera, not the one in the request", async () => {
+  // The request claims a matching transfer, but the schedule pays someone else.
+  const { agent, signed } = agentWithChain(chainSchedule({}, { from: "0.0.5000", payee: "0.0.9999", amountTinybars: 10_000_000 }));
+  const o = await processProposal(agent, prop("C-1", 10_000_000), null);
+  assert.equal(o.decision, "REFUSED");
+  assert.equal(o.checkMatches, false);
+  assert.equal(o.transferSource, "hedera-mirror-node");
+  assert.equal(o.proposal.transfer.payee, "0.0.9999");
+  assert.deepEqual(signed, []);
+});
+
+test("chain: a matching schedule is co-signed", async () => {
+  const { agent, signed } = agentWithChain(chainSchedule());
+  const o = await processProposal(agent, prop("C-2", 10_000_000), null);
+  assert.equal(o.decision, "SIGNED");
+  assert.equal(o.scheduledTxId, "0.0.7777");
+  assert.deepEqual(signed, ["0.0.7777"]);
+});
+
+test("chain: a schedule naming a scheduleId only is checked against its description", async () => {
+  const { agent } = agentWithChain(chainSchedule({}, { from: "0.0.5000", payee: "0.0.1001", amountTinybars: 90_000_000 }));
+  const submitted = { ...prop("C-3", 10_000_000), scheduleId: "0.0.7777", transferFromChain: true };
+  const o = await processProposal(agent, submitted, null);
+  assert.equal(o.decision, "REFUSED");
+  assert.match(o.reason, /amountTinybars described as 10000000 but transfer is 90000000/);
+});
+
+test("chain: refuses schedules from the wrong treasury, executed, deleted, unreadable", async () => {
+  for (const [label, sch, re] of [
+    ["wrong treasury", chainSchedule({}, { from: "0.0.4242", payee: "0.0.1001", amountTinybars: 10_000_000 }), /not the council treasury/],
+    ["executed", chainSchedule({ executed: true }), /already executed/],
+    ["deleted", chainSchedule({ deleted: true }), /deleted/],
+    ["not a transfer", chainSchedule({ transfer: null, problem: "The scheduled transaction is not a crypto transfer." }), /not a crypto transfer/],
+    ["unreadable", new Error("Mirror node has no schedule 0.0.7777 (HTTP 404)."), /Could not read/],
+  ] as const) {
+    const { agent, signed } = agentWithChain(sch);
+    const o = await processProposal(agent, prop(`C-4-${label}`, 10_000_000), null);
+    assert.equal(o.decision, "REFUSED", label);
+    assert.match(o.reason, re, label);
+    assert.equal(o.paidTxId, null, `${label}: no check fee is paid for a schedule that cannot be signed`);
+    assert.deepEqual(signed, [], label);
+  }
+  assert.equal(scheduleProblem(chainSchedule(), "0.0.5000"), null);
+});
+
+test("chain: a large matching schedule still needs the World ID gate", async () => {
+  const { agent, signed } = agentWithChain(chainSchedule({}, { from: "0.0.5000", payee: "0.0.1001", amountTinybars: 80_000_000 }));
+  const o = await processProposal(agent, prop("C-5", 80_000_000), null);
+  assert.equal(o.decision, "REFUSED");
+  assert.match(o.reason, /World ID/);
+  assert.deepEqual(signed, []);
+  const ok = await processProposal(agent, prop("C-5", 80_000_000), mockedWorldCheck("C-5", "approved"));
+  assert.equal(ok.decision, "SIGNED");
+  assert.deepEqual(signed, ["0.0.7777"]);
+});
+
+test("a scheduleId without a transfer cannot be signed without Hedera access", async () => {
+  const o = await processProposal(makeAgent(), { ...prop("C-6", 10_000_000), scheduleId: "0.0.7777", transferFromChain: true }, null);
+  assert.equal(o.decision, "REFUSED");
+  assert.match(o.reason, /no Hedera access/);
+});

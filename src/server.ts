@@ -28,6 +28,7 @@ import { atomicToUsd, SpendingCap, usdcToAtomic } from "./budget.js";
 import { processProposal, type CouncilOutcome } from "./council.js";
 import { checkProposal } from "./checker.js";
 import { HederaClient, loadHederaConfig } from "./hedera.js";
+import { HederaChain, loadCouncilSetup } from "./chain.js";
 import { SimulatedCheckPayer, X402CheckPayer, type CheckPayer } from "./payment.js";
 import { isLargeProposal, proposalFingerprint, validateProposal, type Proposal } from "./proposal.js";
 import { StateStore } from "./store.js";
@@ -55,6 +56,9 @@ function envInt(env: NodeJS.ProcessEnv, name: string, fallback: number): number 
 
 export function buildAgent(env: NodeJS.ProcessEnv = process.env, port = Number(env.PORT ?? 3000)) {
   const { config, mode } = loadHederaConfig(env);
+  const council = mode === "real" ? loadCouncilSetup(env) : null;
+  // The treasury comes from setup when not set explicitly.
+  if (council?.treasuryAccountId && !env.HEDERA_TREASURY_ACCOUNT_ID?.trim()) config.treasuryAccountId = council.treasuryAccountId;
   const hedera = new HederaClient(config, mode);
   const priceUsd = (env.X402_PRICE_USDC ?? "0.01").trim();
   const priceAtomic = usdcToAtomic(priceUsd);
@@ -75,6 +79,8 @@ export function buildAgent(env: NodeJS.ProcessEnv = process.env, port = Number(e
     world: loadWorldConfig(env),
     largeThresholdTinybars: envInt(env, "LARGE_PROPOSAL_TINYBARS", 50_000_000),
     payer,
+    chain: mode === "real" ? new HederaChain(hedera, council) : undefined,
+    councilProposer: council?.memberAccountId ?? null,
     payTo,
     priceUsd,
     priceAtomic,
@@ -163,6 +169,7 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       spendCapRemaining: atomicToUsd(agent.budget.remainingAtomic),
       hcsTopic: agent.hedera.config.topicId || (agent.mode === "real" ? "created on first audit" : "simulated"),
       treasury: agent.hedera.config.treasuryAccountId || "simulated",
+      councilProposer: agent.councilProposer ?? (agent.mode === "real" ? "none: proposals must name a scheduleId" : "simulated"),
       zeroG: agent.zeroG.apiKey ? "real" : "simulated",
       world: worldOn ? `real (${agent.world.environment})` : "not configured, MOCKED approvals only",
       councilSeats: store.seats().length,
@@ -215,8 +222,11 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     }
     const entry = known ?? { proposal, fingerprint, lastOutcome: null };
     proposals.set(proposal.id, entry);
-    const outcome = await processProposal(agent, proposal, approvals.get(proposal.id));
+    // Resubmissions use the proposal as already resolved against Hedera, so
+    // the same schedule is checked and signed, not a new one created.
+    const outcome = await processProposal(agent, entry.proposal, approvals.get(proposal.id));
     if (outcome.usedWorldApproval) approvals.delete(proposal.id);
+    entry.proposal = outcome.proposal;
     entry.lastOutcome = outcome;
     const needsApproval =
       outcome.decision === "REFUSED" && outcome.worldGateReason !== null && outcome.checkMatches;

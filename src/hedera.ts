@@ -54,9 +54,8 @@ export interface AuditEntry {
 
 export interface ScheduleResult {
   scheduleId: string;
-  // "created": the agent created the schedule (its signature included).
-  // "signed": the identical schedule existed, the agent added its signature.
-  // "already-signed": the agent's signature was already on it.
+  // "signed": the agent added its signature. "already-signed": it was already on it.
+  // "created": simulated mode only.
   action: "created" | "signed" | "already-signed";
 }
 
@@ -156,42 +155,57 @@ export class HederaClient {
     return receipt.topicId.toString();
   }
 
-  // Sign the exact transfer as a Scheduled Transaction from the treasury.
-  // The memo must be deterministic (it is part of schedule identity), so
-  // every council member signing the same proposal hits the same schedule.
-  async signScheduledTransfer(transfer: Transfer, memo: string): Promise<ScheduleResult> {
-    if (this.mode === "simulated") return { scheduleId: this.simId("SCHED"), action: "created" };
+  // Simulated mode only: stand-in for propose + sign, with a SIM id.
+  simulateSign(): ScheduleResult {
+    return { scheduleId: this.simId("SCHED"), action: "created" };
+  }
+
+  // A council member proposes: create the Scheduled Transaction for the
+  // exact transfer out of the treasury, signed with the member key only.
+  // The treasury needs more signatures, so nothing runs yet. Returns the schedule id.
+  async proposeSchedule(
+    p: { treasuryAccountId: string; proposerAccountId: string; proposerPrivateKey: import("@hiero-ledger/sdk").PrivateKey },
+    transfer: Transfer,
+    memo: string,
+  ): Promise<string> {
     const sdk = await this.getSdk();
-    const client = await this.getClient();
-    const treasury = sdk.AccountId.fromString(this.config.treasuryAccountId);
-    const inner = new sdk.TransferTransaction()
-      .addHbarTransfer(treasury, sdk.Hbar.fromTinybars(-transfer.amountTinybars))
-      .addHbarTransfer(sdk.AccountId.fromString(transfer.payee), sdk.Hbar.fromTinybars(transfer.amountTinybars))
-      .setTransactionMemo(memo.slice(0, 100));
+    const client = this.config.network === "mainnet" ? sdk.Client.forMainnet() : sdk.Client.forTestnet();
+    client.setOperator(sdk.AccountId.fromString(p.proposerAccountId), p.proposerPrivateKey);
     try {
+      const inner = new sdk.TransferTransaction()
+        .addHbarTransfer(sdk.AccountId.fromString(p.treasuryAccountId), sdk.Hbar.fromTinybars(-transfer.amountTinybars))
+        .addHbarTransfer(sdk.AccountId.fromString(transfer.payee), sdk.Hbar.fromTinybars(transfer.amountTinybars))
+        .setTransactionMemo(memo.slice(0, 100));
       const created = await new sdk.ScheduleCreateTransaction()
         .setScheduledTransaction(inner)
         .setScheduleMemo(memo.slice(0, 100))
         .execute(client);
       const receipt = await created.getReceipt(client);
       if (!receipt.scheduleId) throw new Error("ScheduleCreateTransaction returned no schedule id");
-      return { scheduleId: receipt.scheduleId.toString(), action: "created" };
+      return receipt.scheduleId.toString();
+    } finally {
+      client.close();
+    }
+  }
+
+  // Co-sign a schedule the agent has already checked.
+  async signSchedule(scheduleId: string): Promise<ScheduleResult> {
+    if (this.mode === "simulated") return this.simulateSign();
+    const sdk = await this.getSdk();
+    const client = await this.getClient();
+    const id = sdk.ScheduleId.fromString(scheduleId);
+    try {
+      const signed = await new sdk.ScheduleSignTransaction().setScheduleId(id).execute(client);
+      await signed.getReceipt(client);
+      return { scheduleId, action: "signed" };
     } catch (err) {
-      const existing =
-        err instanceof sdk.ReceiptStatusError && err.status === sdk.Status.IdenticalScheduleAlreadyCreated
-          ? err.transactionReceipt.scheduleId
-          : null;
-      if (!existing) throw err;
-      try {
-        const signed = await new sdk.ScheduleSignTransaction().setScheduleId(existing).execute(client);
-        await signed.getReceipt(client);
-        return { scheduleId: existing.toString(), action: "signed" };
-      } catch (signErr) {
-        if (signErr instanceof sdk.StatusError && signErr.status === sdk.Status.NoNewValidSignatures) {
-          return { scheduleId: existing.toString(), action: "already-signed" };
-        }
-        throw signErr;
+      if (err instanceof sdk.ReceiptStatusError && err.status === sdk.Status.NoNewValidSignatures) {
+        return { scheduleId, action: "already-signed" };
       }
+      if (err instanceof sdk.PrecheckStatusError && err.status === sdk.Status.NoNewValidSignatures) {
+        return { scheduleId, action: "already-signed" };
+      }
+      throw err;
     }
   }
 
@@ -239,6 +253,34 @@ export class HederaClient {
     const receipt = await tx.getReceipt(client);
     if (!receipt.accountId) throw new Error("AccountCreateTransaction returned no account id");
     return receipt.accountId.toString();
+  }
+
+  // One-time council setup: a member account with its own key, and a
+  // treasury whose key is a 2-of-2 threshold over the agent and the member.
+  async createCouncil(treasuryHbar = 5, memberHbar = 5): Promise<{ treasuryAccountId: string; memberAccountId: string; memberPrivateKey: string }> {
+    const sdk = await this.getSdk();
+    const client = await this.getClient();
+    const agentKey = parsePrivateKey(this.config.privateKey);
+    const memberKey = sdk.PrivateKey.generateECDSA();
+    const member = await (await new sdk.AccountCreateTransaction()
+      .setKeyWithoutAlias(memberKey.publicKey)
+      .setInitialBalance(new sdk.Hbar(memberHbar))
+      .setAccountMemo("council member (proposer)")
+      .execute(client)).getReceipt(client);
+    const thresholdKey = new sdk.KeyList([agentKey.publicKey, memberKey.publicKey], 2);
+    const frozen = await new sdk.AccountCreateTransaction()
+      .setKeyWithoutAlias(thresholdKey)
+      .setInitialBalance(new sdk.Hbar(treasuryHbar))
+      .setAccountMemo("council treasury, 2-of-2")
+      .freezeWith(client)
+      .sign(memberKey);
+    const treasury = await (await frozen.execute(client)).getReceipt(client);
+    if (!member.accountId || !treasury.accountId) throw new Error("Council account creation returned no account id");
+    return {
+      treasuryAccountId: treasury.accountId.toString(),
+      memberAccountId: member.accountId.toString(),
+      memberPrivateKey: memberKey.toStringDer(),
+    };
   }
 
   close(): void {

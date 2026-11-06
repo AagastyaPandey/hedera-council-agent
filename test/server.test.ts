@@ -175,3 +175,14 @@ test("GET /proposals lists registered proposals for the UI", async () => {
     assert.equal(p.decision, "REFUSED");
   });
 });
+
+test("a proposal naming only a scheduleId is validated and refused without Hedera access", async () => {
+  await withServer({ env: {} }, async (call) => {
+    const { transfer: _t, createdAt: _c, ...rest } = large("P-SCHED");
+    const r = await call("POST", "/proposals", { proposal: { ...rest, scheduleId: "0.0.7777" } });
+    assert.equal(r.status, 200);
+    assert.equal(r.body.decision, "REFUSED");
+    assert.match(r.body.reason, /no Hedera access/);
+    assert.equal((await call("POST", "/proposals", { proposal: { ...rest, id: "P-BAD", scheduleId: "nope" } })).status, 400);
+  });
+});
