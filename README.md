@@ -45,7 +45,7 @@ council member schedules the exact transfer out of a 2-of-2 treasury (Hedera Sch
 - `src/council.ts` - orchestration: pay, verdict, check, gate, sign or refuse
 - `src/server.ts` - HTTP server and API (below)
 - `src/preflight.ts` - checks every external dependency, one-time Hedera setup
-- `src/demo.ts` - demo rehearsal, 7 scenes
+- `src/demo.ts` - demo rehearsal, 8 scenes
 - `public/` - the UI: `index.html` (atlas), `report.html`, `console.html`, shared `assets/` (see `docs/ui-handoff.md`)
 
 ## Setup
@@ -54,9 +54,9 @@ council member schedules the exact transfer out of a 2-of-2 treasury (Hedera Sch
 npm install
 cp .env.example .env   # fill in the values below, never commit .env
 npm run css:console    # only after editing public/console.html
-npm test               # build + 78 tests (unit + HTTP level)
+npm test               # build + 109 tests (unit + HTTP level)
 npm run preflight      # check Hedera, x402, 0G, World ID; add -- --setup, --create-fee-account, --create-council for one-time Hedera setup
-npm run demo           # demo rehearsal, 7 scenes
+npm run demo           # demo rehearsal, 8 scenes
 npm start              # HTTP server on :3000 (PORT to change); UI at /
 ```
 
@@ -78,7 +78,12 @@ Node 20.12 or newer.
 | `POST /world/rp-context` | RP-signed IDKit request for one server-chosen action |
 | `POST /world/verify` | verifies the owner's World ID for one proposal and stores the approval server-side |
 | `POST /council/join` | Proof of Human council join, one seat per nullifier |
-| `GET /council/seats` | current seats |
+| `GET /council/seats` | current seats, and the epoch |
+| `POST /proposals/:id/execute` | after the challenge window: re-check everything from scratch (mismatch check, payee registry, epoch, World ID approval still unexpired), then sign or abort. `425` with seconds remaining before the window ends; `409` on a challenged proposal. Needs the API key |
+| `POST /proposals/:id/challenge` | `{reason}` pauses execution (`CHALLENGED` in the log); `{resume: true}` lifts it (`CHALLENGE_RESOLVED`). Needs the API key |
+| `POST /payees/:account/revoke` | revokes a registry entry at runtime (`PAYEE_REVOKED`). `GET /payees` shows `revokedAt`. Needs the API key |
+| `POST /council/revoke` | a current seat holder (World ID proof for action `revoke-seat`, or a labelled MOCKED holder in demo mode) revokes a seat: epoch +1, the nullifier is blocked from rejoining, every pending proposal is cancelled, one `REVOKED` log entry. Needs the API key |
+| `GET /council/epoch` | `{epoch, revokedSeats}` |
 | `GET /`, `/console.html`, `/report.html?proposal=<id>` | the UI |
 
 ## Verifiable by anyone
@@ -154,7 +159,9 @@ network, it is a council agent API, not a public one.
 | `AGENT_SPEND_CAP_USDC` | Agent spending cap per run, default `0.10` |
 | `LARGE_PROPOSAL_TINYBARS` | Large threshold, World ID required at or above, default `50000000` (0.5 HBAR) |
 | `PAYEE_REGISTRY` | Payee accounts the council may pay: JSON array of `{account, label, validFrom?, validUntil?}` or a comma list of `0.0.x`. Non-empty turns enforcement on |
-| `PAYEE_REGISTRY_FILE` | Same, read from a JSON file |
+| `PAYEE_REGISTRY_FILE` | Same, read from a JSON file. A runtime revocation is written back to this file; env and demo registries are revoked in memory only |
+| `CHALLENGE_WINDOW_SECONDS` | Default `0` (off: sign as soon as every check passes). Above 0, a passing proposal is `PENDING_CHALLENGE` and signs only through `POST /proposals/:id/execute` after the window, once a re-check passes. A World ID approval lasts 5 minutes, so for a window over 5 minutes the owner approves again before executing. Part of the published policy |
+| `COUNCIL_API_KEY` | When set, `POST /proposals`, `/proposals/:id/execute`, `/proposals/:id/challenge`, `/payees/:account/revoke` and `/council/revoke` need `Authorization: Bearer <key>` or `x-api-key`. Unset: open (`auth: "open (demo)"` in `/health` and `/policy`, and a startup warning in real mode). `/check`, `/world/*` and `/council/join` keep their own protection |
 | `REQUIRE_REGISTERED_PAYEE` | `true` enforces the registry even when it is empty (refuses every payee) |
 | `ALLOW_NO_0G` | `true` lets the agent sign without a 0G verdict. Default off: no verdict, no signature |
 | `ZERO_G_API_KEY` | 0G Private Computer API key, `sk-` key from pc.0g.ai |
@@ -244,7 +251,7 @@ missing.
 
 ## Demo rehearsal
 
-`npm run demo` runs 7 scenes (it prints `ALL 7 SCENES CORRECT` when every one behaves):
+`npm run demo` runs 8 scenes (it prints `ALL 8 SCENES CORRECT` when every one behaves):
 
 1. Routine proposal, paid check, agent signs.
 2. Mismatched proposal (payee and amount differ), paid check, agent refuses.
@@ -253,6 +260,7 @@ missing.
 5. Reuse of yesterday's World approval is refused: an approval signs one payment and is spent.
 6. Same amount, same description, swapped recipient in the 402: refused before paying, nothing spent. "The amount was right. The recipient was a lie."
 7. 0G unavailable: the agent fails closed and does not sign.
+8. Challenge window (600 s on a fake clock, no sleeping): a proposal passes every check and waits instead of signing. Its payee is revoked inside the window, so at execution the agent prints `re-checked at execution: payee revoked, ABORTED`. A second proposal executes after the window and signs.
 
 Each scene prints its decision, the check payment id, the 0G verdict
 and request id, the World ID gate result, the Scheduled Transaction id,
@@ -262,7 +270,7 @@ HashScan link.
 Demo video: 2-3 minutes. ETHGlobal requires 2-4 minutes, 0G wants under
 3 minutes. Lead with the refusal (scene 2), then scenes 1, 3 and 4
 (the World ID gate), then 5, 6 and 7 (spent approval, swapped recipient,
-0G fails closed). See `docs/demo-script.md`.
+0G fails closed), and 8 if time allows (challenge window). See `docs/demo-script.md`.
 
 ## Track-by-track submission notes
 
@@ -314,6 +322,13 @@ Do not put SIM- ids here.
 - Check payment, scene 1: tx id: (none yet), HashScan: (none yet)
 - HCS audit, scene 1: tx id: (none yet), HashScan: (none yet)
 - Scheduled Transaction, scene 1: (none yet)
+
+## Challenge window and seat revocation: limits
+
+- The real-mode path (schedule admin key set to the proposer, `ScheduleDeleteTransaction` on seat revocation, re-reading the schedule at execution) is written and unit-tested only against a fake chain port. It has not run against Hedera.
+- `POST /council/revoke` checks a World ID proof for action `revoke-seat` and requires its nullifier to equal a seat's nullifier. World ID nullifiers can differ per action, so a real holder's `revoke-seat` nullifier may not match the nullifier stored when they joined. This has not been tried against World; demo mode (MOCKED holders) works.
+- No limit ladder was built: revoking only bumps the epoch, blocks the nullifier and cancels pending proposals.
+- A World ID approval lasts 5 minutes. With a window longer than that, a large proposal needs a fresh approval before execution.
 
 ## What is not in scope
 

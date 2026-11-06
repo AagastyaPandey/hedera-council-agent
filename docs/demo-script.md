@@ -37,6 +37,11 @@ Point out that the council's payee registry is the project's own list on Hedera,
 Show Scene 7.
 Say: "If 0G cannot write the verdict, the agent does not carry on without it. No verdict, no signature. Every logged decision carries the 0G request id and a hash of the verdict and the proposal."
 
+## Optional beat, Scene 8, the re-check at execution (15 seconds, only if the video stays under 3 minutes)
+Show Scene 8.
+Say: "A proposal that passes every check does not sign straight away. It waits out a challenge window. Here the payee is revoked inside the window, so at execution the agent re-checks and prints: re-checked at execution, payee revoked, aborted."
+The demo uses a fake clock, so say "ten minute window, simulated clock" out loud. Skip this beat rather than cut the refusal scenes.
+
 ## 2:30-2:45, close
 Say: "Hedera x402 pays for the check, Scheduled Transactions fix the transfer, HCS logs every decision, World ID gates the large ones, 0G writes the verdict. One agent seat, three partners, five tracks."
 Show the repo URL, https://github.com/BeastAyyG/hedera-council-agent, and the track list.
@@ -44,8 +49,8 @@ Show the repo URL, https://github.com/BeastAyyG/hedera-council-agent, and the tr
 Shortcut: press J on the console (or open `/console.html?judge=1`) to run the whole demo.
 
 ## Checklist before recording
-- `npm test` green, 78/78
-- `npm run demo` green, all 7 scenes correct (`ALL 7 SCENES CORRECT`)
+- `npm test` green, 109/109
+- `npm run demo` green, all 8 scenes correct (`ALL 8 SCENES CORRECT`)
 - If real mode: .env filled, one real x402 payment settled, HashScan link copied into the README "Hedera transaction IDs" section
 - Close other windows, use a clean terminal, 720p or better
 - Record in one take if possible, human voice, normal speed

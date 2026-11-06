@@ -17,17 +17,31 @@ export interface CouncilSeat {
 interface StateShape {
   seats: CouncilSeat[];
   usedApprovals: string[];
+  // Bumped by every seat revocation; pending proposals carry the epoch they were created in.
+  epoch: number;
+  // Nullifiers of revoked seats. They stay blocked: a revoked person cannot rejoin.
+  revokedSeats: string[];
+  // Next seat number, so a seat id is never reused after a revocation.
+  nextSeat: number;
 }
 
 export class StateStore {
-  private state: StateShape = { seats: [], usedApprovals: [] };
+  private state: StateShape = { seats: [], usedApprovals: [], epoch: 1, revokedSeats: [], nextSeat: 1 };
 
   // path null keeps state in memory only (tests).
   constructor(private readonly path: string | null) {
     if (!path) return;
     try {
       const raw = JSON.parse(readFileSync(path, "utf8")) as Partial<StateShape>;
-      this.state = { seats: raw.seats ?? [], usedApprovals: raw.usedApprovals ?? [] };
+      const seats = raw.seats ?? [];
+      const revokedSeats = raw.revokedSeats ?? [];
+      this.state = {
+        seats,
+        usedApprovals: raw.usedApprovals ?? [],
+        epoch: raw.epoch ?? 1,
+        revokedSeats,
+        nextSeat: raw.nextSeat ?? seats.length + revokedSeats.length + 1,
+      };
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
     }
@@ -45,11 +59,36 @@ export class StateStore {
     return [...this.state.seats];
   }
 
-  // Returns null when this nullifier already holds a seat.
+  epoch(): number {
+    return this.state.epoch;
+  }
+
+  revokedSeatCount(): number {
+    return this.state.revokedSeats.length;
+  }
+
+  isRevoked(nullifier: string): boolean {
+    return this.state.revokedSeats.includes(nullifier);
+  }
+
+  // Revokes one seat and bumps the epoch, in one save. The seat is removed
+  // and its nullifier stays blocked. Returns null when there is no such seat.
+  revokeSeat(seatId: string): { seat: CouncilSeat; fromEpoch: number; toEpoch: number } | null {
+    const seat = this.state.seats.find((s) => s.seat === seatId);
+    if (!seat) return null;
+    const fromEpoch = this.state.epoch;
+    this.state.seats = this.state.seats.filter((s) => s.seat !== seatId);
+    this.state.revokedSeats.push(seat.nullifier);
+    this.state.epoch = fromEpoch + 1;
+    this.save();
+    return { seat, fromEpoch, toEpoch: this.state.epoch };
+  }
+
+  // Returns null when this nullifier already holds a seat, or was revoked.
   addSeat(nullifier: string, source: CouncilSeat["source"]): CouncilSeat | null {
-    if (this.state.seats.some((s) => s.nullifier === nullifier)) return null;
+    if (this.state.seats.some((s) => s.nullifier === nullifier) || this.isRevoked(nullifier)) return null;
     const seat: CouncilSeat = {
-      seat: `council-seat:${this.state.seats.length + 1}`,
+      seat: `council-seat:${this.state.nextSeat++}`,
       nullifier,
       joinedAt: new Date().toISOString(),
       source,

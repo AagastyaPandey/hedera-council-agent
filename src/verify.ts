@@ -158,6 +158,22 @@ export function verifyBundle(bundle: EvidenceBundle, policy: PublishedPolicy, au
       bundle.decision === "SIGNED" ? res("schedule", "FAIL", "decision is SIGNED but no schedule id is recorded") : res("schedule", "PASS", `none, decision was ${bundle.decision}`),
     ),
   );
+  // 10. Decisions that are not final or not made by the checks: say what the log shows.
+  if (bundle.decision === "PENDING_CHALLENGE") {
+    out.push(
+      entry?.event === "PROPOSAL_CREATED"
+        ? res("challenge window", "PASS", `not signed yet: ${entry.detail}`)
+        : res("challenge window", "FAIL", `decision is PENDING_CHALLENGE but entry ${seq} is ${entry?.event ?? "missing"}, not PROPOSAL_CREATED`),
+    );
+  } else if (bundle.decision === "CANCELLED") {
+    const by = (bundle.challenge as { cancelledBy?: { auditSeq: number | null; auditHash: string | null } } | undefined)?.cancelledBy;
+    const rev = by?.auditSeq ? auditMessages.filter(isChainedEntry).find((e) => e.seq === by.auditSeq) : undefined;
+    out.push(
+      rev && rev.event === "REVOKED" && rev.hash === by?.auditHash
+        ? res("cancellation", "PASS", `cancelled by entry ${rev.seq} (REVOKED): ${rev.detail}`)
+        : res("cancellation", "FAIL", `decision is CANCELLED but the log has no matching REVOKED entry${opts.truncated ? " (reader stopped early)" : ""}`),
+    );
+  }
   return out;
 }
 

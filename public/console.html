@@ -102,6 +102,7 @@
 
         <div id="qr"></div>
         <p id="status" role="status" class="mt-4 text-[12px]"></p>
+        <form id="keybox" hidden class="mt-2 flex items-center gap-2"><input id="keyinput" type="password" autocomplete="off" placeholder="API key" aria-label="API key" class="h-8 border border-edge2 bg-panel2 px-2.5 text-[12px] text-body"><button type="submit" class="btn">Use key</button></form>
         <pre id="result" hidden class="hash mt-4 max-h-64 overflow-auto whitespace-pre-wrap border border-edge p-3"></pre>
       </div>
     </div>
@@ -125,6 +126,22 @@ const el = (tag, text, cls) => { const e = document.createElement(tag); if (text
 const status = (t, tone = "") => { $("status").textContent = t; $("status").className = `mt-4 text-[12px] ${tone === "ok" ? "text-safe" : tone === "bad" ? "text-danger" : "text-dim"}`; };
 const show = (o) => { $("result").hidden = false; $("result").textContent = JSON.stringify(o, null, 2); };
 const toTiny = (h) => Math.round(Number(h) * 1e8);
+
+// Decision labels. PENDING_CHALLENGE is not yet decided: never shown as refused.
+const LABEL = { SIGNED: "signed", REFUSED: "refused", PENDING_CHALLENGE: "pending", CANCELLED: "cancelled" };
+const decisionPill = (d, challenged) => d === "SIGNED" ? pill("safe", "signed") : d === "PENDING_CHALLENGE" ? pill("warn", challenged ? "challenged" : "challenge window") : pill("danger", LABEL[d] ?? d.toLowerCase());
+const outcomeStatus = (d) => d.decision === "SIGNED" ? [`Agent signed. Scheduled tx ${d.scheduledTxId}.`, "ok"]
+  : d.decision === "PENDING_CHALLENGE" ? [`Passed every check. Challenge window open until ${new Date(d.challengeUntil).toLocaleTimeString()}; then execute.`, ""]
+  : [`Agent refused: ${d.reason}`, "bad"];
+const authHeaders = () => { const k = sessionStorage.getItem("councilKey"); return k ? { Authorization: `Bearer ${k}` } : {}; };
+const post = async (path, body) => { const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(body ?? {}) }); return { ok: r.ok, status: r.status, data: await r.json().catch(() => ({})) }; };
+// A 401 means the server has an API key: say so and offer the key box.
+function needKey(res) {
+  if (res.status !== 401) return false;
+  status("This server needs an API key", "bad"); $("keybox").hidden = false; $("keyinput").focus();
+  return true;
+}
+$("keybox").onsubmit = (e) => { e.preventDefault(); sessionStorage.setItem("councilKey", $("keyinput").value.trim()); $("keyinput").value = ""; $("keybox").hidden = true; status("API key stored for this session. Try again."); };
 
 const TONE = { safe: ["text-safe", "●"], warn: ["text-signal", "◐"], danger: ["text-danger", "✕"], neutral: ["text-dim", "○"] };
 function pill(tone, label) {
@@ -166,7 +183,7 @@ async function refreshList() {
     const a = document.createElement("td"); a.className = "font-mono"; a.textContent = `${p.id}${p.large ? " · large" : ""}`;
     const b = document.createElement("td"); b.textContent = `${p.purpose} · ${hbar(p.amountTinybars)}`;
     const c = document.createElement("td"); c.append(pill(p.matches ? "safe" : "danger", p.matches ? "matches" : "mismatch"));
-    const d = document.createElement("td"); d.append(p.decision ? pill(p.decision === "SIGNED" ? "safe" : "danger", p.decision.toLowerCase()) : pill("neutral", "not submitted"));
+    const d = document.createElement("td"); d.append(p.decision ? decisionPill(p.decision, p.challenged) : pill("neutral", "not submitted"));
     tr.append(a, b, c, d); tr.onclick = () => select(p.id); tb.append(tr);
   }
   t.append(tb); box.append(t);
@@ -187,28 +204,51 @@ async function select(id) {
   history.replaceState(null, "", `?proposal=${encodeURIComponent(id)}`);
   const r = await api.proposal(id);
   if (!r.ok) { status(r.data.error, "bad"); return; }
-  const { proposal: p, check, lastOutcome: o, large, approval } = r.data;
+  const { proposal: p, check, lastOutcome: o, large, approval, challenge } = r.data;
   const decision = o?.decision ?? null;
+  const pending = decision === "PENDING_CHALLENGE";
+  const until = o?.challengeUntil ? new Date(o.challengeUntil).toLocaleTimeString() : "";
   const idx = rowsCache.findIndex((x) => x.id === id);
 
   $("selected").hidden = false;
   $("mRecord").textContent = `Record ${String(idx + 1 || rowsCache.length + 1).padStart(2, "0")}`;
   $("mId").textContent = p.id; $("mDate").textContent = new Date(p.createdAt).toLocaleDateString();
-  $("mNotes").replaceChildren(...[decision === "SIGNED" ? "Agent signed" : decision === "REFUSED" ? "Agent refused" : "Awaiting the agent", check.matches ? "Check passed" : "Check failed", large ? "Large: World ID gate" : "Routine"].map((t, i) => el("div", t, `doc-note ${i ? "mt-1" : ""}`)));
-  const stamp = $("mStamp"); stamp.textContent = decision ? decision.toLowerCase() : health.mode === "real" ? "Real mode" : "Simulated"; stamp.style.color = decision === "SIGNED" ? "var(--color-safe)" : ""; stamp.style.borderColor = decision === "SIGNED" ? "var(--color-safe)" : "";
+  $("mNotes").replaceChildren(...[decision === "SIGNED" ? "Agent signed" : decision === "REFUSED" ? "Agent refused" : pending ? (challenge?.challenged ? "Challenged, execution paused" : "Waiting out the challenge window") : decision === "CANCELLED" ? "Cancelled by a seat revocation" : "Awaiting the agent", check.matches ? "Check passed" : "Check failed", large ? "Large: World ID gate" : "Routine"].map((t, i) => el("div", t, `doc-note ${i ? "mt-1" : ""}`)));
+  const stamp = $("mStamp"); stamp.textContent = decision ? LABEL[decision] ?? decision.toLowerCase() : health.mode === "real" ? "Real mode" : "Simulated"; const stampTone = decision === "SIGNED" ? "var(--color-safe)" : pending ? "var(--color-signal)" : ""; stamp.style.color = stampTone; stamp.style.borderColor = stampTone;
 
-  const al = $("alert"); al.className = `border-l-2 ${decision === "SIGNED" ? "border-safe" : "border-danger"} pl-3 text-[12px] leading-relaxed text-dim`;
-  al.replaceChildren(el("span", decision === "SIGNED" ? "Agent signed. " : decision === "REFUSED" ? "Agent refused. " : "Not yet submitted. ", decision === "SIGNED" ? "text-safe" : "text-danger"), document.createTextNode(o ? o.reason.slice(0, 240) : "Submit this proposal to the agent to record a decision."));
+  const al = $("alert"); al.className = `border-l-2 ${decision === "SIGNED" ? "border-safe" : pending ? "border-signal" : "border-danger"} pl-3 text-[12px] leading-relaxed text-dim`;
+  al.replaceChildren(el("span", decision === "SIGNED" ? "Agent signed. " : decision === "REFUSED" ? "Agent refused. " : pending ? "Challenge window. " : decision === "CANCELLED" ? "Cancelled. " : "Not yet submitted. ", decision === "SIGNED" ? "text-safe" : pending ? "text-signal" : "text-danger"), document.createTextNode(o ? o.reason.slice(0, 240) : "Submit this proposal to the agent to record a decision."));
   $("folio").textContent = `Proposal ${p.id} · Decision trail`;
-  $("topPill").replaceChildren(decision ? pill(decision === "SIGNED" ? "safe" : "danger", decision === "SIGNED" ? "signed" : "refused") : pill("neutral", "pending"));
+  $("topPill").replaceChildren(decision ? decisionPill(decision, challenge?.challenged) : pill("neutral", "pending"));
   $("title").textContent = p.description.purpose;
   $("lede").replaceChildren(document.createTextNode(`${check.verdict} `), ...(check.matches ? [] : [el("span", check.mismatches.map((m) => m.field).join(", ") + " differ", "font-mono text-[15px] text-danger")]));
   document.title = `Council Agent · ${p.id}`;
 
   const actions = $("head-actions"); actions.replaceChildren();
   const sub = el("button", o ? "Submit again" : "Submit to the agent", "btn btn-primary");
-  sub.onclick = async () => { sub.disabled = true; const res = await whileWorking($("workingBar"), () => api.submit(p)); show(res.data); status(res.data.decision === "SIGNED" ? `Agent signed. Scheduled tx ${res.data.scheduledTxId}.` : `Agent refused: ${res.data.reason}`, res.data.decision === "SIGNED" ? "ok" : "bad"); await select(id); };
-  actions.append(sub);
+  sub.onclick = async () => { sub.disabled = true; const res = await whileWorking($("workingBar"), () => api.submit(p)); show(res.data); if (!needKey(res)) status(...outcomeStatus(res.data)); await select(id); };
+  if (pending) {
+    // In the challenge window the next step is to execute (after the window) or challenge.
+    const ex = el("button", "Execute", "btn btn-primary"); ex.id = "execute-btn"; ex.disabled = Boolean(challenge?.challenged);
+    ex.onclick = async () => {
+      ex.disabled = true; const res = await whileWorking($("workingBar"), () => post(`/proposals/${encodeURIComponent(id)}/execute`)); show(res.data);
+      if (!needKey(res)) {
+        if (res.status === 425) status(`Challenge window still open: ${res.data.secondsRemaining} more second(s).`);
+        else if (res.status >= 400) status(res.data.error, "bad");
+        else status(...outcomeStatus(res.data));
+      }
+      await refreshList(); await select(id);
+    };
+    const ch = el("button", challenge?.challenged ? "Resume (lift challenge)" : "Challenge", "btn"); ch.id = "challenge-btn";
+    ch.onclick = async () => {
+      const reason = challenge?.challenged ? null : window.prompt("Why challenge this proposal?");
+      if (!challenge?.challenged && !reason) return;
+      ch.disabled = true; const res = await post(`/proposals/${encodeURIComponent(id)}/challenge`, challenge?.challenged ? { resume: true } : { reason }); show(res.data);
+      if (!needKey(res)) status(res.ok ? (res.data.state === "challenged" ? "Challenged: execution is paused." : "Challenge lifted.") : res.data.error, res.ok ? "ok" : "bad");
+      await refreshList(); await select(id);
+    };
+    actions.append(ex, ch);
+  } else if (decision !== "CANCELLED") actions.append(sub);
   lastLanding = o ? { decision, check, large, approval, o } : null;
   if (o) {
     const rp = el("button", "Replay decision", "btn"); rp.id = "replay-btn"; rp.onclick = () => replayDecision();
@@ -232,6 +272,8 @@ async function select(id) {
     ledgerRow("Check", o ? `paid via ${o.paidVia}` : "not paid yet"),
     ledgerRow("0G verdict", o ? `${o.zeroGSource}${o.zeroGRequestId ? " · " + o.zeroGRequestId : ""}` : "none yet"),
     ledgerRow("World ID", o?.worldGateReason ?? (large ? "required for this size" : "not required"), o?.worldGateReason && decision === "REFUSED" ? "text-danger" : ""),
+    ...(pending ? [ledgerRow("Challenge window", `${challenge?.challenged ? `challenged: ${challenge.reason}` : `open until ${until}`}; re-checked at execution`)] : []),
+    ...(decision === "CANCELLED" ? [ledgerRow("Cancelled", `seat revocation, epoch ${o.cancelledBy?.epoch ?? "?"}`, "text-danger")] : []),
   );
   const H = $("hashes"); H.replaceChildren(hashLine("Scheduled transaction", o?.scheduledTxId ?? p.scheduleId), hashLine("Check payment", o?.paidTxId), hashLine("HCS audit entry", o?.auditHash ? `#${o.auditSeq} ${o.auditHash}` : ""));
 
@@ -246,7 +288,7 @@ async function select(id) {
     stage("01", "Claim", "safe", "recorded", "1.00", "described", `${hbar(p.description.amountTinybars)} to ${p.description.payee}.`),
     stage("02", "Check", check.matches ? "safe" : "danger", check.matches ? "clear" : "attention", `${(matched / 3).toFixed(2)}`, "fields matched", check.matches ? "Payee, amount and token agree with the description." : check.mismatches.map((m) => `${m.field}: ${m.described} vs ${m.actual}`).join("; ")),
     stage("03", "World ID", gate[0], gate[1], gate[2], gate[3], gate[4]),
-    stage("04", "Signature", decision === "SIGNED" ? "safe" : decision === "REFUSED" ? "danger" : "warn", "gate", decision === "SIGNED" ? "1" : decision === "REFUSED" ? "0" : "—", "hard gate", o ? (decision === "SIGNED" ? `Co-signed ${o.scheduledTxId}.` : "No signature added.") : "Waiting for the agent.", true),
+    stage("04", "Signature", decision === "SIGNED" ? "safe" : decision === "REFUSED" || decision === "CANCELLED" ? "danger" : "warn", pending ? "window" : decision === "CANCELLED" ? "cancelled" : "gate", decision === "SIGNED" ? "1" : decision === "REFUSED" || decision === "CANCELLED" ? "0" : "—", "hard gate", o ? (decision === "SIGNED" ? `Co-signed ${o.scheduledTxId}.` : pending ? `Not signed yet. Challenge window until ${until}; execution re-checks first.` : "No signature added.") : "Waiting for the agent.", true),
   );
 
   const S = $("said"); S.replaceChildren();
@@ -273,7 +315,7 @@ function choreograph({ decision, check, o }) {
   const end = T + stages.length * 0.55;
   // the stage that decided it flashes: the failed check, or the blocked gate, or the signature
   const decided = !check.matches ? 1 : decision === "REFUSED" ? 2 : 3;
-  if (decision) {
+  if (decision && decision !== "PENDING_CHALLENGE") {
     const inner = stages[decided].firstElementChild;
     inner.classList.remove("m-flash-green", "m-flash-red", "m-shake"); void inner.offsetWidth;
     inner.style.setProperty("--d", `${end.toFixed(2)}s`);
@@ -313,9 +355,10 @@ $("new-form").onsubmit = async (e) => {
   const f = Object.fromEntries(new FormData(e.target));
   const proposal = { id: f.id, description: { payee: f.payee, amountTinybars: toTiny(f.amount), token: "HBAR", purpose: f.purpose }, transfer: { payee: f.tpayee, amountTinybars: toTiny(f.tamount), token: "HBAR" } };
   const res = await whileWorking($("workingBar"), () => api.submit(proposal));
+  if (needKey(res)) return;
   if (res.status >= 400) { status(res.data.error, "bad"); return; }
   show(res.data);
-  status(res.data.decision === "SIGNED" ? `Agent signed. Scheduled tx ${res.data.scheduledTxId}.` : `Agent refused: ${res.data.reason}`, res.data.decision === "SIGNED" ? "ok" : "bad");
+  status(...outcomeStatus(res.data));
   await refreshList(); await select(proposal.id);
   $("new-form").elements.id.value = `P-${Date.now().toString(36).toUpperCase()}`;
 };

@@ -7,16 +7,18 @@
 //   2. The x402 check seller's wallet (payTo) is compared with the
 //      registered check service before the agent pays anything.
 
-import { readFileSync } from "node:fs";
+import { readFileSync, renameSync, writeFileSync } from "node:fs";
 
 export interface PayeeEntry {
   account: string;
   label: string;
   validFrom?: string;
   validUntil?: string;
+  // Set when the council revokes the payee at runtime.
+  revokedAt?: string;
 }
 
-export type PayeeStatus = "registered" | "unregistered" | "expired" | "not-yet-valid" | "not-enforced";
+export type PayeeStatus = "registered" | "unregistered" | "expired" | "not-yet-valid" | "revoked" | "not-enforced";
 
 export interface PayeeLookup {
   account: string;
@@ -49,7 +51,7 @@ function parseEntries(raw: unknown): PayeeEntry[] {
     if (!e || typeof e.account !== "string" || !ACCOUNT.test(e.account.trim())) {
       throw new Error(`payee registry entry needs a Hedera account id (0.0.x): ${JSON.stringify(item)}`);
     }
-    for (const k of ["validFrom", "validUntil"] as const) {
+    for (const k of ["validFrom", "validUntil", "revokedAt"] as const) {
       if (e[k] !== undefined && Number.isNaN(Date.parse(String(e[k])))) throw new Error(`payee ${e.account}: ${k} is not a date`);
     }
     return {
@@ -57,6 +59,7 @@ function parseEntries(raw: unknown): PayeeEntry[] {
       label: typeof e.label === "string" && e.label ? e.label.slice(0, 60) : "registered payee",
       ...(e.validFrom ? { validFrom: String(e.validFrom) } : {}),
       ...(e.validUntil ? { validUntil: String(e.validUntil) } : {}),
+      ...(e.revokedAt ? { revokedAt: String(e.revokedAt) } : {}),
     };
   });
 }
@@ -73,9 +76,26 @@ export class PayeeRegistry {
 
   constructor(
     entries: PayeeEntry[],
-    readonly opts: { source: PayeeSource; requireRegistered?: boolean } = { source: "empty" },
+    readonly opts: { source: PayeeSource; requireRegistered?: boolean; onRevoke?: (account: string, at: string) => void } = { source: "empty" },
   ) {
-    this.entries = entries;
+    // Copies, so revoking never mutates a shared list such as DEMO_PAYEES.
+    this.entries = entries.map((e) => ({ ...e }));
+  }
+
+  // Marks every entry for this account revoked from `now`. Returns how many
+  // entries changed (0: nothing to revoke). File-backed registries are
+  // written back; env and demo registries are revoked in memory only.
+  revoke(account: string, now = new Date()): number {
+    const at = now.toISOString();
+    let n = 0;
+    for (const e of this.entries) {
+      if (sameAccount(e.account, account) && !e.revokedAt) {
+        e.revokedAt = at;
+        n += 1;
+      }
+    }
+    if (n > 0) this.opts.onRevoke?.(account, at);
+    return n;
   }
 
   // Enforced when asked for explicitly, or whenever there is anything in it.
@@ -94,8 +114,12 @@ export class PayeeRegistry {
       return { account, status: "unregistered", label: null, detail: `Recipient ${account} is not in the council payee registry.` };
     }
     const t = now.getTime();
-    const live = matches.find((e) => (!e.validFrom || Date.parse(e.validFrom) <= t) && (!e.validUntil || Date.parse(e.validUntil) > t));
+    const live = matches.find((e) => !(e.revokedAt && Date.parse(e.revokedAt) <= t) && (!e.validFrom || Date.parse(e.validFrom) <= t) && (!e.validUntil || Date.parse(e.validUntil) > t));
     if (live) return { account, status: "registered", label: live.label, detail: `Recipient ${account} is registered (${live.label}).` };
+    const revoked = matches.find((e) => e.revokedAt && Date.parse(e.revokedAt) <= t);
+    if (revoked) {
+      return { account, status: "revoked", label: revoked.label, detail: `Recipient ${account} is not in the council payee registry (its entry was revoked ${revoked.revokedAt}).` };
+    }
     const expired = matches.find((e) => e.validUntil && Date.parse(e.validUntil) <= t);
     if (expired) {
       return { account, status: "expired", label: expired.label, detail: `Recipient ${account} is not in the council payee registry (its entry expired ${expired.validUntil}).` };
@@ -120,5 +144,20 @@ export function loadPayeeRegistry(env: NodeJS.ProcessEnv, fallback: PayeeEntry[]
   const entries = [...fromEnv, ...fromFile];
   if (entries.length === 0 && fallback.length > 0) return new PayeeRegistry(fallback, { source: "demo registry", requireRegistered });
   const source: PayeeSource = fromEnv.length && fromFile.length ? "env+file" : fromEnv.length ? "env" : fromFile.length ? "file" : "empty";
-  return new PayeeRegistry(entries, { source, requireRegistered });
+  // Revocations of file entries are written back to the file, atomically.
+  const onRevoke = file
+    ? (account: string, at: string) => {
+        let changed = false;
+        for (const e of fromFile) {
+          if (sameAccount(e.account, account) && !e.revokedAt) {
+            e.revokedAt = at;
+            changed = true;
+          }
+        }
+        if (!changed) return;
+        writeFileSync(`${file}.tmp`, JSON.stringify(fromFile, null, 2));
+        renameSync(`${file}.tmp`, file);
+      }
+    : undefined;
+  return new PayeeRegistry(entries, { source, requireRegistered, onRevoke });
 }

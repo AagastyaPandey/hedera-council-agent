@@ -13,9 +13,11 @@ export function emit(name, detail = {}) {
 }
 
 async function call(method, path, body) {
+  // State-changing routes need the API key when the server has one (stored by the console on a 401).
+  const key = sessionStorage.getItem("councilKey");
   const res = await fetch(path, {
     method,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(key ? { Authorization: `Bearer ${key}` } : {}) },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));

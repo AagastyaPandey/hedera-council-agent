@@ -236,11 +236,30 @@ export class HederaClient {
         .setTransactionMemo(memo.slice(0, 100));
       const created = await new sdk.ScheduleCreateTransaction()
         .setScheduledTransaction(inner)
+        // The proposer can delete its own proposal (seat revocation).
+        .setAdminKey(p.proposerPrivateKey.publicKey)
         .setScheduleMemo(memo.slice(0, 100))
         .execute(client);
       const receipt = await created.getReceipt(client);
       if (!receipt.scheduleId) throw new Error("ScheduleCreateTransaction returned no schedule id");
       return receipt.scheduleId.toString();
+    } finally {
+      client.close();
+    }
+  }
+
+  // Delete a pending schedule, signed by the proposer (the schedule's admin key).
+  async deleteSchedule(
+    scheduleId: string,
+    p: { proposerAccountId: string; proposerPrivateKey: import("@hiero-ledger/sdk").PrivateKey },
+  ): Promise<void> {
+    if (this.mode === "simulated") return;
+    const sdk = await this.getSdk();
+    const client = this.config.network === "mainnet" ? sdk.Client.forMainnet() : sdk.Client.forTestnet();
+    client.setOperator(sdk.AccountId.fromString(p.proposerAccountId), p.proposerPrivateKey);
+    try {
+      const tx = await new sdk.ScheduleDeleteTransaction().setScheduleId(sdk.ScheduleId.fromString(scheduleId)).execute(client);
+      await tx.getReceipt(client);
     } finally {
       client.close();
     }

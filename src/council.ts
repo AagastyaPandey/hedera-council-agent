@@ -13,10 +13,13 @@ import type { PayeeRegistry } from "./payee.js";
 import { scheduleProblem, type ChainPort } from "./chain.js";
 import type { Proposal } from "./proposal.js";
 import { isLargeProposal, proposalFingerprint } from "./proposal.js";
+import { recheckAtExecution } from "./challenge.js";
 import { worldGate, type WorldCheck } from "./world.js";
 import { zeroGVerdict, type ZeroGConfig, type ZeroGVerdict } from "./zeroG.js";
 
-export type CouncilDecision = "SIGNED" | "REFUSED";
+// PENDING_CHALLENGE: every check passed, signing waits for the challenge window
+// and a re-check at execution. CANCELLED: a seat revocation cancelled it.
+export type CouncilDecision = "SIGNED" | "REFUSED" | "PENDING_CHALLENGE" | "CANCELLED";
 
 export interface CouncilOutcome {
   proposalId: string;
@@ -40,6 +43,10 @@ export interface CouncilOutcome {
   // True when a large proposal was signed on the strength of a World ID
   // approval; the caller must then spend that approval.
   usedWorldApproval: boolean;
+  // ISO time the challenge window closes; set while the decision is PENDING_CHALLENGE.
+  challengeUntil: string | null;
+  // CANCELLED: the audit entry of the revocation that cancelled it.
+  cancelledBy?: { auditSeq: number | null; auditHash: string | null; epoch: number };
   // Where the transfer that was checked came from.
   transferSource: "request" | "hedera-mirror-node";
   // The proposal as checked: with the on-chain transfer and schedule id filled in.
@@ -62,6 +69,11 @@ export interface CouncilAgent {
   requireVerdict?: boolean;
   // ALLOW_NO_0G=true: sign without a 0G verdict (recorded in the log).
   allowNo0G?: boolean;
+  // CHALLENGE_WINDOW_SECONDS: 0 or absent signs immediately; above 0 a proposal
+  // that passes every check waits that long, then is re-checked at execution.
+  challengeWindowSeconds?: number;
+  // Injectable clock (tests and the demo).
+  now?: () => Date;
 }
 
 export const NO_VERDICT_REASON = "0G verdict unavailable, failing closed";
@@ -115,6 +127,7 @@ function emptyOutcome(proposal: Proposal, mode: "real" | "simulated", paidVia: "
     zeroGVerdictText: "",
     worldGateReason: null,
     usedWorldApproval: false,
+    challengeUntil: null,
     transferSource,
     proposal,
     mode,
@@ -185,6 +198,7 @@ export async function processProposal(
     zeroGVerdictText: "",
     worldGateReason: null,
     usedWorldApproval: false,
+    challengeUntil: null,
     transferSource,
     proposal,
     mode,
@@ -254,7 +268,7 @@ export async function processProposal(
   const large = isLargeProposal(proposal, agent.largeThresholdTinybars);
   let worldGateReason: string | null = null;
   if (large) {
-    const gate = worldGate(worldCheck, proposal.id);
+    const gate = worldGate(worldCheck, proposal.id, agent.now?.());
     worldGateReason = gate.reason;
     if (!gate.allowed) {
       return {
@@ -264,6 +278,23 @@ export async function processProposal(
         ...(await audit("REFUSED_WORLD_ID", gate.reason)),
       };
     }
+  }
+
+  // 5a. Challenge window: every check passed, but signing waits. The
+  // approval is not spent; execution re-checks everything and spends it.
+  const windowSeconds = agent.challengeWindowSeconds ?? 0;
+  if (windowSeconds > 0) {
+    const challengeUntil = new Date((agent.now?.() ?? new Date()).getTime() + windowSeconds * 1000).toISOString();
+    const logged = await audit("PROPOSAL_CREATED", `PROPOSAL ${proposal.id} CREATED, challenge until ${challengeUntil}`);
+    return {
+      ...afterVerdict,
+      decision: "PENDING_CHALLENGE",
+      reason: `Passed every check. Not signed yet: challenge window open until ${challengeUntil}, then POST /proposals/${proposal.id}/execute re-checks and signs.`,
+      scheduledTxId: proposal.scheduleId ?? null,
+      worldGateReason,
+      challengeUntil,
+      ...logged,
+    };
   }
 
   // 5. Sign: co-sign the Scheduled Transaction that was just checked.
@@ -287,5 +318,112 @@ export async function processProposal(
     worldGateReason,
     usedWorldApproval: large,
     ...logged,
+  };
+}
+
+export interface PendingExecution {
+  outcome: CouncilOutcome;
+  challengeUntil: string;
+  challenged: boolean;
+  challengeReason?: string | null;
+  createdEpoch: number;
+}
+
+export type ExecuteResult =
+  | { kind: "too-early"; secondsRemaining: number; reason: string }
+  | { kind: "challenged"; reason: string }
+  | { kind: "done"; outcome: CouncilOutcome };
+
+// Execute a proposal whose challenge window has run: re-check everything from
+// scratch, then sign (and the caller spends the World approval) or abort.
+export async function executePending(
+  agent: CouncilAgent,
+  pending: PendingExecution,
+  ctx: { currentEpoch: number; approval: WorldCheck | null },
+): Promise<ExecuteResult> {
+  const now = agent.now?.() ?? new Date();
+  const prev = pending.outcome;
+  let proposal = prev.proposal;
+  let chainProblem: string | null = null;
+  // Real mode: read the schedule back from Hedera again; it may have been deleted or changed.
+  if (agent.chain && proposal.scheduleId) {
+    try {
+      const onChain = await agent.chain.resolve(proposal);
+      chainProblem = scheduleProblem(onChain, agent.hedera.config.treasuryAccountId);
+      if (onChain.transfer) proposal = { ...proposal, transfer: { payee: onChain.transfer.payee, amountTinybars: onChain.transfer.amountTinybars, token: "HBAR" } };
+    } catch (err) {
+      chainProblem = `could not read the schedule from Hedera (${err instanceof Error ? err.message : String(err)})`;
+    }
+  }
+  const re = recheckAtExecution({
+    proposal,
+    payees: agent.payees,
+    largeThresholdTinybars: agent.largeThresholdTinybars,
+    approval: ctx.approval,
+    challengeUntil: pending.challengeUntil,
+    challenged: pending.challenged,
+    challengeReason: pending.challengeReason,
+    createdEpoch: pending.createdEpoch,
+    currentEpoch: ctx.currentEpoch,
+    now,
+  });
+  if (re.status === "too-early") return { kind: "too-early", secondsRemaining: re.secondsRemaining, reason: re.reason };
+  if (re.status === "challenged") return { kind: "challenged", reason: re.reason };
+
+  const proposalHash = sha256(proposalFingerprint(proposal));
+  const meta: EntryMeta = {
+    proposalHash,
+    payeeRegistry: re.status === "ok" ? re.payeeStatus : "not-enforced",
+    zeroGRequestId: prev.zeroGRequestId?.slice(0, 80) ?? null,
+    zeroGModel: prev.zeroGSource === "0g" ? agent.zeroG.model.slice(0, 48) : null,
+    verdictHash: sha256(prev.zeroGVerdictText + proposalHash),
+  };
+  const write = async (event: string, detail: string) => {
+    try {
+      const r = await agent.hedera.auditEntry({ proposalId: proposal.id, event, detail, at: now.toISOString(), meta });
+      return { auditTxId: r.txId, auditSeq: r.entry.seq, auditHash: r.entry.hash, auditError: null };
+    } catch (err) {
+      return { auditTxId: null, auditSeq: null, auditHash: null, auditError: `HCS audit failed: ${err instanceof Error ? err.message : String(err)}` };
+    }
+  };
+  const aborted = async (reason: string): Promise<ExecuteResult> => ({
+    kind: "done",
+    outcome: {
+      ...prev,
+      proposal,
+      decision: "REFUSED",
+      reason: `re-checked at execution: ${reason}, ABORTED`,
+      challengeUntil: null,
+      ...(await write("ABORTED_AT_EXECUTION", `re-checked at execution: ${reason}, ABORTED`)),
+    },
+  });
+  if (chainProblem) return aborted(`schedule ${proposal.scheduleId} cannot be signed: ${chainProblem}`);
+  if (re.status === "aborted") return aborted(re.reason);
+
+  let schedule;
+  try {
+    schedule = agent.chain && proposal.scheduleId ? await agent.chain.sign(proposal.scheduleId) : agent.hedera.simulateSign();
+  } catch (err) {
+    const msg = `Scheduled Transaction failed: ${err instanceof Error ? err.message : String(err)}`;
+    return { kind: "done", outcome: { ...prev, proposal, decision: "REFUSED", reason: msg, challengeUntil: null, ...(await write("SIGN_FAILED", msg)) } };
+  }
+  const logged = await write(
+    "SIGNED",
+    `Agent ${schedule.action} schedule ${schedule.scheduleId} at execution, after the challenge window (re-checked). Check paid ${prev.paidTxId}. 0G request ${prev.zeroGRequestId ?? "none"}. Payee registry: ${re.payeeStatus}.`,
+  );
+  return {
+    kind: "done",
+    outcome: {
+      ...prev,
+      proposal,
+      decision: "SIGNED",
+      reason: `Agent signed proposal ${proposal.id} at execution, after a re-check. ${prev.zeroGVerdictText}`,
+      scheduledTxId: schedule.scheduleId,
+      scheduleAction: schedule.action,
+      worldGateReason: re.worldReason ?? prev.worldGateReason,
+      usedWorldApproval: re.large,
+      challengeUntil: null,
+      ...logged,
+    },
   };
 }

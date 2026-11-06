@@ -20,6 +20,10 @@ export interface AgentPolicy {
   verdict: { zeroG: string; requireVerdict: boolean; allowNo0G: boolean };
   worldGate: { requiredForLarge: boolean; environment: string; approvalTtlMinutes: number; singleUse: boolean };
   transferSource: "hedera-mirror-node" | "request";
+  // 0 seconds: no window, the agent signs as soon as every check passes.
+  challenge?: { windowSeconds: number; recheckAtExecution: boolean };
+  // Whether state-changing routes need the API key. Never the key itself.
+  auth?: { enabled: boolean };
   rules: string[];
 }
 
@@ -41,6 +45,13 @@ export function buildPolicy(p: Omit<AgentPolicy, "version" | "rules">): { policy
         : "Fail closed: with no 0G verdict (call failed, or no key in real mode) the agent refuses. In simulated mode without a key the verdict is a labelled template.",
       "Every decision entry anchors the proposal hash, the 0G request id and model, a hash of the verdict plus the proposal hash, and the payee registry result.",
       `Large proposals need a fresh World ID approval for that exact proposal: single use, ${p.worldGate.approvalTtlMinutes} minutes, verified on the server.`,
+      ...(p.challenge && p.challenge.windowSeconds > 0
+        ? [
+            `A proposal that passes every check waits ${p.challenge.windowSeconds} seconds before it can be signed. It executes only after a re-check at execution: the mismatch check, the payee registry, the revocation epoch and, for large proposals, a World ID approval that is still unexpired. A challenged proposal does not execute.`,
+          ]
+        : []),
+      ...(p.auth?.enabled ? ["State-changing routes require the API key; the key is never published."] : []),
+      "Revoking a council seat bumps the epoch, blocks that person from rejoining and cancels every pending proposal.",
       "Log every decision to the HCS audit topic as a hash-chained entry that commits to this policy.",
     ],
   };

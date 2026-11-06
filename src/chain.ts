@@ -24,6 +24,8 @@ export interface ChainPort {
   resolve(proposal: Proposal): Promise<OnChainSchedule>;
   // Co-sign an already-checked schedule.
   sign(scheduleId: string): Promise<ScheduleResult>;
+  // Delete a not-yet-executed schedule the proposer created (seat revocation).
+  cancel?(scheduleId: string): Promise<void>;
 }
 
 export interface CouncilSetup {
@@ -93,5 +95,13 @@ export class HederaChain implements ChainPort {
 
   sign(scheduleId: string): Promise<ScheduleResult> {
     return this.hedera.signSchedule(scheduleId);
+  }
+
+  async cancel(scheduleId: string): Promise<void> {
+    if (!this.setup) throw new Error("No council proposer configured, so the schedule admin key is not available to delete it.");
+    await this.hedera.deleteSchedule(scheduleId, {
+      proposerAccountId: this.setup.memberAccountId,
+      proposerPrivateKey: parsePrivateKey(this.setup.memberPrivateKey),
+    });
   }
 }

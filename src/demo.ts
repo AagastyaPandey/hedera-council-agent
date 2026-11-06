@@ -1,5 +1,5 @@
 // Fresh code, written 2026-11-06 for ETHGlobal Mumbai.
-// Demo rehearsal: 7 scenes, the exact moments the submission video shows.
+// Demo rehearsal: 8 scenes, the exact moments the submission video shows.
 // Scene 1: routine proposal, paid check, agent signs.
 // Scene 2: mismatched proposal, paid check, agent refuses.
 // Scene 3: large proposal, World ID approved, agent signs.
@@ -7,6 +7,9 @@
 // Scene 5: yesterday's World ID approval is spent; reusing it is refused.
 // Scene 6: the 402 names a swapped recipient; refused before paying.
 // Scene 7: 0G is unavailable; the agent fails closed.
+// Scene 8: challenge window. A proposal passes and waits; its payee is revoked
+//          in the window; at execution the agent re-checks and aborts. A second
+//          proposal executes after the window and signs. A fake clock, no sleeps.
 // In real mode the paid check service (POST /check) is started in-process
 // unless CHECK_SERVICE_URL points elsewhere, and the agent pays it via x402.
 // World ID approvals in this rehearsal are MOCKED; the real World ID flow
@@ -17,6 +20,8 @@ import { processProposal } from "./council.js";
 import { buildAgent, createApp } from "./server.js";
 import { ApprovalStore, mockedWorldCheck } from "./world.js";
 import { SimulatedCheckPayer } from "./payment.js";
+import { executePending, type PendingExecution } from "./council.js";
+import { PayeeRegistry } from "./payee.js";
 import type { Proposal } from "./proposal.js";
 
 function proposal(id: string, payee: string, amount: number, purpose: string, transferPayee?: string, transferAmount?: number): Proposal {
@@ -119,13 +124,49 @@ async function main(): Promise<void> {
     const s7 = await processProposal(noZeroG, proposal(`P-007${tag}`, payee(1), 10_000_000, "Pay the venue deposit"), null);
     printScene(7, "0G unavailable: the agent fails closed", s7);
 
+    // Scene 8: a 600 second challenge window on a fake clock (no sleeping).
+    // Each proposal gets its own one-entry payee registry, so revoking one payee
+    // cannot touch the other scenes (in real mode every scene pays the same account).
+    let clock = new Date();
+    const windowed = (account: string) => ({
+      ...agent,
+      challengeWindowSeconds: 600,
+      now: () => clock,
+      payees: new PayeeRegistry([{ account, label: "demo payee" }], { source: "env" }),
+    });
+    const pend = (o: Awaited<ReturnType<typeof processProposal>>): PendingExecution => ({ outcome: o, challengeUntil: o.challengeUntil ?? "", challenged: false, createdEpoch: 1 });
+    const aw = windowed(payee(8));
+    const s8 = await processProposal(aw, proposal(`P-008${tag}`, payee(8), 10_000_000, "Pay the venue deposit"), null);
+    printScene(8, "Challenge window: payee revoked during the window, execution aborts", s8);
+    console.log(`Window: PROPOSAL P-008${tag} CREATED, challenge until ${s8.challengeUntil}. Not signed yet.`);
+    aw.payees.revoke(payee(8), clock);
+    console.log(`Payee ${payee(8)} revoked during the window.`);
+    clock = new Date(clock.getTime() + 601_000);
+    const x8 = await executePending(aw, pend(s8), { currentEpoch: 1, approval: null });
+    const s8x = x8.kind === "done" ? x8.outcome : null;
+    console.log(s8x ? `Execution: ${s8x.reason}` : `Execution did not run: ${x8.kind}`);
+
+    clock = new Date();
+    const ap = windowed(payee(9));
+    const s8b = await processProposal(ap, proposal(`P-009${tag}`, payee(9), 10_000_000, "Pay the venue deposit"), null);
+    console.log(`\nSecond proposal P-009${tag}: ${s8b.decision}, challenge until ${s8b.challengeUntil}. Executing too early:`);
+    const early = await executePending(ap, pend(s8b), { currentEpoch: 1, approval: null });
+    console.log(`  ${early.kind}${early.kind === "too-early" ? `, ${early.secondsRemaining}s remaining` : ""}`);
+    clock = new Date(clock.getTime() + 601_000);
+    const x9 = await executePending(ap, pend(s8b), { currentEpoch: 1, approval: null });
+    const s8c = x9.kind === "done" ? x9.outcome : null;
+    console.log(`  After the window, re-checked at execution: ${s8c?.decision ?? x9.kind}. Scheduled tx ${s8c?.scheduledTxId ?? "none"}`);
+
     const passed =
       s1.decision === "SIGNED" && s2.decision === "REFUSED" && s2.checkMatches === false &&
       s3.decision === "SIGNED" && s4.decision === "REFUSED" && s4.worldGateReason !== null &&
       s5a.decision === "SIGNED" && s5a.usedWorldApproval && s5.decision === "REFUSED" && s5.worldGateReason !== null &&
       s6.decision === "REFUSED" && s6.paidTxId === null && /402 offer asks to pay/.test(s6.reason) &&
-      s7.decision === "REFUSED" && s7.zeroGSource === "unavailable" && /failing closed/.test(s7.reason);
-    console.log(`\nRehearsal: ${passed ? "ALL 7 SCENES CORRECT" : "FAILED, check the scenes above"}`);
+      s7.decision === "REFUSED" && s7.zeroGSource === "unavailable" && /failing closed/.test(s7.reason) &&
+      s8.decision === "PENDING_CHALLENGE" && s8.scheduledTxId === (mode === "real" ? s8.proposal.scheduleId : null) &&
+      s8x?.decision === "REFUSED" && /^re-checked at execution: payee revoked, ABORTED$/.test(s8x.reason) &&
+      s8b.decision === "PENDING_CHALLENGE" && early.kind === "too-early" && s8c?.decision === "SIGNED";
+    console.log(`\nRehearsal: ${passed ? "ALL 8 SCENES CORRECT" : "FAILED, check the scenes above"}`);
     if (!passed) process.exitCode = 1;
   } finally {
     server?.close();
