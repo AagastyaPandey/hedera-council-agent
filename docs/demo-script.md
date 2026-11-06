@@ -27,6 +27,8 @@ Show the console approval (QR for World App, or the labelled MOCKED button), the
 Say: "Hedera x402 pays for the check, Scheduled Transactions fix the transfer, HCS logs every decision, World ID gates the large ones, 0G writes the verdict. One agent seat, three partners, five tracks."
 Show the repo URL, https://github.com/BeastAyyG/hedera-council-agent, and the track list.
 
+Shortcut: press J on the console (or open `/console.html?judge=1`) to run the whole demo.
+
 ## Checklist before recording
 - `npm test` green, 43/43
 - `npm run demo` green, all 4 scenes correct

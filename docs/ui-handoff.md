@@ -41,6 +41,12 @@ Every effect is off under `prefers-reduced-motion`, and the final state is shown
 
 Also: the original Atlas never applied its polygon fill (its `poly()` helper dropped the argument, so every island rendered black); that is fixed in one line.
 
+### Judge mode and replay
+
+On the console, a proposal that already has a decision shows a **Replay decision** button (and `window.__replay()` for tests). It re-runs the landing animation from the stored outcome: the agent-working strip runs around a no-op, then `choreograph()` lands the same data again. Nothing is resubmitted and no proposal is created.
+
+**Judge mode** is a fixed bottom-right panel for recording the demo (`public/assets/judge.js`, styles at the end of `motion.css`). Press `J` outside an input, or open `/console.html?judge=1`, then press Start. It submits a routine proposal (signs), a mismatch (refused), and a large 0.8 HBAR proposal (blocked at the World ID gate), approves the large one, resubmits it (signs), and ends on the mismatch's Process strip with the caption "The agent paid for the check and still refused." Every step uses the console's own `api.submit`, `select` and `approve`. `?speed=0.2` scales every pause (default 1, about a minute at 1x); under `prefers-reduced-motion` no pause exceeds 300ms. `Esc` stops it. The approval is mocked only when `/world/config` says `configured:false` and `mockedAllowed:true`; otherwise it stops with "World ID needs a real scan" and the owner approves with World App. State is mirrored in `document.body.dataset.judge` (`idle`, `running`, `done`, `stopped`, `failed`, `needs-scan`).
+
 ## Where to work
 
 The paper-and-red design is implemented on every page, matched against the rendered reference
