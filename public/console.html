@@ -2,17 +2,28 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Council Agent · Console</title><link rel="icon" href="data:,">
-<link rel="stylesheet" href="/assets/theme.css">
+<link rel="stylesheet" href="/assets/original.css">
+<link rel="stylesheet" href="/assets/console.css">
 </head><body data-page="console" data-state="loading">
-<div class="frame">
-  <aside class="vrail"><span>Council</span></aside>
-  <div class="stage">
-    <div class="bar">
-      <a class="brand" href="/">Council <em>Agent</em></a>
-      <nav><a href="/">Atlas</a><a href="/console.html" aria-current="page">Console</a><a href="/console.html#join">Join</a></nav>
-      <div class="chips" id="chips"></div>
+<div class="grain" aria-hidden="true"></div>
+<div class="sheet">
+  <div class="rail"><div class="wordmark">COUNCIL</div><div class="rail-rule"></div><div class="rail-meta">Fig.&nbsp;03&nbsp;&middot;&nbsp;Console</div></div>
+  <div class="rail-r" aria-hidden="true"><div class="dot"></div><div class="est">Mumbai&nbsp;2026</div></div>
+  <header class="topbar">
+    <div class="menu">
+      <div class="label menu-title">Menu</div>
+      <a href="/">Atlas</a>
+      <a href="/console.html" aria-current="page">Console</a>
+      <a href="/report.html">Report</a>
+      <a href="/policy">Policy</a>
+      <a href="/audit/verify">Audit</a>
     </div>
-    <main class="console">
+    <div><div class="label">Mode</div><p class="topval"><span class="live"></span><span id="tMode">&mdash;</span></p></div>
+    <div><div class="label">Log</div><p class="topval" id="tLog">&mdash;</p></div>
+    <div class="right"><div class="label">Seats</div><p class="topval" id="tSeats">&mdash;</p></div>
+  </header>
+  <div id="chips" hidden></div>
+    <main class="console" style="padding-top:34px">
       <aside id="meta"></aside>
       <div>
         <!-- CONSOLE: #banner, #head (selected proposal), #record, #process, then #new, #proposals, #join -->
@@ -52,7 +63,8 @@
         <pre id="result" hidden></pre>
       </div>
     </main>
-  </div>
+  <div class="ticker" aria-hidden="true"><div class="ticker-track"><span id="tickA"></span><span id="tickB"></span></div></div>
+  <footer class="footer" id="consoleFooter"><div class="col"></div><div class="col"></div><div class="col"></div><div class="col"></div></footer>
 </div>
 <script src="/vendor/idkit.js"></script>
 <script type="module">
@@ -72,6 +84,7 @@ let selected = qs("proposal");
 async function refreshSeats() {
   const s = (await api.seats()).data;
   $("seats").textContent = `${s.count} seat${s.count === 1 ? "" : "s"} held.`;
+  $("tSeats").textContent = String(s.count).padStart(2, "0");
 }
 
 async function refreshList() {
@@ -210,8 +223,18 @@ $("join-btn").onclick = async () => {
 bus.addEventListener("proposal:decision", (e) => { document.body.dataset.decision = e.detail.outcome.decision; });
 
 health = (await api.health()).data;
-const chip = (t) => el("span", t, "chip");
-$("chips").replaceChildren(chip(`${health.mode} · ${health.network}`), chip(`World ${health.world.startsWith("real") ? "real" : "mocked"}`), chip(`0G ${health.zeroG}`));
+const polHash = (await fetch("/policy").then((r) => r.json()).catch(() => ({}))).hash;
+const ver = await fetch("/audit/verify").then((r) => r.json()).catch(() => ({}));
+const logLine = ver.ok ? `verified, ${ver.checked} entries` : ver.checked === 0 ? "empty" : "BROKEN";
+$("tMode").textContent = `${health.mode} · ${health.network}`;
+$("tLog").textContent = logLine;
+const tick = `COUNCIL AGENT \u00b7 ${health.mode.toUpperCase()} \u00b7 CHECK ${health.checkPrice} \u00b7 LOG ${logLine.toUpperCase()} \u00b7 WORLD ${health.world.startsWith("real") ? "REAL" : "MOCKED"} \u00b7 0G ${health.zeroG.toUpperCase()} \u00b7 `;
+$("tickA").textContent = tick + tick + tick; $("tickB").textContent = tick + tick + tick;
+const fcol = (i, label, rows) => { const c = document.querySelectorAll("#consoleFooter .col")[i]; const l = el("div", label, "label"); const p = el("p"); rows.forEach(([k, v], j) => { if (j) p.append(document.createElement("br")); p.append(document.createTextNode(k + " "), el("b", v)); }); c.replaceChildren(l, p); };
+fcol(0, "Rails", [["x402", health.x402Buyer.startsWith("real") ? "real" : "sim"], ["0G", health.zeroG], ["World", health.world.startsWith("real") ? "real" : "mocked"], ["Mode", health.mode]]);
+fcol(1, "Traffic", [["Check price", health.checkPrice], ["Spend left", health.spendCapRemaining]]);
+fcol(2, "Commitment", [["policy", polHash ? polHash.slice(0, 12) + "…" : "—"], ["topic", String(health.hcsTopic).slice(0, 14)]]);
+fcol(3, "Read", [["policy", "/policy"], ["audit", "/audit"], ["verify", "/audit/verify"]]);
 $("meta").replaceChildren(el("div", "No proposal open"), el("div", health.mode === "real" ? "Real mode" : "SIMULATED", "tagbox"));
 world = (await api.worldConfig()).data;
 await Promise.all([refreshList(), refreshSeats()]);

@@ -1,5 +1,20 @@
 # UI handoff
 
+> **Branch `ui/original-design`: the original paper-and-red pages are used as designed.**
+> `public/index.html` (Atlas) and `public/report.html` (report poster) are the original files from
+> BeastAyyG/CODE_TANTRAFEST (`public/ecosystem.html`, `public/report-editorial.html`): their markup, CSS,
+> SVG scenery and animation are unchanged. Only the copy and links were edited (Aegis / IntentLock /
+> AIP-042 became this project's), the fake random metrics and the external price fetch were removed,
+> and `public/assets/live-original.js` fills in live data (proposal amounts, decision, stamp, counts,
+> policy hash, audit-log status). `console.html` wears the same original shell (rail, top bar, ticker, footer, grain, from
+> `public/assets/original.css`); its record, process strip and forms are components drawn for this project on the
+> original's tokens, because the original console is a Next.js app with another project's data.
+>
+> **Read before merging into the submission branch.** Those two files were written on Oct 25 2026, before
+> the event (Nov 5-7). ETHGlobal's From Scratch rule says prior project-specific "code, designs, or assets
+> are not allowed" in projects entering partner prizes. That is why this lives on its own branch and the
+> submission branch (`hoplite/aspendos-096475b8`) uses redrawn pages. Merge only after ETHGlobal confirms.
+
 The backend is finished and tested; the UI is a thin layer on top of it. Everything
 visual lives in `public/`. Nothing outside `public/` needs to change for the UI work.
 
