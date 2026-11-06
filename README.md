@@ -99,6 +99,13 @@ These make the agent auditable, not just correct. They are Hedera-native and nee
 - **Evidence bundle per decision.** `GET /proposals/:id/evidence` gathers the transfer actually checked and where it
   was read from, the check, the x402 payment, the 0G request id, the schedule and the audit entry, with HashScan
   links in real mode and a digest over the whole bundle.
+- **Replayable audit.** `npm run verify -- <proposalId> [--server http://127.0.0.1:3000]` (`src/verify.ts`) fetches the
+  evidence bundle and policy, then re-computes the bundle digest, the proposal hash and World ID signal, re-reads
+  the audit topic, re-checks the whole hash chain, and confirms the decision's entry and policy hash. In real mode
+  the topic comes from a Hedera mirror node, not from our server. In simulated mode there is no mirror node, so it
+  reads the server log and prints `SIMULATED: no mirror node, reading the server log`. Each line is `PASS`, `WARN`
+  (simulated 0G verdict or `SIM-` ids) or `FAIL`; any `FAIL` exits 1. Change one character of a stored receipt and
+  the matching line fails (`test/verify.test.ts`).
 - **Discoverable paid check.** `POST /check` declares an x402 Bazaar discovery extension (`@x402/extensions`), so
   other agents can find the paid service and see its input and output. The unpaid 402 carries it (checked against
   the Official facilitator).

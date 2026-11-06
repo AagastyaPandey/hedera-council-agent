@@ -44,6 +44,7 @@ Run `npm run ready`. It prints PASS / TODO / FAIL by group and exits 1 only on F
 - [ ] Repo public, README complete, .env never committed
 - [ ] `npm test` all passing, `npm run demo` 4/4 scenes correct
 - [ ] `npm run preflight` has no FAIL lines
+- [ ] `npm run verify -- <id>` has no FAIL lines for a demo proposal (real mode: read from the mirror node)
 - [ ] Real x402 payment settled, HashScan link in README (or simulated mode stated plainly)
 - [ ] 0G request ids shown in the demo
 - [ ] World ID approved and denied paths both shown
