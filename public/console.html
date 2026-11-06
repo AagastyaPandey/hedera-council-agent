@@ -54,16 +54,36 @@
     </main>
   </div>
 </div>
-<script src="/vendor/idkit.js"></script>
 <script type="module">
 import { api, bus, hbar, qs } from "/assets/api.js";
 import { runWorldFlow, runMockedFlow } from "/assets/world-flow.js";
+import { replay, reduced } from "/assets/motion.js";
 const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
-const status = (t, cls = "") => { $("status").textContent = t; $("status").className = cls; };
+const status = (t, cls = "") => { const s = $("status"); s.textContent = t; s.className = cls; if (t) replay(s); };
 const show = (o) => { $("result").hidden = false; $("result").textContent = JSON.stringify(o, null, 2); };
 const toTiny = (h) => Math.round(Number(h) * 1e8);
 const th = (t) => { const x = el("th", t); return x; };
+
+// IDKit is only needed for the real World flow; load it on demand so
+// simulated mode has a clean console.
+let idkitPromise = null;
+function loadIdkit() {
+  if (window.IDKit) return Promise.resolve();
+  if (!idkitPromise) idkitPromise = new Promise((ok, err) => {
+    const s = document.createElement("script");
+    s.src = "/vendor/idkit.js"; s.onload = ok;
+    s.onerror = () => { idkitPromise = null; err(new Error("IDKit failed to load")); };
+    document.head.append(s);
+  });
+  return idkitPromise;
+}
+
+function showQr(src) {
+  const box = document.createElement("span"); box.className = "qrbox";
+  const i = el("img"); i.src = src; i.alt = "Scan with World App";
+  box.append(i); $("qr").replaceChildren(box);
+}
 
 let world = { configured: false, mockedAllowed: false };
 let health = {};
@@ -81,20 +101,22 @@ async function refreshList() {
   const head = t.createTHead().insertRow();
   for (const x of ["Proposal", "Amount", "Check", "Decision"]) head.append(th(x));
   const body = t.createTBody();
-  for (const p of rows) {
+  rows.forEach((p, idx) => {
     const tr = body.insertRow(); tr.dataset.proposal = p.id; tr.dataset.decision = p.decision ?? "PENDING"; tr.dataset.selected = String(p.id === selected);
+    tr.style.setProperty("--i", String(idx));
     tr.insertCell().textContent = `${p.id}${p.large ? " · large" : ""}`;
     tr.insertCell().textContent = hbar(p.amountTinybars);
     const c = tr.insertCell(); c.textContent = p.matches ? "matches" : "MISMATCH"; c.className = p.matches ? "green" : "red";
     const d = tr.insertCell(); d.textContent = p.decision ?? "not submitted"; d.className = "dec"; d.dataset.decision = p.decision ?? "PENDING";
     tr.onclick = () => select(p.id);
-  }
+  });
   box.replaceChildren(el("h2", undefined), rows.length ? t : el("p", "No proposals yet.", "muted"));
   box.firstChild.append(document.createTextNode("Proposals"), Object.assign(el("small"), { textContent: `${rows.length} registered` }));
 }
 
 function step(no, title, state, tag, text) {
   const s = el("div", undefined, "step"); s.dataset.state = state;
+  s.style.setProperty("--i", String(no - 1));
   const n = el("div", undefined, "no"); n.append(el("span", `0${no}`), el("span", tag, "st"));
   s.append(n, el("h3", title), el("p", text));
   return s;
@@ -124,10 +146,12 @@ async function select(id) {
   const actions = $("head-actions"); actions.replaceChildren();
   const sub = el("button", o ? "Submit again" : "Submit to the agent");
   sub.onclick = async () => {
-    sub.disabled = true;
-    const res = await api.submit(p); show(res.data);
-    status(res.data.decision === "SIGNED" ? `Agent signed. Scheduled tx ${res.data.scheduledTxId}.` : `Agent refused: ${res.data.reason}`, res.data.decision === "SIGNED" ? "green" : "red");
-    await refreshList(); await select(id);
+    sub.disabled = true; const label = sub.textContent; sub.textContent = "Re-checking…";
+    try {
+      const res = await api.submit(p); show(res.data);
+      status(res.data.decision === "SIGNED" ? `Agent signed. Scheduled tx ${res.data.scheduledTxId}.` : `Agent refused: ${res.data.reason}`, res.data.decision === "SIGNED" ? "green" : "red");
+      await refreshList(); await select(id);
+    } finally { sub.disabled = false; sub.textContent = label; }
   };
   actions.append(sub);
   if (large && check.matches) {
@@ -169,39 +193,71 @@ async function select(id) {
   const h2 = el("h2", "Process"); h2.append(el("small", `claim → check → gate → sign`));
   sec2.append(h2, steps);
   box.replaceChildren(sec1, sec2);
+  playTrail(sec2, b, o);
   await refreshList();
 }
 
+// Replay the decision as a story: every step starts dim, then claim →
+// check → gate → sign light up in order, and the verdict banner lands last.
+let trailRun = 0;
+function playTrail(sec, banner, o) {
+  if (!o || reduced()) return;
+  const run = ++trailRun;
+  const els = [...sec.querySelectorAll(".step")];
+  const finals = els.map((s) => s.dataset.state);
+  banner.hidden = true;
+  els.forEach((s) => { s.dataset.state = "wait"; });
+  els.forEach((s, i) => {
+    setTimeout(() => {
+      if (run !== trailRun) return;
+      s.dataset.state = finals[i];
+      if (i === els.length - 1) { banner.hidden = false; replay(banner); }
+    }, 550 + i * 550);
+  });
+}
+
 async function approve(proposalId) {
-  const res = world.configured
-    ? await runWorldFlow({ proposalId, onQr: (_u, svg) => { const i = el("img"); i.src = svg; i.alt = "Scan with World App"; $("qr").replaceChildren(i); }, onStatus: status })
-    : await runMockedFlow({ proposalId });
+  let res;
+  if (world.configured) {
+    try { await loadIdkit(); } catch (e) { status(e.message ?? String(e), "red"); return; }
+    res = await runWorldFlow({ proposalId, onQr: (_u, svg) => showQr(svg), onStatus: status });
+  } else {
+    res = await runMockedFlow({ proposalId });
+  }
   $("qr").replaceChildren();
   status(res.ok ? `Approved${res.data.source === "mocked" ? " (MOCKED, demo only)" : " with World ID"}. Single use, 5 minutes.` : res.data.error, res.ok ? "green" : "red");
 }
 
 $("new-form").onsubmit = async (e) => {
   e.preventDefault();
-  const f = Object.fromEntries(new FormData(e.target));
-  const proposal = {
-    id: f.id,
-    description: { payee: f.payee, amountTinybars: toTiny(f.amount), token: "HBAR", purpose: f.purpose },
-    transfer: { payee: f.tpayee, amountTinybars: toTiny(f.tamount), token: "HBAR" },
-  };
-  const res = await api.submit(proposal);
-  if (res.status >= 400) { status(res.data.error, "red"); return; }
-  show(res.data);
-  status(res.data.decision === "SIGNED" ? `Agent signed. Scheduled tx ${res.data.scheduledTxId}.` : `Agent refused: ${res.data.reason}`, res.data.decision === "SIGNED" ? "green" : "red");
-  await select(proposal.id);
-  $("new-form").elements.id.value = `P-${Date.now().toString(36).toUpperCase()}`;
+  const btn = e.target.querySelector("button[type=submit]");
+  btn.disabled = true; const label = btn.textContent; btn.textContent = "Checking…";
+  try {
+    const f = Object.fromEntries(new FormData(e.target));
+    const proposal = {
+      id: f.id,
+      description: { payee: f.payee, amountTinybars: toTiny(f.amount), token: "HBAR", purpose: f.purpose },
+      transfer: { payee: f.tpayee, amountTinybars: toTiny(f.tamount), token: "HBAR" },
+    };
+    const res = await api.submit(proposal);
+    if (res.status >= 400) { status(res.data.error, "red"); return; }
+    show(res.data);
+    status(res.data.decision === "SIGNED" ? `Agent signed. Scheduled tx ${res.data.scheduledTxId}.` : `Agent refused: ${res.data.reason}`, res.data.decision === "SIGNED" ? "green" : "red");
+    await select(proposal.id);
+    $("new-form").elements.id.value = `P-${Date.now().toString(36).toUpperCase()}`;
+  } finally { btn.disabled = false; btn.textContent = label; }
 };
 $("new-form").elements.id.value = `P-${Date.now().toString(36).toUpperCase()}`;
 
 $("join-btn").onclick = async () => {
   $("join-btn").disabled = true;
-  const res = world.configured
-    ? await runWorldFlow({ join: true, onQr: (_u, svg) => { const i = el("img"); i.src = svg; $("qr").replaceChildren(i); }, onStatus: status })
-    : world.mockedAllowed ? await runMockedFlow({ join: true }) : { ok: false, data: { error: "World ID is not configured here." } };
+  let res;
+  if (world.configured) {
+    try { await loadIdkit(); } catch (e) { status(e.message ?? String(e), "red"); $("join-btn").disabled = false; return; }
+    res = await runWorldFlow({ join: true, onQr: (_u, svg) => showQr(svg), onStatus: status });
+  } else {
+    res = world.mockedAllowed ? await runMockedFlow({ join: true }) : { ok: false, data: { error: "World ID is not configured here." } };
+  }
   $("qr").replaceChildren();
   status(res.ok ? `Joined: ${res.data.seat} (${res.data.proof}).` : res.data.error, res.ok ? "green" : "red");
   $("join-btn").disabled = false; await refreshSeats();

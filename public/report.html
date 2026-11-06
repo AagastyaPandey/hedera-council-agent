@@ -25,7 +25,7 @@
           <div class="numcap">Actual transfer · <b id="payee-actual"></b></div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;padding:8px 0 16px">
+      <div class="verdict-row" style="display:grid;grid-template-columns:1fr 1fr;gap:28px;padding:8px 0 16px">
         <div><h1 class="shout lg" id="verdict"></h1></div>
         <div><p class="shout lg" id="reason" style="font-size:12px"></p><p class="actions" style="margin:0"><a class="btn secondary" id="open-console" href="/console.html">Open in console</a> <a class="btn secondary" href="/">Back to atlas</a></p></div>
       </div>
@@ -38,6 +38,7 @@
 import { api, hbar, qs } from "/assets/api.js";
 import { mountRail, mountTicker } from "/assets/rail.js";
 import { pixelIsland, el, hashSeed } from "/assets/scene.js";
+import { countUp } from "/assets/motion.js";
 const $ = (x) => document.getElementById(x);
 const id = qs("proposal");
 const [r, health] = await Promise.all([id ? api.proposal(id) : Promise.resolve({ ok: false, data: { error: "Add ?proposal=<id> to the URL, or pick one on the atlas." } }), api.health()]);
@@ -56,14 +57,15 @@ if (!r.ok) {
     { label: "Proposal", value: p.id, end: true, dot: "red" },
   ]);
   const big = (t) => (t / 1e8).toLocaleString(undefined, { maximumFractionDigits: 8 });
-  $("num-described").textContent = big(p.description.amountTinybars);
-  $("num-actual").textContent = big(p.transfer.amountTinybars);
+  countUp($("num-described"), p.description.amountTinybars, { format: big });
+  countUp($("num-actual"), p.transfer.amountTinybars, { format: big });
   $("payee-described").textContent = `${p.description.payee} · ${p.description.token}`;
   $("payee-actual").textContent = `${p.transfer.payee} · ${p.transfer.token}`;
-  if (!check.matches) $("num-actual").classList.add("red");
+  if (!check.matches) { $("num-actual").classList.add("red"); document.querySelector(".poster").classList.add("diverge"); }
   $("scene").append(pixelIsland({ cx: 150, cy: 118, seed: hashSeed(p.id) }));
   const stamp = $("stamp"); stamp.dataset.decision = decision;
   stamp.firstChild.textContent = decision === "SIGNED" ? "Signed" : decision === "REFUSED" ? "Refused" : "Pending";
+  if (decision !== "PENDING") stamp.classList.add("stamped");
   $("verdict").textContent = check.matches
     ? `${p.description.purpose}. The transfer matches its description.`
     : `The description said one thing. The transfer does another. ${check.mismatches.map((m) => `${m.field}: ${m.described} vs ${m.actual}`).join(". ")}.`;

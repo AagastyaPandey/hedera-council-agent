@@ -105,21 +105,36 @@ export function pixelIsland({ cx, cy, seed = 7 }) {
   return g;
 }
 
-export function bridge(a, b, { id = "" } = {}) {
+export function bridge(a, b, { id = "", delay = 0, dur = 7 } = {}) {
   const mx = (a[0] + b[0]) / 2, my = Math.min(a[1], b[1]) - 46;
   const d = `M ${a[0]} ${a[1]} Q ${mx} ${my} ${b[0]} ${b[1]}`;
   const path = el("path", { d, class: "bridge", "data-link": id });
   const t = 0.5;
   const px = (1 - t) * (1 - t) * a[0] + 2 * (1 - t) * t * mx + t * t * b[0];
   const py = (1 - t) * (1 - t) * a[1] + 2 * (1 - t) * t * my + t * t * b[1];
-  return el("g", {}, [path, el("rect", { class: "packet", x: px - 2, y: py - 2, width: 4, height: 4 })]);
+  const packet = el("rect", { class: "packet", x: px - 2, y: py - 2, width: 4, height: 4 });
+  // Reduced motion: the dot rests at the bridge midpoint, as before.
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    packet.setAttribute("x", "-2");
+    packet.setAttribute("y", "-2");
+    packet.setAttribute("opacity", "0");
+    // SMIL so the dot follows the drawn curve in every browser; the
+    // negative begin spreads packets along the bridges immediately.
+    packet.append(
+      el("animateMotion", { dur: `${dur}s`, begin: `${delay}s`, repeatCount: "indefinite", path: d, rotate: "0" }),
+      el("animate", { attributeName: "opacity", values: "0;1;1;0", keyTimes: "0;0.08;0.88;1", dur: `${dur}s`, begin: `${delay}s`, repeatCount: "indefinite" }),
+    );
+  }
+  return el("g", {}, [path, packet]);
 }
 
 export function sky({ width = 800 } = {}) {
   const g = el("g", { class: "sky" });
-  g.append(el("circle", { cx: width * 0.46, cy: 70, r: 9, fill: "#f2b233" }), el("circle", { cx: width * 0.46, cy: 70, r: 14, fill: "#f2b233", opacity: 0.18 }));
+  g.append(el("circle", { class: "sun-halo", cx: width * 0.46, cy: 70, r: 14, fill: "#f2b233", opacity: 0.18 }), el("circle", { cx: width * 0.46, cy: 70, r: 9, fill: "#f2b233" }));
   for (const [x, y, w] of [[120, 76, 30], [330, 60, 26], [610, 96, 34]]) {
-    g.append(el("rect", { x, y, width: w, height: 5, fill: "#d9d4c6" }), el("rect", { x: x + 5, y: y - 4, width: w - 12, height: 5, fill: "#d9d4c6" }));
+    const cloud = el("g", { class: "cloud", style: `--dx:${Math.round(14 + w * 0.7)}px` });
+    cloud.append(el("rect", { x, y, width: w, height: 5, fill: "#d9d4c6" }), el("rect", { x: x + 5, y: y - 4, width: w - 12, height: 5, fill: "#d9d4c6" }));
+    g.append(cloud);
   }
   return g;
 }
