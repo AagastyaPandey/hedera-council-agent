@@ -439,8 +439,11 @@
   <header class="topbar">
     <div class="menu">
       <div class="label menu-title">Menu</div>
-      <a href="/">Atlas</a>
+      <a href="/" aria-current="page">Atlas</a>
       <a href="/console.html">Console</a>
+      <a href="/mandate.html">Instructions</a>
+      <a href="/council.html">Council</a>
+      <a href="/member.html">My seat</a>
       <a href="/report.html" id="navReport">Report</a>
       <a href="/policy">Policy</a>
       <a href="/audit/verify">Audit</a>
@@ -983,6 +986,7 @@
       stop:row.matches === false ? 'rollup' : row.matches === true && row.large === true ? 'outpost' : 'dao',
       label:'Refused' };
     if (row.decision === 'PENDING_CHALLENGE') return { pose:'wait', stop:'dao', label:'Pending challenge' };
+    if (row.decision === 'PENDING_VOTE') return { pose:'wait', stop:'dao', label:'Waiting for the council' };
     return { pose:'wait', stop:row.large === true && row.matches === true ? 'outpost' : 'rollup',
       label:row.decision ? 'Outcome unrecognized' : 'Not decided' };
   }
