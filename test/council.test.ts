@@ -268,3 +268,103 @@ test("a scheduleId without a transfer cannot be signed without Hedera access", a
   assert.equal(o.decision, "REFUSED");
   assert.match(o.reason, /no Hedera access/);
 });
+
+// --- tamper-evident audit log ---
+import { EMPTY_HEAD, sealEntry, verifyChain, canonical, GENESIS } from "../src/auditlog.js";
+import { buildPolicy } from "../src/policy.js";
+import { fetchTopicMessages, parseMessages } from "../src/mirror.js";
+
+const mk = (n: number) => {
+  let head = EMPTY_HEAD;
+  const out = [];
+  for (let i = 1; i <= n; i++) {
+    const e = sealEntry(head, { proposalId: `P-${i}`, event: "SIGNED", detail: `d${i}`, at: "2026-11-06T00:00:00Z", policy: "ab".repeat(32) });
+    out.push(e);
+    head = { seq: e.seq, hash: e.hash };
+  }
+  return out;
+};
+
+test("audit chain: an intact log verifies, starts at genesis, ignores foreign messages", () => {
+  const log = mk(4);
+  assert.equal(log[0]!.prev, GENESIS);
+  const r = verifyChain([{ hello: "world" }, null, ...log]);
+  assert.equal(r.ok, true);
+  assert.equal(r.checked, 4);
+  assert.equal(r.ignored, 2);
+  assert.equal(r.head?.seq, 4);
+});
+
+test("audit chain: edited, dropped, reordered and forged entries are detected", () => {
+  const log = mk(5);
+  const edited = log.map((e, i) => (i === 2 ? { ...e, detail: "Agent signed a different transfer" } : e));
+  assert.match(verifyChain(edited).reason ?? "", /altered/);
+  assert.equal(verifyChain(edited).brokenAt, 3);
+  const dropped = [log[0]!, log[1]!, log[3]!, log[4]!];
+  assert.match(verifyChain(dropped).reason ?? "", /missing or out of order/);
+  const swapped = [log[0]!, log[2]!, log[1]!, log[3]!];
+  assert.equal(verifyChain(swapped).ok, false);
+  // A forged entry that hashes itself correctly but links to nothing real.
+  const forged = sealEntry({ seq: 2, hash: "cd".repeat(32) }, { proposalId: "P-X", event: "SIGNED", detail: "x", at: "t", policy: "" });
+  assert.match(verifyChain([...log.slice(0, 3), forged]).reason ?? "", /missing or out of order|does not link/);
+  const relinked = sealEntry({ seq: 3, hash: "cd".repeat(32) }, { proposalId: "P-X", event: "SIGNED", detail: "x", at: "t", policy: "" });
+  assert.match(verifyChain([...log.slice(0, 3), relinked]).reason ?? "", /does not link/);
+});
+
+test("audit chain: the simulated agent logs a verifiable chain that commits to the policy", async () => {
+  const agent = makeAgent();
+  const { hash } = buildPolicy({
+    network: "testnet", mode: "simulated", treasury: "simulated",
+    signers: { agent: "simulated", proposer: null, threshold: "simulated" },
+    largeThresholdTinybars: 50_000_000,
+    check: { via: "simulated", priceUsdc: "0.01", spendCapUsdc: "0.10", decidedBy: "deterministic checker" },
+    worldGate: { requiredForLarge: true, environment: "production", approvalTtlMinutes: 5, singleUse: true },
+    transferSource: "request",
+  });
+  agent.hedera.setPolicy(hash);
+  const a = await processProposal(agent, prop("A-1", 10_000_000), null);
+  const b = await processProposal(agent, prop("A-2", 10_000_000, "0.0.9999"), null);
+  assert.equal(a.auditSeq, 1);
+  assert.equal(b.auditSeq, 2);
+  const log = await agent.hedera.readAuditLog();
+  const r = verifyChain(log.messages);
+  assert.equal(r.ok, true);
+  assert.equal(r.checked, 2);
+  assert.equal(r.head?.hash, b.auditHash);
+  assert.ok(log.messages.every((m) => (m as { policy: string }).policy === hash));
+});
+
+test("audit chain: concurrent decisions cannot fork the chain", async () => {
+  const agent = makeAgent();
+  await Promise.all([1, 2, 3, 4, 5].map((i) => processProposal(agent, prop(`K-${i}`, 10_000_000), null)));
+  const r = verifyChain((await agent.hedera.readAuditLog()).messages);
+  assert.equal(r.ok, true);
+  assert.equal(r.checked, 5);
+});
+
+test("policy hash is stable and changes with any rule", () => {
+  const base = {
+    network: "testnet", mode: "real" as const, treasury: "0.0.5", signers: { agent: "0.0.1", proposer: "0.0.2", threshold: "2 of 2" },
+    largeThresholdTinybars: 1, check: { via: "x402" as const, priceUsdc: "0.01", spendCapUsdc: "0.10", decidedBy: "deterministic checker" },
+    worldGate: { requiredForLarge: true, environment: "production", approvalTtlMinutes: 5, singleUse: true }, transferSource: "hedera-mirror-node" as const,
+  };
+  assert.equal(buildPolicy(base).hash, buildPolicy(structuredClone(base)).hash);
+  assert.notEqual(buildPolicy(base).hash, buildPolicy({ ...base, largeThresholdTinybars: 2 }).hash);
+  assert.equal(canonical({ b: 1, a: [2, { d: 1, c: undefined }] }), '{"a":[2,{"d":1}],"b":1}');
+});
+
+test("mirror topic reader follows pagination and treats a missing topic as empty", async () => {
+  const page = (msgs: string[], next: string | null) =>
+    new Response(JSON.stringify({ messages: msgs.map((m, i) => ({ sequence_number: i + 1, consensus_timestamp: "1.0", message: Buffer.from(m).toString("base64") })), links: { next } }), { status: 200 });
+  const calls: string[] = [];
+  const fetchImpl = (async (url: string) => {
+    calls.push(String(url));
+    return String(url).includes("page=2") ? page(['{"b":2}'], null) : page(['{"a":1}', "not json"], "/api/v1/topics/0.0.9/messages?page=2");
+  }) as unknown as typeof fetch;
+  const r = await fetchTopicMessages("testnet", "0.0.9", { fetchImpl });
+  assert.equal(r.messages.length, 3);
+  assert.deepEqual(parseMessages(r.messages), [{ a: 1 }, null, { b: 2 }]);
+  assert.equal(calls.length, 2);
+  const none = await fetchTopicMessages("testnet", "0.0.404", { fetchImpl: (async () => new Response("", { status: 404 })) as unknown as typeof fetch });
+  assert.deepEqual(none, { messages: [], truncated: false });
+});

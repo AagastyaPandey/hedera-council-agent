@@ -12,6 +12,8 @@ A treasury proposal is a transfer plus a description of that transfer. Most agen
 
 Proposals are Hedera Scheduled Transactions plus HCS, with no smart contracts. A council member schedules the exact transfer out of a 2-of-2 treasury, the agent reads it back from the mirror node and checks what it will really execute, and its ScheduleSign is the second signature. Every decision, sign or refuse, is logged to an HCS topic.
 
+Every decision is a hash-chained HCS entry that commits to the agent's published policy, and anyone can re-verify the whole log from the mirror node at /audit/verify. The paid check is discoverable by other agents through x402 Bazaar.
+
 Large proposals, at or above 0.5 HBAR, need a fresh World ID check tied to that exact proposal id, validated on the backend. Approved, the agent signs. Denied or expired, it does not sign.
 
 ## Partner prizes to select, exactly 3 partners
@@ -27,7 +29,7 @@ Fill this in at submission time, honestly. At build time the demo ran in simulat
 
 ## Submission checklist
 - [ ] Repo public, README complete, .env never committed
-- [ ] `npm test` 35/35, `npm run demo` 4/4 scenes correct
+- [ ] `npm test` 42/42, `npm run demo` 4/4 scenes correct
 - [ ] `npm run preflight` has no FAIL lines
 - [ ] Real x402 payment settled, HashScan link in README (or simulated mode stated plainly)
 - [ ] 0G request ids shown in the demo

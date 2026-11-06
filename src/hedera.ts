@@ -13,7 +13,9 @@
 // ScheduleSign. If the treasury has a threshold key, the transfer runs
 // only once enough council members have signed.
 
+import { EMPTY_HEAD, isChainedEntry, sealEntry, type ChainedEntry, type ChainHead } from "./auditlog.js";
 import { parsePrivateKey } from "./keys.js";
+import { fetchTopicMessages, parseMessages } from "./mirror.js";
 import type { Transfer } from "./proposal.js";
 
 export type HederaMode = "real" | "simulated";
@@ -68,6 +70,10 @@ export class HederaClient {
   private sdkClient: import("@hiero-ledger/sdk").Client | null = null;
   private sdk: Sdk | null = null;
   private topicCreation: Promise<string> | null = null;
+  private auditLock: Promise<unknown> = Promise.resolve();
+  private chainHead: ChainHead | null = null;
+  private simEntries: ChainedEntry[] = [];
+  private policyHash = "";
 
   constructor(
     readonly config: HederaConfig,
@@ -130,18 +136,65 @@ export class HederaClient {
     return this.topicCreation;
   }
 
-  // Append an audit entry to the HCS topic. Returns the tx id, or a SIM id.
+  // Commit the policy hash that every following audit entry carries.
+  setPolicy(hash: string): void {
+    this.policyHash = hash;
+  }
+
+  // Append a hash-chained audit entry to the HCS topic. Returns the tx id,
+  // or a SIM id in simulated mode.
   async audit(entry: AuditEntry): Promise<string> {
-    if (this.mode === "simulated") return this.simId("HCS");
+    return (await this.auditEntry(entry)).txId;
+  }
+
+  // Same, also returning the sealed entry (seq and hash) for evidence bundles.
+  // Writes are serialised so two decisions can never fork the chain.
+  auditEntry(entry: AuditEntry): Promise<{ txId: string; entry: ChainedEntry }> {
+    const run = this.auditLock.then(() => this.writeAudit(entry));
+    this.auditLock = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
+  }
+
+  private async writeAudit(entry: AuditEntry): Promise<{ txId: string; entry: ChainedEntry }> {
+    const input = { ...entry, policy: this.policyHash };
+    if (this.mode === "simulated") {
+      const head = this.simEntries.at(-1) ?? EMPTY_HEAD;
+      const sealed = sealEntry(head, input);
+      this.simEntries.push(sealed);
+      return { txId: this.simId("HCS"), entry: sealed };
+    }
     const topicId = await this.ensureTopic();
+    const sealed = sealEntry(await this.loadHead(topicId), input);
     const sdk = await this.getSdk();
     const client = await this.getClient();
     const tx = await new sdk.TopicMessageSubmitTransaction()
       .setTopicId(sdk.TopicId.fromString(topicId))
-      .setMessage(JSON.stringify(entry))
+      .setMessage(JSON.stringify(sealed))
       .execute(client);
     await tx.getReceipt(client);
-    return tx.transactionId.toString();
+    this.chainHead = { seq: sealed.seq, hash: sealed.hash };
+    return { txId: tx.transactionId.toString(), entry: sealed };
+  }
+
+  // After a restart, continue the chain from the topic's latest entry
+  // rather than starting a second chain.
+  private async loadHead(topicId: string): Promise<ChainHead> {
+    if (this.chainHead) return this.chainHead;
+    const { messages } = await fetchTopicMessages(this.config.network, topicId, { order: "desc", limit: 25, maxPages: 1 });
+    const latest = parseMessages(messages).find(isChainedEntry);
+    this.chainHead = latest ? { seq: latest.seq, hash: latest.hash } : EMPTY_HEAD;
+    return this.chainHead;
+  }
+
+  // Everything on the audit topic, in consensus order, for verification.
+  async readAuditLog(): Promise<{ source: "hcs" | "simulated"; topicId: string | null; messages: unknown[]; truncated: boolean }> {
+    if (this.mode === "simulated") return { source: "simulated", topicId: null, messages: [...this.simEntries], truncated: false };
+    if (!this.config.topicId) return { source: "hcs", topicId: null, messages: [], truncated: false };
+    const { messages, truncated } = await fetchTopicMessages(this.config.network, this.config.topicId);
+    return { source: "hcs", topicId: this.config.topicId, messages: parseMessages(messages), truncated };
   }
 
   // Create an HCS topic for the audit log. Returns the topic id.
@@ -149,7 +202,11 @@ export class HederaClient {
     if (this.mode === "simulated") return this.simId("TOPIC");
     const sdk = await this.getSdk();
     const client = await this.getClient();
-    const tx = await new sdk.TopicCreateTransaction().setTopicMemo(memo.slice(0, 100)).execute(client);
+    // Only the agent key can append, so the log cannot be polluted or forged by anyone else.
+    const tx = await new sdk.TopicCreateTransaction()
+      .setTopicMemo(memo.slice(0, 100))
+      .setSubmitKey(parsePrivateKey(this.config.privateKey).publicKey)
+      .execute(client);
     const receipt = await tx.getReceipt(client);
     if (!receipt.topicId) throw new Error("TopicCreateTransaction returned no topic id");
     return receipt.topicId.toString();

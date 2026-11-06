@@ -104,3 +104,54 @@ export async function fetchSchedule(
   }
   throw new Error(`Mirror node has no schedule ${scheduleId} (${last}).`);
 }
+
+export interface TopicMessage {
+  sequence: number;
+  consensusTimestamp: string;
+  text: string;
+}
+
+// Read an HCS topic's messages from the mirror node, following pagination.
+// An unknown or brand-new topic (404) reads as empty.
+export async function fetchTopicMessages(
+  network: string,
+  topicId: string,
+  opts: { order?: "asc" | "desc"; limit?: number; maxPages?: number; fetchImpl?: typeof fetch } = {},
+): Promise<{ messages: TopicMessage[]; truncated: boolean }> {
+  const base = network === "mainnet" ? MIRROR_URLS.mainnet : MIRROR_URLS.testnet;
+  const f = opts.fetchImpl ?? fetch;
+  const maxPages = opts.maxPages ?? 10;
+  let path: string | null = `/api/v1/topics/${encodeURIComponent(topicId)}/messages?order=${opts.order ?? "asc"}&limit=${opts.limit ?? 100}`;
+  const messages: TopicMessage[] = [];
+  let pages = 0;
+  while (path && pages < maxPages) {
+    const res = await f(base + path, { signal: AbortSignal.timeout(10_000) });
+    if (res.status === 404) return { messages, truncated: false };
+    if (!res.ok) throw new Error(`Mirror node returned HTTP ${res.status} for topic ${topicId}.`);
+    const body = (await res.json()) as {
+      messages?: Array<{ sequence_number: number; consensus_timestamp: string; message: string }>;
+      links?: { next?: string | null };
+    };
+    for (const m of body.messages ?? []) {
+      messages.push({
+        sequence: m.sequence_number,
+        consensusTimestamp: m.consensus_timestamp,
+        text: Buffer.from(m.message, "base64").toString("utf8"),
+      });
+    }
+    path = body.links?.next ?? null;
+    pages += 1;
+  }
+  return { messages, truncated: path !== null };
+}
+
+// Parse topic messages as JSON; anything that is not JSON becomes null.
+export function parseMessages(messages: TopicMessage[]): unknown[] {
+  return messages.map((m) => {
+    try {
+      return JSON.parse(m.text) as unknown;
+    } catch {
+      return null;
+    }
+  });
+}

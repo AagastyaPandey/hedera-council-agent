@@ -49,10 +49,14 @@ All JSON. Base URL is the same origin. Use `api` from `assets/api.js`.
 | `api.proposals()` | `{ proposals: [{ id, purpose, amountTinybars, large, matches, decision, scheduledTxId }] }` |
 | `api.proposal(id)` | `{ proposal, large, check: { matches, mismatches[], verdict }, lastOutcome, approval }` |
 | `api.submit(proposal)` | the outcome below (200), or `{ error }` (400/409) |
+| `GET /policy` | `{ policy, hash }` the published rules; show the hash as a "policy" chip |
+| `GET /audit/verify` | `{ ok, checked, head: {seq, hash}, brokenAt, reason, source, topicId, hashscan }` re-checks the log on every call: a good "verified" badge |
+| `GET /audit` | `{ report, entries[] }` the hash-chained decision log, newest last; each entry has `seq`, `prev`, `hash`, `event`, `detail` |
+| `GET /proposals/:id/evidence` | one decision's evidence bundle with `digest`, payment/schedule/audit HashScan links (real mode) |
 | `api.seats()` | `{ count, seats[] }` |
 | `api.worldConfig()` | `{ configured, appId, environment, mockedAllowed }` |
 
-Outcome: `{ proposal, transferSource: "request"|"hedera-mirror-node", decision: "SIGNED"|"REFUSED", reason, checkMatches, paidVia, paidTxId, paidHashscan, auditTxId, scheduledTxId, scheduleAction, zeroGSource, zeroGRequestId, zeroGVerdictText, worldGateReason, approveUrl?, mode }`.
+Outcome: `{ auditSeq, auditHash, proposal, transferSource: "request"|"hedera-mirror-node", decision: "SIGNED"|"REFUSED", reason, checkMatches, paidVia, paidTxId, paidHashscan, auditTxId, scheduledTxId, scheduleAction, zeroGSource, zeroGRequestId, zeroGVerdictText, worldGateReason, approveUrl?, mode }`.
 `outcome.proposal` is the proposal as checked (real mode: with the transfer read from Hedera and its `scheduleId`); show that, not what was typed. `mode: "simulated"` means ids start with `SIM-`: the UI must label them SIMULATED, never present them as real.
 `zeroGSource: "simulated"` and World `source: "mocked"` must likewise be labelled.
 

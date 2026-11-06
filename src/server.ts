@@ -13,6 +13,9 @@
 //     on first submission, so an approval cannot be reused for a changed transfer.
 //   GET  /proposals             -> list of registered proposals
 //   GET  /proposals/:id         -> registered proposal, last outcome, approval state
+//   GET  /proposals/:id/evidence -> evidence bundle for the decision, with a digest
+//   GET  /policy                -> the published agent policy and its hash
+//   GET  /audit, /audit/verify  -> the HCS decision log, and a re-check of its hash chain
 //   GET  /world/config          -> public World ID config for the approval page
 //   POST /world/rp-context      -> RP-signed IDKit request for one server-chosen action
 //   POST /world/verify          -> verify the owner's World ID for one proposal,
@@ -28,9 +31,11 @@ import { atomicToUsd, SpendingCap, usdcToAtomic } from "./budget.js";
 import { processProposal, type CouncilOutcome } from "./council.js";
 import { checkProposal } from "./checker.js";
 import { HederaClient, loadHederaConfig } from "./hedera.js";
+import { canonical, sha256, verifyChain, isChainedEntry } from "./auditlog.js";
 import { HederaChain, loadCouncilSetup } from "./chain.js";
 import { SimulatedCheckPayer, X402CheckPayer, type CheckPayer } from "./payment.js";
 import { isLargeProposal, proposalFingerprint, validateProposal, type Proposal } from "./proposal.js";
+import { buildPolicy } from "./policy.js";
 import { StateStore } from "./store.js";
 import {
   ApprovalStore,
@@ -46,6 +51,8 @@ import {
 } from "./world.js";
 import { loadZeroGConfig } from "./zeroG.js";
 import { acceptsForCheck, paymentRequiredResponse, X402_FACILITATOR_URL } from "./x402.js";
+import { APPROVAL_TTL_MINUTES } from "./world.js";
+import { hashscanUrl } from "./hedera.js";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -74,6 +81,7 @@ export function buildAgent(env: NodeJS.ProcessEnv = process.env, port = Number(e
       : new SimulatedCheckPayer(hedera, priceAtomic);
   return {
     hedera,
+    spendCapUsd: (env.AGENT_SPEND_CAP_USDC ?? "0.10").trim(),
     budget: new SpendingCap(usdcToAtomic((env.AGENT_SPEND_CAP_USDC ?? "0.10").trim())),
     zeroG: loadZeroGConfig(env),
     world: loadWorldConfig(env),
@@ -112,6 +120,21 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     options.statePath === undefined ? (env.STATE_FILE ?? join(ROOT, ".data", "state.json")) : options.statePath,
   );
   const approvals = new ApprovalStore();
+  const { policy, hash: policyHash } = buildPolicy({
+    network: agent.hedera.config.network,
+    mode: agent.mode,
+    treasury: agent.hedera.config.treasuryAccountId || "simulated",
+    signers: {
+      agent: agent.hedera.config.accountId || "simulated",
+      proposer: agent.councilProposer,
+      threshold: agent.councilProposer ? "2 of 2 (agent and council member)" : agent.mode === "real" ? "set by the treasury key" : "simulated",
+    },
+    largeThresholdTinybars: agent.largeThresholdTinybars,
+    check: { via: agent.payer.via, priceUsdc: agent.priceUsd, spendCapUsdc: agent.spendCapUsd, decidedBy: "deterministic checker" },
+    worldGate: { requiredForLarge: true, environment: agent.world.environment, approvalTtlMinutes: APPROVAL_TTL_MINUTES, singleUse: true },
+    transferSource: agent.mode === "real" ? "hedera-mirror-node" : "request",
+  });
+  agent.hedera.setPolicy(policyHash);
   const proposals = new Map<string, RegisteredProposal>();
   const worldOn = isWorldConfigured(agent.world);
   const allowMocked = mockedAllowed(agent.world, agent.hedera.config.network);
@@ -137,9 +160,12 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       const { HTTPFacilitatorClient, x402ResourceServer } = await import("@x402/core/server");
       const { paymentMiddleware } = await import("@x402/express");
       const { ExactHederaScheme } = await import("@x402/hedera/exact/server");
+      const { bazaarResourceServerExtension, declareDiscoveryExtension } = await import("@x402/extensions/bazaar");
       const resourceServer = new x402ResourceServer(
         new HTTPFacilitatorClient({ url: (env.X402_FACILITATOR_URL ?? "").trim() || X402_FACILITATOR_URL }),
-      ).register(agent.x402Network, new ExactHederaScheme());
+      )
+        .register(agent.x402Network, new ExactHederaScheme())
+        .registerExtension(bazaarResourceServerExtension);
       await resourceServer.initialize();
       app.use(
         paymentMiddleware(
@@ -147,6 +173,23 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
             "POST /check": {
               accepts: [{ scheme: "exact", price: `$${agent.priceUsd}`, network: agent.x402Network, payTo: agent.payTo }],
               description: "Paid proposal check: one check of one treasury proposal",
+              // x402 Bazaar discovery: lets other agents find and call this paid check.
+              extensions: {
+                ...declareDiscoveryExtension({
+                  bodyType: "json",
+                  input: {
+                    proposal: {
+                      id: "P-001",
+                      description: { payee: "0.0.1001", amountTinybars: 10000000, token: "HBAR", purpose: "Pay the venue deposit" },
+                      transfer: { payee: "0.0.1001", amountTinybars: 10000000, token: "HBAR" },
+                    },
+                  },
+                  inputSchema: { properties: { proposal: { type: "object" } }, required: ["proposal"] },
+                  output: {
+                    example: { proposalId: "P-001", matches: true, mismatches: [], verdict: "Proposal P-001 matches its description." },
+                  },
+                }),
+              },
             },
           },
           resourceServer,
@@ -261,6 +304,75 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       lastOutcome: entry.lastOutcome,
       approval: approval ? { source: approval.source, expiresAt: approval.expiresAt } : null,
     });
+  });
+
+  app.get("/policy", (_req, res) => {
+    res.json({ policy, hash: policyHash, note: "Every HCS audit entry carries this hash." });
+  });
+
+  const topicLink = (topicId: string | null) =>
+    topicId && agent.mode === "real"
+      ? `https://hashscan.io/${agent.hedera.config.network === "mainnet" ? "mainnet" : "testnet"}/topic/${topicId}`
+      : null;
+
+  // Re-reads the audit topic and re-checks the hash chain from scratch.
+  app.get("/audit/verify", async (_req, res) => {
+    try {
+      const log = await agent.hedera.readAuditLog();
+      const report = verifyChain(log.messages);
+      res.json({ source: log.source, topicId: log.topicId, hashscan: topicLink(log.topicId), truncated: log.truncated, ...report, policyHash });
+    } catch (err) {
+      res.status(502).json({ error: `Could not read the audit topic: ${err instanceof Error ? err.message : String(err)}` });
+    }
+  });
+
+  app.get("/audit", async (_req, res) => {
+    try {
+      const log = await agent.hedera.readAuditLog();
+      const entries = log.messages.filter(isChainedEntry);
+      res.json({
+        source: log.source,
+        topicId: log.topicId,
+        hashscan: topicLink(log.topicId),
+        report: verifyChain(log.messages),
+        entries: entries.slice(-100),
+      });
+    } catch (err) {
+      res.status(502).json({ error: `Could not read the audit topic: ${err instanceof Error ? err.message : String(err)}` });
+    }
+  });
+
+  // Everything a judge needs to check one decision, with a digest over it.
+  app.get("/proposals/:id/evidence", (req, res) => {
+    const entry = proposals.get(req.params.id);
+    const o = entry?.lastOutcome;
+    if (!entry || !o) {
+      res.status(404).json({ error: "No decision recorded for this proposal yet." });
+      return;
+    }
+    const net = agent.hedera.config.network;
+    const real = o.mode === "real";
+    const bundle = {
+      version: 1,
+      proposalId: entry.proposal.id,
+      decision: o.decision,
+      reason: o.reason,
+      mode: o.mode,
+      policyHash,
+      proposal: entry.proposal,
+      transferSource: o.transferSource,
+      check: checkProposal(entry.proposal),
+      payment: { via: o.paidVia, id: o.paidTxId, hashscan: real && o.paidTxId ? hashscanUrl(net, o.paidTxId) : null },
+      zeroG: { source: o.zeroGSource, requestId: o.zeroGRequestId, verdict: o.zeroGVerdictText },
+      worldGate: o.worldGateReason,
+      schedule: {
+        id: o.scheduledTxId,
+        action: o.scheduleAction,
+        hashscan: real && o.scheduledTxId ? `https://hashscan.io/${net === "mainnet" ? "mainnet" : "testnet"}/schedule/${o.scheduledTxId}` : null,
+      },
+      audit: { txId: o.auditTxId, seq: o.auditSeq, entryHash: o.auditHash, topicId: agent.hedera.config.topicId || null, hashscan: topicLink(agent.hedera.config.topicId || null) },
+    };
+    res.json({ ...bundle, digest: sha256(canonical(bundle)), digestOf: "sha256 over the canonical JSON of this bundle without the digest field" });
   });
 
   app.get("/world/config", (_req, res) => {

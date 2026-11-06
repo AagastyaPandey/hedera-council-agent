@@ -202,3 +202,30 @@ test("the UI pages and shared assets are served", async () => {
     server.close();
   }
 });
+
+test("policy, audit verification and evidence bundles", async () => {
+  await withServer({ env: {} }, async (call) => {
+    const pol = await call("GET", "/policy");
+    assert.match(pol.body.hash, /^[0-9a-f]{64}$/);
+    assert.ok(pol.body.policy.rules.length >= 5);
+    assert.equal((await call("GET", "/proposals/P-NONE/evidence")).status, 404);
+
+    await call("POST", "/proposals", { proposal: large("P-EV", 10_000_000) });
+    await call("POST", "/proposals", { proposal: large("P-EV2", 20_000_000) });
+    const ev = await call("GET", "/proposals/P-EV/evidence");
+    assert.equal(ev.status, 200);
+    assert.equal(ev.body.decision, "SIGNED");
+    assert.equal(ev.body.policyHash, pol.body.hash);
+    assert.equal(ev.body.audit.seq, 1);
+    assert.match(ev.body.digest, /^[0-9a-f]{64}$/);
+
+    const v = await call("GET", "/audit/verify");
+    assert.equal(v.body.ok, true);
+    assert.equal(v.body.checked, 2);
+    assert.equal(v.body.policyHash, pol.body.hash);
+    const log = await call("GET", "/audit");
+    assert.equal(log.body.entries.length, 2);
+    assert.equal(log.body.entries[1].prev, log.body.entries[0].hash);
+    assert.equal(log.body.entries[1].hash, (await call("GET", "/proposals/P-EV2/evidence")).body.audit.entryHash);
+  });
+});

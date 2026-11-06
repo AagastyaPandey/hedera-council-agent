@@ -25,6 +25,9 @@ export interface CouncilOutcome {
   paidTxId: string | null;
   paidHashscan: string | null;
   auditTxId: string | null;
+  // Position and hash of this decision's entry in the hash-chained HCS log.
+  auditSeq: number | null;
+  auditHash: string | null;
   auditError: string | null;
   scheduledTxId: string | null;
   scheduleAction: "created" | "signed" | "already-signed" | null;
@@ -62,6 +65,8 @@ function emptyOutcome(proposal: Proposal, mode: "real" | "simulated", paidVia: "
     paidTxId: null,
     paidHashscan: null,
     auditTxId: null,
+    auditSeq: null,
+    auditHash: null,
     auditError: null,
     scheduledTxId: null,
     scheduleAction: null,
@@ -85,13 +90,15 @@ export async function processProposal(
   const network = agent.hedera.config.network;
   let proposal = submitted;
   let transferSource: CouncilOutcome["transferSource"] = "request";
-  const auditEarly = async (event: string, detail: string) => {
+  const writeAudit = async (proposalId: string, event: string, detail: string) => {
     try {
-      return { auditTxId: await agent.hedera.audit({ proposalId: submitted.id, event, detail, at: new Date().toISOString() }), auditError: null };
+      const r = await agent.hedera.auditEntry({ proposalId, event, detail, at: new Date().toISOString() });
+      return { auditTxId: r.txId, auditSeq: r.entry.seq, auditHash: r.entry.hash, auditError: null };
     } catch (err) {
-      return { auditTxId: null, auditError: `HCS audit failed: ${err instanceof Error ? err.message : String(err)}` };
+      return { auditTxId: null, auditSeq: null, auditHash: null, auditError: `HCS audit failed: ${err instanceof Error ? err.message : String(err)}` };
     }
   };
+  const auditEarly = (event: string, detail: string) => writeAudit(submitted.id, event, detail);
 
   // 0. Real mode: the transfer to check is the one on Hedera, read back
   // from the mirror node, never the one that came with the request.
@@ -128,6 +135,8 @@ export async function processProposal(
     paidTxId: null,
     paidHashscan: null,
     auditTxId: null,
+    auditSeq: null,
+    auditHash: null,
     auditError: null,
     scheduledTxId: null,
     scheduleAction: null,
@@ -141,13 +150,7 @@ export async function processProposal(
     mode,
   };
 
-  const audit = async (event: string, detail: string) => {
-    try {
-      return { auditTxId: await agent.hedera.audit({ proposalId: proposal.id, event, detail, at: new Date().toISOString() }), auditError: null };
-    } catch (err) {
-      return { auditTxId: null, auditError: `HCS audit failed: ${err instanceof Error ? err.message : String(err)}` };
-    }
-  };
+  const audit = (event: string, detail: string) => writeAudit(proposal.id, event, detail);
 
   // 1. Pay for the check, under the spending cap. No payment, no check.
   const price = agent.payer.priceAtomic;

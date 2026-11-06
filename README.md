@@ -53,7 +53,7 @@ council member schedules the exact transfer out of a 2-of-2 treasury (Hedera Sch
 ```bash
 npm install
 cp .env.example .env   # fill in the values below, never commit .env
-npm test               # build + 35 tests (unit + HTTP level)
+npm test               # build + 42 tests (unit + HTTP level)
 npm run preflight      # check Hedera, x402, 0G, World ID; add -- --setup, --create-fee-account, --create-council for one-time Hedera setup
 npm run demo           # demo rehearsal, 4 scenes
 npm start              # HTTP server on :3000 (PORT to change); UI at /
@@ -69,12 +69,37 @@ Node 20.12 or newer.
 | `GET /health` | mode, what is real and what is simulated |
 | `POST /check` | the paid check service, protected by x402 (HTTP 402 until paid) |
 | `POST /proposals` | full flow: pay via x402, 0G verdict, mismatch check, World ID gate, sign or refuse |
+| `GET /proposals` | list of registered proposals |
 | `GET /proposals/:id` | registered proposal, last outcome, approval state |
+| `GET /proposals/:id/evidence` | evidence bundle for the decision (payment, 0G request id, schedule, audit entry) with a sha256 digest |
+| `GET /policy` | the published agent policy and its hash |
+| `GET /audit`, `GET /audit/verify` | the HCS decision log, and a from-scratch re-check of its hash chain |
 | `POST /world/rp-context` | RP-signed IDKit request for one server-chosen action |
 | `POST /world/verify` | verifies the owner's World ID for one proposal and stores the approval server-side |
 | `POST /council/join` | Proof of Human council join, one seat per nullifier |
 | `GET /council/seats` | current seats |
 | `GET /`, `/console.html`, `/report.html?proposal=<id>` | the UI |
+
+## Verifiable by anyone
+
+These make the agent auditable, not just correct. They are Hedera-native and need no extra service.
+
+- **Tamper-evident decision log.** Every decision is an HCS message that carries the hash of the previous one
+  (`src/auditlog.ts`). `GET /audit/verify` re-reads the topic from the mirror node and re-checks the chain from
+  genesis: an edited, dropped, reordered or forged entry is reported with the entry number. The topic is created
+  with the agent's submit key, so nobody else can append to it. After a restart the chain continues from the
+  topic's latest entry.
+- **Published policy.** `GET /policy` is the rule set the agent signs under (`src/policy.ts`); its hash is inside
+  every audit entry, so each decision commits to the policy in force when it was made.
+- **Evidence bundle per decision.** `GET /proposals/:id/evidence` gathers the transfer actually checked and where it
+  was read from, the check, the x402 payment, the 0G request id, the schedule and the audit entry, with HashScan
+  links in real mode and a digest over the whole bundle.
+- **Discoverable paid check.** `POST /check` declares an x402 Bazaar discovery extension (`@x402/extensions`), so
+  other agents can find the paid service and see its input and output. The unpaid 402 carries it (checked against
+  the Official facilitator).
+
+Considered and left out: World AgentKit. Its documented networks are World Chain and Base, and it does not
+document Hedera, so adding it here would not be a real integration.
 
 ## Real-mode council setup
 
