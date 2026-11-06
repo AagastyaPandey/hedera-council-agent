@@ -5,8 +5,11 @@ visual lives in `public/`. Nothing outside `public/` needs to change for the UI 
 
 ## Where to work
 
-The paper-and-red design (cream `#f0ede5` paper, red `#df3d2a` headline type, tiny mono
-labels, vertical rail, pixel-isometric islands) is implemented on every page. Everything
+The paper-and-red design is implemented on every page, matched against the rendered reference
+pages: paper `#f2efe7` (the page is cream, white is only the giant "ghost" numerals `#ffffff`),
+red `#e23b28`, ink `#111110`, muted `#8b857a`, hairlines `#d8d3c6`, Helvetica Neue / Arial for
+type and the system mono for labels (the originals load no web fonts), full-bleed sheet with a
+vertical rail, `+` registration marks and a double-hairline ticker. Everything
 visual lives in `public/`; nothing outside it needs to change.
 
 | File | Role | Reference look |

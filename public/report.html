@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="/assets/theme.css">
 </head><body data-page="report" data-state="loading">
 <div class="frame">
-  <aside class="vrail"><span>Council Agent</span></aside>
+  <aside class="vrail"><span>Council</span></aside>
   <div class="stage">
     <header class="top" id="top"></header>
     <main>
@@ -17,7 +17,7 @@
         </div>
         <div class="mid">
           <svg class="badge-ring" viewBox="0 0 100 100" aria-hidden="true"><defs><path id="ring" d="M50,50 m-38,0 a38,38 0 1,1 76,0 a38,38 0 1,1 -76,0"/></defs><text><textPath href="#ring">Decision integrity · council agent · decision integrity · </textPath></text><circle cx="50" cy="50" r="2" fill="#df3d2a"/></svg>
-          <svg class="scene" id="scene" viewBox="0 0 300 220" role="img" aria-label="Pixel island"></svg>
+          <svg class="scene" id="scene" viewBox="55 40 190 150" role="img" aria-label="Pixel island"></svg>
           <div class="stamp" id="stamp" data-decision="PENDING">Pending<small>agent decision</small></div>
         </div>
         <div>
@@ -25,13 +25,13 @@
           <div class="numcap">Actual transfer · <b id="payee-actual"></b></div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;padding:8px 0 16px">
-        <div><h1 class="shout lg" id="verdict"></h1></div>
-        <div><p class="shout lg" id="reason" style="font-size:12px"></p><p class="actions" style="margin:0"><a class="btn secondary" id="open-console" href="/console.html">Open in console</a> <a class="btn secondary" href="/">Back to atlas</a></p></div>
+      <div class="poster-foot" style="display:grid;grid-template-columns:1fr 1fr;gap:28px;padding:0 0 12px;border-bottom:1px solid var(--rule)">
+        <p class="shout" id="verdict" style="font-size:14px;margin:0 0 12px"></p>
+        <div><p class="shout" id="reason" style="font-size:11px;margin:0 0 12px"></p><p class="actions" style="margin:0"><a class="btn secondary" id="open-console" href="/console.html">Open in console</a> <a class="btn secondary" href="/">Back to atlas</a></p></div>
       </div>
     </main>
     <div class="ticker" id="ticker"></div>
-    <section class="cols4" id="cols" style="padding:14px 28px 22px"></section>
+    <section class="cols4" id="cols"></section>
   </div>
 </div>
 <script type="module">
