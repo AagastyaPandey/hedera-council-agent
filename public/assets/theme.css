@@ -1,0 +1,44 @@
+/* PLACEHOLDER THEME. This is the file the UI work replaces.
+   Pages only rely on the class names and data-* hooks listed in
+   docs/ui-handoff.md, so any visual system can sit on top of them.
+   Written fresh for this project; do not paste files from other projects
+   (ETHGlobal "From Scratch" rule). */
+:root {
+  --paper: #f6f3ea;
+  --paper-2: #ece8dc;
+  --ink: #151515;
+  --ink-2: #5c5a54;
+  --red: #d8342a;
+  --green: #1f7a45;
+  --rule: #15151522;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); line-height: 1.45; }
+a { color: inherit; }
+.shell { display: grid; grid-template-columns: 180px 1fr; min-height: 100vh; }
+.rail { border-right: 1px solid var(--rule); padding: 1.25rem 1rem; font-family: var(--mono); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; }
+.rail a { display: block; padding: .3rem 0; text-decoration: none; color: var(--ink-2); }
+.rail a[aria-current="page"], .rail a:hover { color: var(--red); }
+.rail .brand { color: var(--ink); font-weight: 700; margin-bottom: 1.5rem; display: block; }
+main { padding: 1.5rem 2rem 4rem; max-width: 980px; }
+h1 { font-size: 2rem; line-height: 1.1; margin: 0 0 .5rem; }
+.kicker, .label { font-family: var(--mono); font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.red { color: var(--red); } .ok { color: var(--green); } .muted { color: var(--ink-2); }
+.panel { border: 1px solid var(--rule); background: var(--paper-2); padding: 1rem; margin: 1rem 0; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { text-align: left; padding: .4rem .5rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-family: var(--mono); font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); font-weight: 500; }
+button, .btn { font: inherit; font-size: .85rem; padding: .5rem .9rem; border: 1px solid var(--ink); background: var(--ink); color: var(--paper); cursor: pointer; text-decoration: none; display: inline-block; }
+button.secondary, .btn.secondary { background: transparent; color: var(--ink); }
+button[disabled] { opacity: .45; cursor: default; }
+input, select { font: inherit; padding: .4rem .5rem; border: 1px solid var(--ink-2); background: #fff; width: 100%; }
+label { display: block; font-size: .75rem; margin: .5rem 0 .15rem; color: var(--ink-2); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.bignum { font-size: clamp(3rem, 12vw, 8rem); font-weight: 800; line-height: 1; letter-spacing: -.03em; }
+.tag { font-family: var(--mono); font-size: .65rem; padding: .05rem .4rem; border: 1px solid currentColor; text-transform: uppercase; }
+[data-decision="SIGNED"] { color: var(--green); } [data-decision="REFUSED"] { color: var(--red); }
+#qr img { width: 240px; height: 240px; background: #fff; padding: 8px; }
+pre { white-space: pre-wrap; word-break: break-word; font-family: var(--mono); font-size: .75rem; }
+@media (max-width: 720px) { .shell { grid-template-columns: 1fr; } .rail { border-right: 0; border-bottom: 1px solid var(--rule); } .grid2 { grid-template-columns: 1fr; } }

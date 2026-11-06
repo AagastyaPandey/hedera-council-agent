@@ -43,7 +43,7 @@ proposal (description vs exact transfer)
 - `src/server.ts` - HTTP server and API (below)
 - `src/preflight.ts` - checks every external dependency, one-time Hedera setup
 - `src/demo.ts` - demo rehearsal, 4 scenes
-- `public/world.html` - World ID approval and council-join page (IDKit 4.x, QR for World App)
+- `public/` - the UI: `index.html`, `report.html`, `console.html`, shared `assets/` (see `docs/ui-handoff.md`)
 
 ## Setup
 
@@ -53,7 +53,7 @@ cp .env.example .env   # fill in the values below, never commit .env
 npm test               # build + 25 tests (unit + HTTP level)
 npm run preflight      # check Hedera, x402, 0G, World ID; add -- --setup to do one-time Hedera setup
 npm run demo           # demo rehearsal, 4 scenes
-npm start              # HTTP server on :3000 (PORT to change); World page at /world.html
+npm start              # HTTP server on :3000 (PORT to change); UI at /
 ```
 
 `.env` is loaded automatically by `npm start`, `npm run demo` and `npm run preflight`.
@@ -71,7 +71,7 @@ Node 20.12 or newer.
 | `POST /world/verify` | verifies the owner's World ID for one proposal and stores the approval server-side |
 | `POST /council/join` | Proof of Human council join, one seat per nullifier |
 | `GET /council/seats` | current seats |
-| `GET /world.html?proposal=<id>` / `?join` | approval and join page |
+| `GET /`, `/console.html`, `/report.html?proposal=<id>` | the UI |
 
 Authorization rules the tests enforce: a client-supplied World ID "check" in the
 request body is ignored; only approvals the server verified itself count. An
@@ -203,7 +203,7 @@ Demo video: 2-3 minutes. ETHGlobal requires 2-4 minutes, 0G wants under
    Before signing a large proposal the owner must pass a fresh World ID
    check for that exact proposal. The server signs the IDKit request
    (`rpContextFor`, RP signing key never leaves the server), the owner scans
-   the QR on `/world.html`, and the server verifies the result at
+   the QR in the console, and the server verifies the result at
    `POST https://developer.world.org/api/v4/verify/{rp_id}` with the
    environment pinned from config (`src/world.ts`). The approval is stored
    server-side for 5 minutes, bound to the proposal, and spent once; the proof's
@@ -211,7 +211,7 @@ Demo video: 2-3 minutes. ETHGlobal requires 2-4 minutes, 0G wants under
    human-in-the-loop guidance. There is no standalone Agent Pass SDK.
    Debrief: `docs/world-debrief.md`, to fill in after the first real run.
 4. **World, Best Use of IDKit, $2,500, if time allows.**
-   `POST /council/join` plus `/world.html?join`. Proof of Human, verified on
+   `POST /council/join` plus the join panel in the console. Proof of Human, verified on
    the server, one council seat per nullifier, stored on disk
    (`src/store.ts`). Not yet run against World with real credentials.
 5. **0G, Build with 0G Private Computer, $5,000.**

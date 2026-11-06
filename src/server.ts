@@ -11,6 +11,7 @@
 //     Client-supplied World ID "checks" are ignored: only approvals the
 //     server verified itself count. A proposal id is bound to its content
 //     on first submission, so an approval cannot be reused for a changed transfer.
+//   GET  /proposals             -> list of registered proposals
 //   GET  /proposals/:id         -> registered proposal, last outcome, approval state
 //   GET  /world/config          -> public World ID config for the approval page
 //   POST /world/rp-context      -> RP-signed IDKit request for one server-chosen action
@@ -18,7 +19,7 @@
 //     store the approval server-side (5 min, single use)
 //   POST /council/join          -> Proof of Human council join, one seat per nullifier
 //   GET  /council/seats         -> current seats
-//   GET  /world.html            -> approval / join page (IDKit 4.x, QR for World App)
+//   GET  /                      -> static UI from public/ (see docs/ui-handoff.md)
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -219,7 +220,21 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     entry.lastOutcome = outcome;
     const needsApproval =
       outcome.decision === "REFUSED" && outcome.worldGateReason !== null && outcome.checkMatches;
-    res.json(needsApproval ? { ...outcome, approveUrl: `/world.html?proposal=${encodeURIComponent(proposal.id)}` } : outcome);
+    res.json(needsApproval ? { ...outcome, approveUrl: `/console.html?proposal=${encodeURIComponent(proposal.id)}` } : outcome);
+  });
+
+  app.get("/proposals", (_req, res) => {
+    res.json({
+      proposals: [...proposals.values()].map((e) => ({
+        id: e.proposal.id,
+        purpose: e.proposal.description.purpose,
+        amountTinybars: e.proposal.transfer.amountTinybars,
+        large: isLargeProposal(e.proposal, agent.largeThresholdTinybars),
+        matches: checkProposal(e.proposal).matches,
+        decision: e.lastOutcome?.decision ?? null,
+        scheduledTxId: e.lastOutcome?.scheduledTxId ?? null,
+      })),
+    });
   });
 
   app.get("/proposals/:id", (req, res) => {

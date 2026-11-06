@@ -165,3 +165,23 @@ test("raw hex keys parse as ECDSA, DER keys keep their type", async () => {
   assert.equal(parsePrivateKey(ed.toStringDer()).publicKey.toStringRaw(), ed.publicKey.toStringRaw());
   assert.equal(parsePrivateKey(ed.toStringRaw(), "ed25519").publicKey.toStringRaw(), ed.publicKey.toStringRaw());
 });
+
+test("mirror decoder reads the transfer an SDK-built schedule will execute", async () => {
+  const sdk = await import("@hiero-ledger/sdk");
+  const { decodeScheduledTransfer } = await import("../src/mirror.js");
+  const { proto } = await import("@hiero-ledger/proto");
+  // The same encoding the network stores for a schedule's transaction_body.
+  const body = (tx: InstanceType<typeof sdk.TransferTransaction>) =>
+    Buffer.from(proto.SchedulableTransactionBody.encode(tx._getScheduledTransactionBody()).finish()).toString("base64");
+  const ok = new sdk.TransferTransaction()
+    .addHbarTransfer("0.0.1000", sdk.Hbar.fromTinybars(-5_000))
+    .addHbarTransfer("0.0.1001", sdk.Hbar.fromTinybars(5_000));
+  const d = decodeScheduledTransfer(body(ok));
+  assert.equal(d.problem, null);
+  assert.deepEqual(d.transfer, { from: "0.0.1000", payee: "0.0.1001", amountTinybars: 5_000, token: "HBAR" });
+  const split = new sdk.TransferTransaction()
+    .addHbarTransfer("0.0.1000", sdk.Hbar.fromTinybars(-5_000))
+    .addHbarTransfer("0.0.1001", sdk.Hbar.fromTinybars(2_500))
+    .addHbarTransfer("0.0.9999", sdk.Hbar.fromTinybars(2_500));
+  assert.match(decodeScheduledTransfer(body(split)).problem ?? "", /exactly one sender/);
+});

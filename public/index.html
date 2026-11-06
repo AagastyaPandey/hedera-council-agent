@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Council Agent · Atlas</title><link rel="icon" href="data:,">
+<link rel="stylesheet" href="/assets/theme.css">
+</head><body data-page="atlas" data-state="loading">
+<div class="shell"><nav class="rail" id="rail"></nav>
+<main>
+  <div class="kicker">Hedera treasury council</div>
+  <h1>One agent. One signing seat.</h1>
+  <p class="muted">It pays for a check of every proposal, signs the honest ones, refuses the ones that lie, and needs its owner's fresh World ID for the large ones.</p>
+  <!-- ATLAS: replace #chain with the poster/illustration. Each proposal is a node: data-proposal, data-decision, data-large. -->
+  <section id="chain" aria-label="Proposals"></section>
+  <section class="panel" id="status" aria-label="System status"></section>
+</main></div>
+<script type="module">
+import { api } from "/assets/api.js";
+import { mountRail } from "/assets/rail.js";
+mountRail(document.getElementById("rail"), "/");
+const [health, list, seats] = await Promise.all([api.health(), api.proposals(), api.seats()]);
+const chain = document.getElementById("chain");
+const rows = list.data.proposals ?? [];
+chain.replaceChildren(...rows.map((p) => {
+  const a = document.createElement("a");
+  a.className = "panel"; a.style.display = "block"; a.href = `/report.html?proposal=${encodeURIComponent(p.id)}`;
+  a.dataset.proposal = p.id; a.dataset.decision = p.decision ?? "PENDING"; a.dataset.large = String(p.large);
+  a.textContent = `${p.id} · ${p.purpose} · ${p.decision ?? "not yet submitted"}${p.large ? " · large" : ""}`;
+  return a;
+}));
+if (!rows.length) { const e = document.createElement("p"); e.className = "muted"; e.textContent = "No proposals yet. Open the console to submit one."; chain.append(e); }
+const s = document.getElementById("status");
+const h = health.data;
+s.textContent = `mode ${h.mode} · network ${h.network} · x402 seller ${h.x402Seller} · 0G ${h.zeroG} · World ${h.world} · seats ${seats.data.count}`;
+document.body.dataset.state = "ready";
+</script>
+</body></html>

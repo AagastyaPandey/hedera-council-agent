@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@hiero-ledger/proto": "^2.32.0",
     "@hiero-ledger/sdk": "^2.90.0",
     "@worldcoin/idkit-core": "^4.6.0",
     "@x402/core": "^2.30.0",

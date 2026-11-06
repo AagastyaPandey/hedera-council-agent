@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Council Agent · Report</title><link rel="icon" href="data:,">
+<link rel="stylesheet" href="/assets/theme.css">
+</head><body data-page="report" data-state="loading">
+<div class="shell"><nav class="rail" id="rail"></nav>
+<main>
+  <div class="kicker" id="kicker">Report</div>
+  <h1 id="title"></h1>
+  <!-- REPORT POSTER: the two big numbers are "described" vs "actual". On a mismatch they differ and #verdict is the headline. -->
+  <section class="grid2" aria-label="Described versus actual">
+    <div><div class="label">Described</div><div class="bignum" id="num-described"></div><div class="muted" id="payee-described"></div></div>
+    <div><div class="label">Actual transfer</div><div class="bignum" id="num-actual"></div><div class="muted" id="payee-actual"></div></div>
+  </section>
+  <p id="verdict"></p>
+  <section class="panel" id="outcome" aria-label="Agent decision"></section>
+  <p><a class="btn secondary" id="open-console" href="/console.html">Open in console</a></p>
+</main></div>
+<script type="module">
+import { api, hbar, hashscan, qs } from "/assets/api.js";
+import { mountRail } from "/assets/rail.js";
+mountRail(document.getElementById("rail"), "");
+const id = qs("proposal");
+const $ = (x) => document.getElementById(x);
+const r = id ? await api.proposal(id) : { ok: false, data: { error: "Add ?proposal=<id> to the URL." } };
+if (!r.ok) { $("title").textContent = r.data.error; document.body.dataset.state = "error"; }
+else {
+  const { proposal: p, check, lastOutcome: o, large } = r.data;
+  $("kicker").textContent = large ? "Proposal report · large" : "Proposal report";
+  $("title").textContent = `${p.id}: ${p.description.purpose}`;
+  $("num-described").textContent = hbar(p.description.amountTinybars);
+  $("num-actual").textContent = hbar(p.transfer.amountTinybars);
+  $("payee-described").textContent = `to ${p.description.payee}`;
+  $("payee-actual").textContent = `to ${p.transfer.payee}`;
+  $("num-actual").className = "bignum" + (check.matches ? "" : " red");
+  $("verdict").textContent = check.verdict;
+  $("verdict").className = check.matches ? "ok" : "red";
+  $("open-console").href = `/console.html?proposal=${encodeURIComponent(p.id)}`;
+  const out = $("outcome");
+  if (o) {
+    out.dataset.decision = o.decision;
+    const net = (await api.health()).data.network;
+    const rows = [["Decision", o.decision], ["Reason", o.reason], ["Check paid", `${o.paidTxId ?? "none"} (${o.paidVia})`], ["0G verdict", `${o.zeroGSource}${o.zeroGRequestId ? " · " + o.zeroGRequestId : ""}`], ["Scheduled tx", o.scheduledTxId ?? "none"], ["HCS audit", o.auditTxId ?? "none"]];
+    const t = document.createElement("table");
+    for (const [k, v] of rows) { const tr = t.insertRow(); const th = document.createElement("th"); th.textContent = k; tr.append(th); tr.insertCell().textContent = v; }
+    out.replaceChildren(t);
+    if (o.paidHashscan) { const a = document.createElement("a"); a.href = o.paidHashscan; a.textContent = "HashScan: check payment"; out.append(a); }
+    void net;
+  } else out.textContent = "Not yet submitted to the agent.";
+  document.body.dataset.state = "ready";
+  document.body.dataset.decision = o?.decision ?? "PENDING";
+}
+</script>
+</body></html>

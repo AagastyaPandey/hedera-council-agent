@@ -71,7 +71,7 @@ test("a client-supplied World ID check is ignored", async () => {
     });
     assert.equal(r.status, 200);
     assert.equal(r.body.decision, "REFUSED");
-    assert.equal(r.body.approveUrl, "/world.html?proposal=P-FORGE");
+    assert.equal(r.body.approveUrl, "/console.html?proposal=P-FORGE");
   });
 });
 
@@ -162,5 +162,16 @@ test("World configured: verified join, one seat per nullifier", async () => {
     assert.equal(again.status, 409);
     const wrongAction = await call("POST", "/council/join", { idkitResult: idkit("council-sign:P-1", "0xdef") });
     assert.equal(wrongAction.status, 403);
+  });
+});
+
+test("GET /proposals lists registered proposals for the UI", async () => {
+  await withServer({ env: {} }, async (call) => {
+    assert.deepEqual((await call("GET", "/proposals")).body.proposals, []);
+    await call("POST", "/proposals", { proposal: large("P-LIST") });
+    const [p] = (await call("GET", "/proposals")).body.proposals;
+    assert.equal(p.id, "P-LIST");
+    assert.equal(p.large, true);
+    assert.equal(p.decision, "REFUSED");
   });
 });

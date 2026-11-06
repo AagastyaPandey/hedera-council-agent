@@ -7,7 +7,7 @@
 // In real mode the paid check service (POST /check) is started in-process
 // unless CHECK_SERVICE_URL points elsewhere, and the agent pays it via x402.
 // World ID approvals in this rehearsal are MOCKED; the real World ID flow
-// runs through the server (public/world.html).
+// runs through the server and the console UI.
 import type { Server } from "node:http";
 import { atomicToUsd } from "./budget.js";
 import { processProposal } from "./council.js";

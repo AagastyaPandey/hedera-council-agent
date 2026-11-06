@@ -7,7 +7,7 @@
 //   1. The server signs the proof request for one action with the RP
 //      signing key (`signRequest` from @worldcoin/idkit-core/signing).
 //      The key never leaves the server.
-//   2. The owner scans the IDKit QR in World App (public/world.html).
+//   2. The owner scans the IDKit QR in World App (public/assets/world-flow.js).
 //   3. The server forwards the IDKit result as-is to
 //      POST https://developer.world.org/api/v4/verify/{rp_id}, with the
 //      environment pinned from server config so a client cannot pick

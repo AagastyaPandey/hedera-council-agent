@@ -21,7 +21,7 @@ Show the exact mismatch fields on screen.
 ## 1:20-2:05, Scenes 3 and 4, World ID gate
 Show Scene 3, then Scene 4.
 Say: "Large proposals need the owner's fresh World ID, tied to that exact proposal. Approved, the agent signs. Denied or expired, the agent does not sign, even though the transfer itself matches."
-Show /world.html (QR for World App, or the labelled MOCKED button), the server verification, and the denied path.
+Show the console approval (QR for World App, or the labelled MOCKED button), the server verification, and the denied path.
 
 ## 2:05-2:30, close
 Say: "Hedera x402 pays for the check, Scheduled Transactions fix the transfer, HCS logs every decision, World ID gates the large ones, 0G writes the verdict. One agent seat, three partners, five tracks."
