@@ -2,15 +2,17 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Council Agent · Console</title><link rel="icon" href="data:,">
+<script>try{const t=new URLSearchParams(location.search).get("theme");if(t)localStorage.setItem("ca-theme",t);document.documentElement.dataset.theme=t||localStorage.getItem("ca-theme")||"midnight"}catch(e){}</script>
 <link rel="stylesheet" href="/assets/theme.css">
 </head><body data-page="console" data-state="loading">
 <div class="veil" aria-hidden="true"><span class="veil-ring"></span><span class="veil-word">Council Agent</span></div>
-<div class="frame" style="grid-template-columns:34px 1fr">
-  <aside class="vrail"><span>Council Agent</span></aside>
+<div class="frame">
   <div class="stage">
     <div class="bar">
       <a class="brand" href="/">Council <em>Agent</em></a>
       <nav><a href="/">Atlas</a><a href="/console.html" aria-current="page">Console</a><a href="/console.html#join">Join</a></nav>
+      <span class="spacer" style="flex:1"></span>
+      <span class="switcher" id="switcher"></span>
       <div class="chips" id="chips"></div>
     </div>
     <main class="console">
@@ -59,9 +61,11 @@
 import { api, bus, hbar, qs } from "/assets/api.js";
 import { runWorldFlow, runMockedFlow } from "/assets/world-flow.js";
 import { replay, reduced, reveal } from "/assets/motion.js";
+import { mountSwitcher } from "/assets/themes.js";
 const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
 const status = (t, cls = "") => { const s = $("status"); s.textContent = t; s.className = cls; if (t) replay(s); };
+mountSwitcher($("switcher"));
 const show = (o) => { $("result").hidden = false; $("result").textContent = JSON.stringify(o, null, 2); };
 const toTiny = (h) => Math.round(Number(h) * 1e8);
 const th = (t) => { const x = el("th", t); return x; };

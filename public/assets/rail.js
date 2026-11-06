@@ -7,6 +7,8 @@ const links = [
   ["/console.html#join", "Join council"],
 ];
 
+import { mountSwitcher } from "./themes.js";
+
 function node(tag, text, cls) {
   const e = document.createElement(tag);
   if (text !== undefined) e.textContent = text;
@@ -43,7 +45,9 @@ export function mountRail(el, current, meta = []) {
   });
   const wrap = node("div", undefined, "cols");
   for (const c of cols) wrap.append(c);
-  el.replaceChildren(brand, menu, wrap);
+  const sw = node("div", undefined, "switcher");
+  mountSwitcher(sw);
+  el.replaceChildren(brand, menu, wrap, sw);
 }
 
 export function mountTicker(el, items) {

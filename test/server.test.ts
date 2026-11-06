@@ -193,7 +193,7 @@ test("the UI pages and shared assets are served", async () => {
   await new Promise((r) => server.once("listening", r));
   const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   try {
-    for (const [path, needle] of [["/", "Atlas"], ["/report.html", "Report"], ["/console.html", "Console"], ["/assets/theme.css", "--grad"], ["/assets/scene.js", "pixelIsland"], ["/vendor/idkit.js", "IDKit"]] as const) {
+    for (const [path, needle] of [["/", "Dashboard"], ["/report.html", "Report"], ["/console.html", "Console"], ["/assets/theme.css", "data-theme"], ["/assets/scene.js", "pixelIsland"], ["/vendor/idkit.js", "IDKit"]] as const) {
       const r = await fetch(base + path);
       assert.equal(r.status, 200, path);
       assert.ok((await r.text()).includes(needle), `${path} contains ${needle}`);

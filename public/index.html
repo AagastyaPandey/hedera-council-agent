@@ -1,185 +1,238 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Council Agent · Atlas</title><link rel="icon" href="data:,">
+<title>Council Agent · Dashboard</title><link rel="icon" href="data:,">
+<script>try{const t=new URLSearchParams(location.search).get("theme");if(t)localStorage.setItem("ca-theme",t);document.documentElement.dataset.theme=t||localStorage.getItem("ca-theme")||"midnight"}catch(e){}</script>
 <link rel="stylesheet" href="/assets/theme.css">
-</head><body data-page="atlas" data-state="loading">
+</head><body data-page="dash" data-state="loading">
 <div class="veil" aria-hidden="true"><span class="veil-ring"></span><span class="veil-word">Council Agent</span></div>
-<div class="frame">
-  <aside class="vrail"><span>Atlas</span></aside>
-  <div class="stage">
-    <header class="top" id="top"></header>
-    <main>
-      <section class="hero">
-        <p class="eyebrow" data-reveal><i class="pulse"></i>Hedera × World × 0G · one agent, one signing seat</p>
-        <h1 class="display" data-reveal style="--i:1">A council is not a signature. <span class="grad">It is a check.</span></h1>
-        <p class="prose lg" data-reveal style="--i:2">Every proposal is a transfer plus a description of that transfer. The agent pays for an independent check, reads the real transfer back from the chain, and signs only when the two agree. Large ones wait for a fresh World ID from its owner.</p>
-        <div class="actions hero-actions" data-reveal style="--i:3">
-          <a class="btn-primary" href="/console.html">Open the console</a>
-          <a class="btn-ghost" href="#how">How it decides</a>
+<header class="topdash">
+  <a class="brand" href="/">Council <span>Agent</span></a>
+  <nav><a href="/" aria-current="page">Dashboard</a><a href="/console.html">Console</a><a href="/console.html#join">Join</a></nav>
+  <span class="spacer"></span>
+  <span class="switcher" id="switcher"></span>
+  <span class="chip" id="chip-mode">…</span>
+  <span class="chip" id="chip-world">…</span>
+</header>
+<main class="dashwrap">
+  <section class="figures" aria-label="Key figures">
+    <div class="tile" data-reveal style="--i:0"><span class="label">Signed</span><b class="num" id="f-signed">0</b></div>
+    <div class="tile" data-reveal style="--i:1"><span class="label">Refused</span><b class="num red" id="f-refused">0</b></div>
+    <div class="tile" data-reveal style="--i:2"><span class="label">Seats held</span><b class="num accent" id="f-seats">0</b></div>
+    <div class="tile" data-reveal style="--i:3"><span class="label">Check price</span><b class="num" id="f-price">—</b></div>
+    <div class="tile" data-reveal style="--i:4"><span class="label">Spend cap left</span><b class="num" id="f-cap">—</b></div>
+    <div class="tile" data-reveal style="--i:5"><span class="label">Network</span><b class="num" id="f-net" style="font-size:17px;line-height:27px">—</b></div>
+  </section>
+
+  <div class="dashgrid">
+    <section class="panel span7" data-reveal style="--i:1" aria-label="Proposals">
+      <h2>Proposals <small id="prop-count"></small></h2>
+      <table class="list" id="prop-table">
+        <thead><tr><th>Proposal</th><th>Amount</th><th>Check</th><th>Decision</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="statusline muted" id="prop-empty" hidden>No proposals yet — compose one on the right.</p>
+    </section>
+
+    <section class="panel span5" data-reveal style="--i:2" aria-label="World ID approval">
+      <h2>Owner approval <small>World ID gate</small></h2>
+      <div id="approval-body"><p class="muted">No large proposal is waiting.</p></div>
+      <p class="statusline" id="approval-status" role="status"></p>
+    </section>
+
+    <section class="panel span5" data-reveal style="--i:3" aria-label="New proposal">
+      <h2>New proposal <small>description vs actual</small></h2>
+      <form id="new-form">
+        <div class="formgrid">
+          <div><label for="f-purpose">Purpose</label><input id="f-purpose" name="purpose" value="Pay the venue deposit" required maxlength="200"></div>
+          <div><label for="f-id">Proposal id</label><input id="f-id" name="id" required pattern="[A-Za-z0-9_\-]{1,64}"></div>
+          <div><label for="f-payee">Described payee</label><input id="f-payee" name="payee" value="0.0.1001" required></div>
+          <div><label for="f-amount">Described amount (HBAR)</label><input id="f-amount" name="amount" value="0.1" required></div>
+          <div><label for="f-tpayee">Actual payee</label><input id="f-tpayee" name="tpayee" value="0.0.1001" required></div>
+          <div><label for="f-tamount">Actual amount (HBAR)</label><input id="f-tamount" name="tamount" value="0.1" required></div>
         </div>
-      </section>
+        <p class="actions"><button type="submit" id="submit-btn">Submit to the agent</button></p>
+      </form>
+      <p class="statusline muted" id="hint">Make the actual transfer differ to watch a refusal.</p>
+    </section>
 
-      <figure class="scene-card" data-reveal style="--i:2">
-        <!-- ATLAS SCENE: one island per proposal, the treasury in the middle. Islands carry data-proposal, data-decision, data-large. -->
-        <svg class="scene" id="scene" viewBox="0 0 800 440" role="img" aria-label="The council treasury and its proposals as islands"></svg>
-        <div class="timeline"><span id="tl-label">0 / 0 signed</span><span class="track"><span class="fill" id="tl-fill"></span></span><span id="tl-right"></span></div>
-        <figcaption class="figcap">Fig. 01 · the council, generated in code · click an island for its report</figcaption>
-      </figure>
-
-      <ul class="legend" data-reveal style="--i:3">
-        <li><i class="sq green"></i>Signed</li>
-        <li><i class="sq red"></i>Refused</li>
-        <li><i class="sq ink"></i>Not yet submitted</li>
-        <li><i class="sq blue"></i>Large · World ID gate</li>
-        <li><i class="sq flight"></i>Paid check travelling</li>
-      </ul>
-
-      <section class="stats" aria-label="Council numbers">
-        <div class="stat" data-reveal style="--i:0"><span class="label">Signed</span><b class="num" id="st-signed">0</b><span class="sub">council signatures added</span></div>
-        <div class="stat" data-reveal style="--i:1"><span class="label">Refused</span><b class="num red" id="st-refused">0</b><span class="sub">transfers that lied</span></div>
-        <div class="stat" data-reveal style="--i:2"><span class="label">Seats held</span><b class="num" id="st-seats">0</b><span class="sub">one person, one seat</span></div>
-        <div class="stat" data-reveal style="--i:3"><span class="label">Check price</span><b class="num" id="st-price">—</b><span class="sub">paid over x402, no human</span></div>
-      </section>
-
-      <section class="how" id="how">
-        <h2 class="sect" data-reveal>How it decides</h2>
-        <div class="how-grid">
-          <div class="how-card" data-reveal style="--i:0">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="12" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
-            <h3>01 · Claim</h3><p>A proposal arrives claiming a transfer: an amount, a payee, a purpose.</p>
-          </div>
-          <div class="how-card" data-reveal style="--i:1">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5M9.5 11h3M11 9.5v3"/></svg>
-            <h3>02 · Paid check</h3><p>The agent pays for an independent check, then reads the real transfer back from Hedera.</p>
-          </div>
-          <div class="how-card" data-reveal style="--i:2">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><circle cx="12" cy="10.5" r="1.6"/><path d="M12 12.2v3"/></svg>
-            <h3>03 · Human gate</h3><p>Large transfers pause until the owner passes a fresh World ID check for that exact proposal.</p>
-          </div>
-          <div class="how-card" data-reveal style="--i:3">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l3.5-.8L19 7.7a2 2 0 0 0-2.8-2.8L4.8 16.4z"/><path d="M13.5 6.5l4 4"/></svg>
-            <h3>04 · Sign or refuse</h3><p>Only an exact match gets a council signature. Every decision lands in the HCS log.</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="partners">
-        <h2 class="sect" data-reveal>Built for three partner tracks</h2>
-        <div class="p-grid">
-          <div class="p-card hedera" data-reveal style="--i:0">
-            <span class="p-chip hedera">H</span>
-            <h3>Hedera</h3>
-            <p>x402 pays for every check with no human. Proposals are Scheduled Transactions plus HCS — no Solidity anywhere.</p>
-            <span class="p-tag">AI Agents That Pay · No Solidity Allowed</span>
-          </div>
-          <div class="p-card world" data-reveal style="--i:1">
-            <span class="p-chip world">W</span>
-            <h3>World</h3>
-            <p>Large signings pause until the owner passes a fresh World ID proof of human, tied to that exact transfer.</p>
-            <span class="p-tag">World ID Agent Pass</span>
-          </div>
-          <div class="p-card zerog" data-reveal style="--i:2">
-            <span class="p-chip zerog">0G</span>
-            <h3>0G</h3>
-            <p>0G Private Computer writes the plain-language verdict on every check, with its request id shown.</p>
-            <span class="p-tag">Build with 0G Private Computer</span>
-          </div>
-        </div>
-      </section>
-    </main>
-    <div class="ticker" id="ticker"></div>
+    <section class="panel span7" data-reveal style="--i:4" aria-label="Audit log">
+      <h2>HCS audit log <small>every decision, on chain</small></h2>
+      <table class="audit" id="audit-table">
+        <thead><tr><th>Proposal</th><th>Decision</th><th>Why</th><th>Receipts</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="statusline muted" id="audit-empty" hidden>Nothing audited yet.</p>
+    </section>
   </div>
-</div>
+</main>
 <script type="module">
-import { api } from "/assets/api.js";
-import { mountRail, mountTicker } from "/assets/rail.js";
-import { el, island, bridge, sky, hashSeed } from "/assets/scene.js";
-import { countUp, reveal } from "/assets/motion.js";
+import { api, hbar } from "/assets/api.js";
+import { runWorldFlow, runMockedFlow } from "/assets/world-flow.js";
+import { countUp, reveal, replay, reduced } from "/assets/motion.js";
+import { mountSwitcher } from "/assets/themes.js";
 
-let h = (await api.health()).data;
-let rows = (await api.proposals()).data.proposals ?? [];
-let seats = (await api.seats()).data;
+const $ = (id) => document.getElementById(id);
+mountSwitcher($("switcher"));
+const whole = (v) => String(Math.round(v));
+let world = { configured: false, mockedAllowed: false };
+let health = {};
+let worldBusy = false;
 
-const accentFor = (p) => (p.decision === "SIGNED" ? "#4ade80" : p.decision === "REFUSED" ? "#ff4d3d" : "#847c6d");
-
-function render() {
-  const signed = rows.filter((p) => p.decision === "SIGNED").length;
-  const refused = rows.filter((p) => p.decision === "REFUSED").length;
-  mountRail(document.getElementById("top"), "/", [
-    { label: "Mode", value: `${h.mode} · ${h.network}`, dot: h.mode === "real" ? "green" : "red" },
-    { label: "Signed", value: `${signed} / ${rows.length}`, dot: "red" },
-    { label: "Seats", value: `${seats.count} held`, end: true },
-    ...(rows[0] ? [{ report: `/report.html?proposal=${encodeURIComponent(rows[0].id)}` }] : []),
-  ]);
-
-  const svg = document.getElementById("scene");
-  svg.replaceChildren();
-  svg.append(sky({ width: 800 }));
-  const C = [400, 250];
-  const n = rows.length;
-  const spots = rows.map((_, i) => {
-    const a = (-150 + (360 / Math.max(n, 1)) * i) * (Math.PI / 180);
-    return [C[0] + Math.cos(a) * 280, C[1] + Math.sin(a) * 128];
+// IDKit is only needed for the real World flow; load on demand.
+let idkitPromise = null;
+function loadIdkit() {
+  if (window.IDKit) return Promise.resolve();
+  if (!idkitPromise) idkitPromise = new Promise((ok, err) => {
+    const s = document.createElement("script");
+    s.src = "/vendor/idkit.js"; s.onload = ok;
+    s.onerror = () => { idkitPromise = null; err(new Error("IDKit failed to load")); };
+    document.head.append(s);
   });
-  const bridges = el("g"); svg.append(bridges);
-  // The travelling dot IS the paid check: it flies treasury → island and is
-  // colored by that proposal's verdict.
-  spots.forEach((s, i) => {
-    const g = bridge(C, s, { id: rows[i].id, delay: -(i * 1.15), dur: 6.5 + (i % 3) });
-    g.querySelector(".packet")?.setAttribute("fill", accentFor(rows[i]));
-    bridges.append(g);
-  });
-  const treasury = el("g", { class: "island", style: "--i:0", "data-treasury": "true" }, [island({ cx: C[0], cy: C[1], cols: 14, rows: 10, seed: 11, accent: "#ff8a3d" })]);
-  const tl = el("text", { class: "island-label", x: C[0], y: C[1] + 62, "text-anchor": "middle" }); tl.textContent = "Treasury";
-  treasury.append(tl); svg.append(treasury);
-  rows.forEach((p, i) => {
-    const [x, y] = spots[i];
-    const size = p.large ? [10, 8] : [8, 6];
-    const a = el("a", { href: `/report.html?proposal=${encodeURIComponent(p.id)}`, class: "island", style: `--i:${i + 1}`, "data-proposal": p.id, "data-decision": p.decision ?? "PENDING", "data-large": String(p.large) }, [
-      island({ cx: x, cy: y, cols: size[0], rows: size[1], seed: hashSeed(p.id), accent: accentFor(p) }),
-    ]);
-    const t = el("text", { class: "island-label", x, y: y + 44, "text-anchor": "middle" }); t.textContent = `${p.id}${p.large ? " · large" : ""}`;
-    a.append(t);
-    if (p.large) a.append(el("rect", { x: x - 3, y: y - 46, width: 6, height: 6, fill: "#5cc8ff" }));
-    svg.append(a);
-  });
-  if (!n) {
-    const t = el("text", { class: "island-label", x: 400, y: 330, "text-anchor": "middle" }); t.textContent = "No proposals yet · open the console to submit one";
-    svg.append(t);
-  }
-
-  document.getElementById("tl-label").textContent = `${signed} / ${rows.length} signed`;
-  document.getElementById("tl-right").textContent = `${refused} refused`;
-  document.getElementById("tl-fill").style.width = rows.length ? `${(signed / rows.length) * 100}%` : "0";
-
-  const whole = (v) => String(Math.round(v));
-  countUp(document.getElementById("st-signed"), signed, { format: whole });
-  countUp(document.getElementById("st-refused"), refused, { format: whole });
-  countUp(document.getElementById("st-seats"), seats.count, { format: whole });
-  document.getElementById("st-price").textContent = h.checkPrice;
-
-  mountTicker(document.getElementById("ticker"), [
-    `Mode ${h.mode}`, `Network ${h.network}`, `x402 ${h.x402Buyer.startsWith("real") ? "real" : "simulated"}`, `Check price ${h.checkPrice}`,
-    `0G ${h.zeroG}`, `World ${h.world.startsWith("real") ? "real" : "mocked"}`, `Seats ${seats.count}`, `${rows.length} proposals`,
-  ]);
+  return idkitPromise;
 }
 
-let stamp = JSON.stringify([h, rows, seats]);
-render();
-reveal(document);
-document.body.dataset.state = "ready";
+function chip(el, label, ok, value) {
+  el.replaceChildren(Object.assign(document.createElement("i"), { className: `dot ${ok ? "green" : ""}` }), document.createTextNode(`${label} `), Object.assign(document.createElement("b"), { textContent: value }));
+}
 
-// Keep the poster honest: re-render only when something actually changed.
-setInterval(async () => {
-  try {
-    const [nh, nl, ns] = await Promise.all([api.health(), api.proposals(), api.seats()]);
-    const next = JSON.stringify([nh.data, nl.data.proposals ?? [], ns.data]);
-    if (next !== stamp) {
-      stamp = next; h = nh.data; rows = nl.data.proposals ?? []; seats = ns.data;
-      render();
+async function refreshApproval(rows) {
+  const body = $("approval-body");
+  const larges = rows.filter((p) => p.large);
+  const details = await Promise.all(larges.map((p) => api.proposal(p.id)));
+  const waiting = details.map((d) => d.data).find((d) => d.proposal && !d.approval && d.check?.matches);
+  if (!waiting) { body.replaceChildren(Object.assign(document.createElement("p"), { textContent: "No large proposal is waiting for approval.", className: "muted" })); return; }
+  const p = waiting.proposal;
+  const action = `council-sign:${p.id}`;
+  const info = document.createElement("div");
+  const row = (k, v) => { const l = document.createElement("span"); l.className = "label"; l.textContent = k; const d = document.createElement("div"); d.textContent = v; d.style.marginBottom = "7px"; info.append(l, d); };
+  row("Proposal", p.id);
+  row("Pays", `${hbar(p.transfer.amountTinybars)} to ${p.transfer.payee}`);
+  row("For", p.description.purpose);
+  row("Exact action to approve", action);
+  body.replaceChildren(info);
+  const btn = document.createElement("button");
+  btn.textContent = world.configured ? "Approve with World ID" : "Approve (MOCKED demo)";
+  btn.className = "secondary";
+  btn.onclick = async () => {
+    btn.disabled = true; worldBusy = true;
+    $("approval-status").textContent = "Waiting for the World App approval…";
+    let res;
+    if (world.configured) {
+      try { await loadIdkit(); } catch (e) { $("approval-status").textContent = e.message ?? String(e); $("approval-status").className = "statusline red"; worldBusy = false; return; }
+      res = await runWorldFlow({ proposalId: p.id, onQr: (_u, svg) => {
+        const box = document.createElement("span"); box.className = "qrbox";
+        const i = document.createElement("img"); i.src = svg; i.alt = "Scan with World App";
+        box.append(i); body.append(box);
+      }, onStatus: (t) => { $("approval-status").textContent = t; } });
+    } else {
+      res = await runMockedFlow({ proposalId: p.id });
     }
-  } catch { /* keep the current poster if the server hiccups */ }
-}, 10000);
+    body.querySelector(".qrbox")?.remove();
+    $("approval-status").textContent = res.ok
+      ? `Approved${res.data.source === "mocked" ? " (MOCKED, demo only)" : " with World ID"}. Submit it again to sign.`
+      : res.data.error ?? "Approval denied.";
+    $("approval-status").className = `statusline ${res.ok ? "green" : "red"}`;
+    if (res.ok) replay($("approval-status"));
+    btn.textContent = "Submit for signing";
+    btn.disabled = false;
+    btn.onclick = async () => {
+      btn.disabled = true;
+      const out = await api.submit(await (await api.proposal(p.id)).data.proposal);
+      $("approval-status").textContent = out.ok
+        ? (out.data.decision === "SIGNED" ? `Signed: ${out.data.scheduledTxId}` : `Refused: ${out.data.reason}`)
+        : out.data.error;
+      $("approval-status").className = `statusline ${out.ok && out.data.decision === "SIGNED" ? "green" : "red"}`;
+      await refreshAll();
+    };
+    worldBusy = false;
+  };
+  body.append(btn);
+}
+
+async function refreshAudit(rows) {
+  const tbody = $("audit-table").querySelector("tbody");
+  const decided = rows.filter((p) => p.decision);
+  $("audit-empty").hidden = decided.length > 0;
+  const details = await Promise.all(decided.slice(-8).map((p) => api.proposal(p.id)));
+  let i = 0;
+  tbody.replaceChildren(...details.map(({ data: d }) => {
+    const o = d.lastOutcome ?? {};
+    const tr = document.createElement("tr"); tr.style.setProperty("--i", String(i++));
+    const c1 = tr.insertCell(); c1.textContent = d.proposal.id;
+    const c2 = tr.insertCell(); c2.textContent = o.decision ?? ""; c2.className = "dec"; c2.dataset.decision = o.decision ?? "PENDING";
+    const c3 = tr.insertCell(); c3.textContent = (o.reason ?? "").slice(0, 150);
+    const c4 = tr.insertCell(); c4.className = "hash";
+    c4.textContent = [o.paidTxId, o.scheduledTxId, o.auditTxId, o.zeroGRequestId ? `0G ${o.zeroGRequestId}` : ""].filter(Boolean).join(" · ") || "—";
+    if (health.mode !== "real") c4.textContent = `SIM · ${c4.textContent}`;
+    return tr;
+  }));
+}
+
+async function refreshProps(rows) {
+  const tbody = $("prop-table").querySelector("tbody");
+  $("prop-empty").hidden = rows.length > 0;
+  $("prop-count").textContent = `${rows.length} registered`;
+  let i = 0;
+  tbody.replaceChildren(...rows.map((p) => {
+    const tr = document.createElement("tr"); tr.style.setProperty("--i", String(i++));
+    tr.dataset.proposal = p.id; tr.dataset.decision = p.decision ?? "PENDING";
+    const c1 = tr.insertCell(); c1.textContent = p.id;
+    if (p.large) c1.append(document.createTextNode(" "), Object.assign(document.createElement("span"), { textContent: "large", className: "tag blue" }));
+    tr.insertCell().textContent = hbar(p.amountTinybars);
+    const c3 = tr.insertCell(); c3.textContent = p.matches ? "match" : "MISMATCH"; c3.className = p.matches ? "green" : "red";
+    const c4 = tr.insertCell(); c4.textContent = p.decision ?? "not submitted"; c4.className = "dec"; c4.dataset.decision = p.decision ?? "PENDING";
+    const c5 = tr.insertCell(); const a = document.createElement("a"); a.href = `/report.html?proposal=${encodeURIComponent(p.id)}`; a.textContent = "report →"; a.className = "muted"; c5.append(a);
+    tr.onclick = (e) => { if (e.target.tagName !== "A") location.href = `/report.html?proposal=${encodeURIComponent(p.id)}`; };
+    return tr;
+  }));
+}
+
+async function refreshAll() {
+  const [h, list, seats] = await Promise.all([api.health(), api.proposals(), api.seats()]);
+  health = h.data; const rows = list.data.proposals ?? [];
+  const signed = rows.filter((p) => p.decision === "SIGNED").length;
+  const refused = rows.filter((p) => p.decision === "REFUSED").length;
+  countUp($("f-signed"), signed, { format: whole });
+  countUp($("f-refused"), refused, { format: whole });
+  countUp($("f-seats"), seats.data.count, { format: whole });
+  $("f-price").textContent = health.checkPrice;
+  $("f-cap").textContent = health.spendCapRemaining;
+  $("f-net").textContent = `${health.mode} · ${health.network}`;
+  chip($("chip-mode"), "mode", health.mode === "real", health.mode);
+  chip($("chip-world"), "world", health.world.startsWith("real"), health.world.startsWith("real") ? "real" : "mocked");
+  await Promise.all([refreshProps(rows), refreshAudit(rows), refreshApproval(rows)]);
+  reveal(document);
+}
+
+$("new-form").onsubmit = async (e) => {
+  e.preventDefault();
+  const btn = $("submit-btn"); btn.disabled = true; const label = btn.textContent; btn.textContent = "Checking…";
+  try {
+    const f = Object.fromEntries(new FormData(e.target));
+    const toTiny = (v) => Math.round(Number(v) * 1e8);
+    const res = await api.submit({
+      id: f.id,
+      description: { payee: f.payee, amountTinybars: toTiny(f.amount), token: "HBAR", purpose: f.purpose },
+      transfer: { payee: f.tpayee, amountTinybars: toTiny(f.tamount), token: "HBAR" },
+    });
+    const line = $("hint");
+    if (res.status >= 400) { line.textContent = res.data.error; line.className = "statusline red"; return; }
+    line.textContent = res.data.decision === "SIGNED"
+      ? `Agent signed. Scheduled tx ${res.data.scheduledTxId}.`
+      : `Agent refused: ${res.data.reason}`;
+    line.className = `statusline ${res.data.decision === "SIGNED" ? "green" : "red"}`;
+    replay(line);
+    $("new-form").elements.id.value = `P-${Date.now().toString(36).toUpperCase()}`;
+    await refreshAll();
+  } finally { btn.disabled = false; btn.textContent = label; }
+};
+
+world = (await api.worldConfig()).data;
+await refreshAll();
+document.body.dataset.state = "ready";
+setInterval(async () => {
+  if (!worldBusy) { try { await refreshAll(); } catch { /* keep the last good panel */ } }
+}, 12000);
 </script>
 </body></html>
