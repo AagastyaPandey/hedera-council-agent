@@ -54,7 +54,7 @@ council member schedules the exact transfer out of a 2-of-2 treasury (Hedera Sch
 npm install
 cp .env.example .env   # fill in the values below, never commit .env
 npm run css:console    # only after editing public/console.html
-npm test               # build + 43 tests (unit + HTTP level)
+npm test               # build + 54 tests (unit + HTTP level)
 npm run preflight      # check Hedera, x402, 0G, World ID; add -- --setup, --create-fee-account, --create-council for one-time Hedera setup
 npm run demo           # demo rehearsal, 4 scenes
 npm start              # HTTP server on :3000 (PORT to change); UI at /

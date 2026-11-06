@@ -30,7 +30,7 @@ Show the repo URL, https://github.com/BeastAyyG/hedera-council-agent, and the tr
 Shortcut: press J on the console (or open `/console.html?judge=1`) to run the whole demo.
 
 ## Checklist before recording
-- `npm test` green, 43/43
+- `npm test` green, 54/54
 - `npm run demo` green, all 4 scenes correct
 - If real mode: .env filled, one real x402 payment settled, HashScan link copied into the README "Hedera transaction IDs" section
 - Close other windows, use a clean terminal, 720p or better
