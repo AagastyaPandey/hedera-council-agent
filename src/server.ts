@@ -31,7 +31,7 @@
 //   GET  /                      -> static UI from public/ (see docs/ui-handoff.md)
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import QRCode from "qrcode";
 import { atomicToUsd, SpendingCap, usdcToAtomic } from "./budget.js";
 import { executePending, processProposal, type CouncilOutcome } from "./council.js";
@@ -776,7 +776,7 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
   return app;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const port = Number(process.env.PORT ?? 3000);
   const app = await createApp({ port });
   app.listen(port, () => {

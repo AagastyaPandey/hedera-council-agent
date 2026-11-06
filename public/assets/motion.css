@@ -19,22 +19,13 @@
 .m-flash-green { animation: m-flash-green 1.1s ease both; animation-delay: var(--d, 0s); }
 @keyframes m-flash-green { 0% { background-color: rgba(63,155,69,.2); } 100% { background-color: transparent; } }
 
-/* the agent working: a sweep runs along the stage that is currently being done */
-.m-working { position: relative; overflow: hidden; }
-.m-working::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--m-red), transparent); transform: translateX(-100%); animation: m-sweep 1s linear infinite; }
+/* request in flight: one indeterminate sweep. No stage is claimed to be complete. */
 @keyframes m-sweep { to { transform: translateX(100%); } }
 
 #workingBar { display: none; margin: 18px 0 0; border: 1px solid var(--m-hair); padding: 12px 14px; font-family: ui-monospace, Menlo, Consolas, monospace; }
-#workingBar.on { display: block; animation: m-in .35s ease both; }
-#workingBar ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-#workingBar li { font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--m-muted); border-top: 2px solid var(--m-hair); padding-top: 6px; transition: color .25s, border-color .25s; }
-#workingBar li.now { color: var(--m-ink); border-top-color: var(--m-red); }
-#workingBar li.now::before { content: "● "; color: var(--m-red); animation: m-blink .7s steps(2) infinite; }
-#workingBar li.done { color: var(--m-green); border-top-color: var(--m-green); }
-#workingBar li.done::before { content: "✓ "; }
-@keyframes m-blink { 50% { opacity: .2; } }
-#workingBar .cap { margin-top: 9px; font-size: 10px; color: var(--m-muted); }
-@media (max-width: 720px) { #workingBar ol { grid-template-columns: 1fr 1fr; } }
+#workingBar.on { display: block; position: relative; overflow: hidden; animation: m-in .35s ease both; }
+#workingBar.on::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--m-red), transparent); transform: translateX(-100%); animation: m-sweep 1.4s linear infinite; }
+#workingBar .cap { font-size: 10px; color: var(--m-muted); }
 
 /* decision flow: a packet runs along the real path and stops where the agent stopped */
 .flow { position: relative; margin: 26px 0 8px; padding: 22px 0 6px; border-top: 1px solid var(--m-hair); }
@@ -69,7 +60,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .m-reveal, .m-wipe, .m-slam, .m-shake, .m-flash-red, .m-flash-green { animation: none !important; opacity: 1 !important; transform: none !important; clip-path: none !important; }
-  .m-working::after, #workingBar li.now::before, .flow .node.fail.lit i::after { animation: none !important; }
+  #workingBar.on::after, .flow .node.fail.lit i::after { animation: none !important; }
   .flow .fill, .flow .packet { transition: none !important; }
 }
 

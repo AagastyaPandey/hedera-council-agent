@@ -21,9 +21,31 @@ export function initJudge(ctx) {
   const $ = (id) => document.getElementById(id);
   const mk = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
 
+  // Page-owned responsive rules: on narrow screens the panel participates in
+  // document flow, so it can never sit on top of submit or approval controls.
+  const style = mk("style");
+  style.textContent = `
+    .judge-head-actions{display:flex;align-items:baseline;gap:10px}
+    .judge-hide{border:0;border-bottom:1px solid var(--m-hair);background:transparent;padding:0;color:var(--m-muted);font:inherit;letter-spacing:.04em;text-transform:uppercase;cursor:pointer}
+    .judge-hide:hover{color:var(--m-red);border-color:var(--m-red)}
+    .judge-start:focus-visible,.judge-hide:focus-visible{outline:2px solid var(--m-red);outline-offset:3px}
+    @media(max-width:640px){
+      body.judge-open{padding-bottom:0}
+      .judge-panel{position:relative;inset:auto;width:auto;max-height:none;margin:20px 12px calc(20px + env(safe-area-inset-bottom));overflow:visible;box-shadow:3px 3px 0 var(--m-ink)}
+      .judge-head{align-items:flex-start}
+      .judge-head-actions{flex-direction:column;align-items:flex-end;gap:4px}
+      .judge-cap{min-height:0}
+    }
+  `;
+  document.head.append(style);
+
   const panel = mk("aside", undefined, "judge-panel"); panel.id = "judgePanel"; panel.hidden = true;
   panel.setAttribute("aria-label", "Judge mode");
-  const head = mk("div", undefined, "judge-head"); head.append(mk("b", "Judge mode"), mk("span", "J hides · Esc stops"));
+  const head = mk("div", undefined, "judge-head");
+  const headActions = mk("div", undefined, "judge-head-actions");
+  headActions.append(mk("span", "J hides · Esc stops"));
+  const hide = mk("button", "Hide", "judge-hide"); hide.type = "button"; hide.setAttribute("aria-label", "Hide judge mode");
+  headActions.append(hide); head.append(mk("b", "Judge mode"), headActions);
   const list = mk("ol", undefined, "judge-steps");
   const items = STEPS.map(([name]) => { const li = mk("li", name); li.dataset.state = "pending"; list.append(li); return li; });
   const cap = mk("p", "Runs the full demo against the live API: sign, refuse, block, approve, sign.", "judge-cap"); cap.id = "judgeCaption"; cap.setAttribute("role", "status"); cap.setAttribute("aria-live", "polite");
@@ -41,7 +63,11 @@ export function initJudge(ctx) {
     return new Promise((res, rej) => { wake = () => rej(STOP); if (aborted) return rej(STOP); setTimeout(res, t); });
   };
   const alive = () => { if (aborted) throw STOP; };
-  const toggle = (on) => { panel.hidden = on === undefined ? !panel.hidden : !on; };
+  const toggle = (on) => {
+    panel.hidden = on === undefined ? !panel.hidden : !on;
+    document.body.classList.toggle("judge-open", !panel.hidden);
+  };
+  hide.onclick = () => toggle(false);
 
   const uid = Date.now().toString(36).toUpperCase();
   const mkProposal = (suffix, purpose, d, t) => ({
@@ -57,7 +83,7 @@ export function initJudge(ctx) {
     const d = res.data.decision;
     ctx.status(d === "SIGNED" ? `Agent signed. Scheduled tx ${res.data.scheduledTxId}.` : d === "PENDING_CHALLENGE" ? `Passed every check. Waiting out the challenge window until ${res.data.challengeUntil}.` : `Agent refused: ${res.data.reason}`, d === "SIGNED" ? "ok" : d === "PENDING_CHALLENGE" ? "" : "bad");
     await ctx.refreshList(); alive();
-    await ctx.select(proposal.id); alive();
+    await ctx.select(proposal.id, { land: true }); alive();
     $("folio")?.scrollIntoView({ behavior: ctx.reduced() ? "auto" : "smooth", block: "start" });
     return res.data;
   }

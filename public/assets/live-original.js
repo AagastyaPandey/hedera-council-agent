@@ -117,6 +117,8 @@ if (document.body.querySelector(".hero .scene")) {
     col(cols[0], "Council", [["Proposals", String(rows.length).padStart(2, "0")], ["Signed", String(signed).padStart(2, "0")], ["Refused", String(refused).padStart(2, "0")], ["Seats", String(seatCount).padStart(2, "0")]]);
     col(cols[1], "Traffic", [["Check price", h.checkPrice], ["Spend left", h.spendCapRemaining], ["Mode", h.mode], ["Buyer", h.x402Buyer.startsWith("real") ? "x402" : "sim"]]);
     col(cols[2], "Reading", [["policy", short(policy.hash, 8), "/policy"], ["log", logLine, "/audit/verify"], ["topic", String(h.hcsTopic).slice(0, 14)], ["treasury", String(h.treasury).slice(0, 14)]]);
+    window.COUNCIL_ATLAS = { rows, mode: h.mode };
+    document.dispatchEvent(new CustomEvent("council:atlas", { detail: window.COUNCIL_ATLAS, bubbles: true }));
   };
   applyAtlas(rows, seats.data.count, h, verify, policy);
 
@@ -197,4 +199,6 @@ if (document.body.querySelector(".hero .scene")) {
     col(foot[1], "Check", [["Result", check.matches ? "matches" : "mismatch"], ["Paid via", o?.paidVia ?? "—"], ["Price", h.checkPrice], ["Gate", !large ? "none" : decision === "SIGNED" ? "approved" : decision === "REFUSED" && o?.worldGateReason && check.matches ? "blocked" : decision === "REFUSED" ? "not reached" : "required"]]);
     col(foot[2], "Commitment", [["policy", short(policy.hash, 12)], ["entry", short(o?.auditHash, 12)], ["schedule", o?.scheduledTxId ?? "—"], ["0G", o?.zeroGRequestId ? short(o.zeroGRequestId, 12) : o?.zeroGSource ?? "—"]]);
   }
+  window.COUNCIL_RECORD = { record: r?.ok ? r.data : null, mode: h.mode };
+  document.dispatchEvent(new CustomEvent("council:record", { detail: window.COUNCIL_RECORD, bubbles: true }));
 }

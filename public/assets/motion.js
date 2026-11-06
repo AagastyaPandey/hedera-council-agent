@@ -42,28 +42,14 @@ export function stagger(nodes, base = 0, step = 0.08) {
   [...nodes].forEach((n, i) => { n.style.setProperty("--d", `${(base + i * step).toFixed(2)}s`); n.classList.remove("m-reveal"); void n.offsetWidth; n.classList.add("m-reveal"); });
 }
 
-// The agent-working strip: shows the real order of what the agent does while the request is in flight.
-// Waits at least `min` ms so the steps are readable even when the simulated agent answers instantly.
-export const AGENT_STEPS = ["Read the transfer", "Pay for the check", "0G verdict", "Compare fields", "World ID, then sign"];
 export async function whileWorking(bar, work, min = 1500) {
-  const items = [...bar.querySelectorAll("li")];
-  if (reduced()) return work();
   bar.classList.add("on");
-  items.forEach((li) => li.classList.remove("now", "done"));
-  let stop = false, i = 0;
-  const run = (async () => {
-    while (!stop) {
-      items.forEach((li, k) => { li.classList.toggle("done", k < i); li.classList.toggle("now", k === i); });
-      if (i < items.length - 1) i += 1;
-      await sleep(min / items.length);
-    }
-  })();
-  const [result] = await Promise.all([work(), sleep(min)]);
-  stop = true; await run;
-  items.forEach((li) => { li.classList.remove("now"); li.classList.add("done"); });
-  await sleep(350);
-  bar.classList.remove("on");
-  return result;
+  try {
+    const [result] = await Promise.all([work(), sleep(reduced() ? 0 : min)]);
+    return result;
+  } finally {
+    bar.classList.remove("on");
+  }
 }
 
 // Packet run along a flow strip. `stops` = index of the node the packet stops at (0-based); passed = reached the end.
