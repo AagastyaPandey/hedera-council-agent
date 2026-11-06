@@ -59,7 +59,14 @@ export function mockedAllowed(config: WorldConfig, hederaNetwork: string): boole
 }
 
 export const JOIN_ACTION = "join-council";
-export const REVOKE_ACTION = "revoke-seat";
+
+// A World ID nullifier is per (person, app, action), so revoking must be proven under the join
+// action for its nullifier to match a seat. The signal tells the two intents apart: a join proof
+// cannot be replayed as a revocation, and a revocation names the seat it targets.
+export const JOIN_SIGNAL = "council-join";
+export function revokeSignal(seat: string): string {
+  return `council-revoke:${seat}`;
+}
 
 export function councilSignAction(proposalId: string): string {
   return `council-sign:${proposalId}`;
@@ -140,7 +147,7 @@ export async function verifyWorldProof(
     const want = hashSignal(expectedSignal);
     const rs = idkitResult.responses;
     if (!Array.isArray(rs) || rs.length === 0 || !rs.every((r) => sameHash((r as { signal_hash?: unknown })?.signal_hash, want))) {
-      return { ok: false, nullifier: null, detail: "Proof was not made for this exact proposal (signal mismatch). The agent does not sign." };
+      return { ok: false, nullifier: null, detail: "Proof was not made for this exact request (signal mismatch). The agent does not act on it." };
     }
   }
   const res = await fetchImpl(`https://developer.world.org/api/v4/verify/${encodeURIComponent(config.rpId)}`, {

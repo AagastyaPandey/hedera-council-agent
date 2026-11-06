@@ -45,10 +45,10 @@ Run `npm run ready`. It prints PASS / TODO / FAIL by group and exits 1 only on F
 ## Submission checklist
 - [ ] UI: `original-console/` is the CODE_TANTRAFEST console, copied in at the owner's instruction (Oct 25, partly other authors, no Solidity included). Confirm with ETHGlobal or delete the folder and the `/original-console` link
 - [ ] UI: the Atlas and report pages are the original CODE_TANTRAFEST designs (Oct 25, before the event). Confirm with ETHGlobal that this satisfies From Scratch, or revert the UI merge (docs/ui-handoff.md)
-- [ ] Repo public, README complete, .env never committed
-- [ ] `npm test` all passing, `npm run demo` 8/8 scenes correct
-- [ ] `npm run preflight` has no FAIL lines
-- [ ] `npm run verify -- <id>` has no FAIL lines for a demo proposal (real mode: read from the mirror node)
+- [x] Repo public, README complete, .env never committed
+- [x] `npm test` all passing, `npm run demo` 8/8 scenes correct
+- [x] `npm run preflight` has no FAIL lines
+- [ ] `npm run verify -- <id>` has no FAIL lines for a demo proposal (real mode: read from the mirror node). Simulated mode: 0 FAIL for a signed and a refused proposal; re-run once credentials are set
 - [ ] Real x402 payment settled, HashScan link in README (or simulated mode stated plainly)
 - [ ] 0G request ids shown in the demo
 - [ ] World ID approved and denied paths both shown

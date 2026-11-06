@@ -82,7 +82,7 @@ Node 20.12 or newer.
 | `POST /proposals/:id/execute` | after the challenge window: re-check everything from scratch (mismatch check, payee registry, epoch, World ID approval still unexpired), then sign or abort. `425` with seconds remaining before the window ends; `409` on a challenged proposal. Needs the API key |
 | `POST /proposals/:id/challenge` | `{reason}` pauses execution (`CHALLENGED` in the log); `{resume: true}` lifts it (`CHALLENGE_RESOLVED`). Needs the API key |
 | `POST /payees/:account/revoke` | revokes a registry entry at runtime (`PAYEE_REVOKED`). `GET /payees` shows `revokedAt`. Needs the API key |
-| `POST /council/revoke` | a current seat holder (World ID proof for action `revoke-seat`, or a labelled MOCKED holder in demo mode) revokes a seat: epoch +1, the nullifier is blocked from rejoining, every pending proposal is cancelled, one `REVOKED` log entry. Needs the API key |
+| `POST /council/revoke` | a current seat holder (World ID proof under the `join-council` action with signal `council-revoke:<seat>`, so its nullifier matches the holder's seat; or a labelled MOCKED holder in demo mode) revokes a seat: epoch +1, the nullifier is blocked from rejoining, every pending proposal is cancelled, one `REVOKED` log entry. Needs the API key |
 | `GET /council/epoch` | `{epoch, revokedSeats}` |
 | `GET /`, `/console.html`, `/report.html?proposal=<id>` | the UI |
 
@@ -326,7 +326,7 @@ Do not put SIM- ids here.
 ## Challenge window and seat revocation: limits
 
 - The real-mode path (schedule admin key set to the proposer, `ScheduleDeleteTransaction` on seat revocation, re-reading the schedule at execution) is written and unit-tested only against a fake chain port. It has not run against Hedera.
-- `POST /council/revoke` checks a World ID proof for action `revoke-seat` and requires its nullifier to equal a seat's nullifier. World ID nullifiers can differ per action, so a real holder's `revoke-seat` nullifier may not match the nullifier stored when they joined. This has not been tried against World; demo mode (MOCKED holders) works.
+- World ID nullifiers are per person, app and action, so `POST /council/revoke` takes a proof under the same `join-council` action as joining; the signal (`council-join` vs `council-revoke:<seat>`) keeps a join proof from being replayed as a revocation. This is tested against a fake verifier only. Not yet tried against World: whether the Developer Portal accepts a second verification by the same person for one action (if the action is limited to one verification, revocation needs that limit raised).
 - No limit ladder was built: revoking only bumps the epoch, blocks the nullifier and cancels pending proposals.
 - A World ID approval lasts 5 minutes. With a window longer than that, a large proposal needs a fresh approval before execution.
 

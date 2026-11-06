@@ -64,6 +64,11 @@ const idkitBase = (action: string, nullifier: string, extra: Record<string, unkn
 });
 
 const idkit = idkitBase;
+const joinProof = (nullifier: string) => {
+  const r = idkitBase("join-council", nullifier);
+  (r.responses[0] as any).signal_hash = hashSignal("council-join");
+  return r;
+};
 
 test("a client-supplied World ID check is ignored", async () => {
   await withServer({ env: {} }, async (call) => {
@@ -191,9 +196,12 @@ test("World configured: verified approval signs once, environment pinned, replay
 
 test("World configured: verified join, one seat per nullifier", async () => {
   await withServer({ env: WORLD_ENV, worldFetch: fakeWorld([]) }, async (call) => {
-    const first = await call("POST", "/council/join", { idkitResult: idkit("join-council", "0xabc") });
+    const unsigned = await call("POST", "/council/join", { idkitResult: idkit("join-council", "0xabc") });
+    assert.equal(unsigned.status, 403);
+    assert.match(unsigned.body.error, /signal mismatch/);
+    const first = await call("POST", "/council/join", { idkitResult: joinProof("0xabc") });
     assert.equal(first.body.joined, true);
-    const again = await call("POST", "/council/join", { idkitResult: idkit("join-council", "0x0abc") });
+    const again = await call("POST", "/council/join", { idkitResult: joinProof("0x0abc") });
     assert.equal(again.status, 409);
     const wrongAction = await call("POST", "/council/join", { idkitResult: idkit("council-sign:P-1", "0xdef") });
     assert.equal(wrongAction.status, 403);

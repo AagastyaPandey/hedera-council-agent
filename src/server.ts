@@ -52,7 +52,8 @@ import {
   JOIN_ACTION,
   loadWorldConfig,
   proposalSignal,
-  REVOKE_ACTION,
+  JOIN_SIGNAL,
+  revokeSignal,
   mockedAllowed,
   mockedWorldCheck,
   rpContextFor,
@@ -130,6 +131,8 @@ interface RegisteredProposal {
   pending: { until: string; epoch: number; challenged: boolean; reason: string | null } | null;
   // True while an execution is in flight, so two calls cannot both sign.
   busy?: boolean;
+  // Settles when the in-flight execution has recorded its outcome.
+  inflight?: Promise<void>;
 }
 
 export interface AppOptions {
@@ -392,6 +395,8 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       return;
     }
     entry.busy = true;
+    let settle!: () => void;
+    entry.inflight = new Promise<void>((resolve) => (settle = resolve));
     try {
       const now = clock();
       const result = await executePending(
@@ -416,6 +421,8 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       res.json(outcome);
     } finally {
       entry.busy = false;
+      entry.inflight = undefined;
+      settle();
     }
   });
 
@@ -490,7 +497,12 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
         res.status(400).json({ error: "World ID is not configured, or no idkitResult was supplied." });
         return;
       }
-      const verified = await verifyWorldProof(agent.world, body.idkitResult, REVOKE_ACTION, options.worldFetch);
+      const named = store.seats().find((s) => (typeof body.seat === "string" && s.seat === body.seat) || (typeof body.nullifier === "string" && s.nullifier === body.nullifier));
+      if (!named) {
+        res.status(404).json({ error: "No such seat. Give a seat id (seat) or its nullifier." });
+        return;
+      }
+      const verified = await verifyWorldProof(agent.world, body.idkitResult, JOIN_ACTION, options.worldFetch, revokeSignal(named.seat));
       if (!verified.ok || !verified.nullifier) {
         res.status(403).json({ revoked: false, error: verified.detail });
         return;
@@ -507,8 +519,12 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       return;
     }
     const revoked = store.revokeSeat(target.seat)!;
-    // Everything still waiting in a challenge window is cancelled in the same step.
-    const cancelled = [...proposals.values()].filter((e) => e.pending && e.lastOutcome);
+    // An execution already past its epoch re-check may be signing right now. Let it record its
+    // real outcome first; cancelling under it would leave CANCELLED on a transfer that went out.
+    // Executions that start after the epoch bump abort on the re-check, so busy entries are skipped.
+    const inFlight = [...proposals.values()].filter((e) => e.inflight);
+    await Promise.all(inFlight.map((e) => e.inflight));
+    const cancelled = [...proposals.values()].filter((e) => e.pending && e.lastOutcome && !e.busy);
     for (const e of cancelled) {
       e.pending = null;
       approvals.delete(e.proposal.id);
@@ -539,6 +555,7 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       by: holder === target.nullifier ? "self" : "another seat holder",
       epoch: revoked.toEpoch,
       cancelledProposals: cancelled.map((e) => e.proposal.id),
+      settledBeforeRevocation: inFlight.map((e) => ({ id: e.proposal.id, decision: e.lastOutcome?.decision ?? null })),
       scheduleDeletion: agent.mode === "real" ? (scheduleErrors.length ? { failed: scheduleErrors } : "deleted") : "simulated: recorded only, no Hedera schedule existed",
       detail,
       ...logged,
@@ -642,9 +659,12 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
   });
 
   // The action is chosen by the server, never by the client.
-  const actionFor = (body: { proposalId?: unknown; join?: unknown; revoke?: unknown }): { action: string; signal?: string } | { error: string; status: number } => {
-    if (body.join === true) return { action: JOIN_ACTION };
-    if (body.revoke === true) return { action: REVOKE_ACTION };
+  const actionFor = (body: { proposalId?: unknown; join?: unknown; revoke?: unknown; seat?: unknown }): { action: string; signal?: string } | { error: string; status: number } => {
+    if (body.join === true) return { action: JOIN_ACTION, signal: JOIN_SIGNAL };
+    if (body.revoke === true) {
+      const seat = store.seats().find((s) => s.seat === body.seat);
+      return seat ? { action: JOIN_ACTION, signal: revokeSignal(seat.seat) } : { error: "No such seat. Give the seat id to revoke (seat).", status: 404 };
+    }
     if (typeof body.proposalId !== "string" || !proposals.has(body.proposalId)) {
       return { error: "Unknown proposal. Submit it to POST /proposals first.", status: 404 };
     }
@@ -656,7 +676,7 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       res.status(503).json({ error: "World ID is not configured on this server (WORLD_RP_ID, WORLD_APP_ID, WORLD_SIGNING_KEY)." });
       return;
     }
-    const a = actionFor({ proposalId: req.body?.proposalId, join: req.body?.join, revoke: req.body?.revoke });
+    const a = actionFor({ proposalId: req.body?.proposalId, join: req.body?.join, revoke: req.body?.revoke, seat: req.body?.seat });
     if ("error" in a) {
       res.status(a.status).json({ error: a.error });
       return;
@@ -727,7 +747,7 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       res.status(400).json({ error: "World ID is not configured, or no idkitResult was supplied." });
       return;
     }
-    const verified = await verifyWorldProof(agent.world, body.idkitResult, JOIN_ACTION, options.worldFetch);
+    const verified = await verifyWorldProof(agent.world, body.idkitResult, JOIN_ACTION, options.worldFetch, JOIN_SIGNAL);
     if (!verified.ok || !verified.nullifier) {
       res.status(403).json({ joined: false, error: verified.detail });
       return;

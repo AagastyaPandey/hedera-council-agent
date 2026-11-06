@@ -7,6 +7,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AddressInfo } from "node:net";
+import { hashSignal } from "@worldcoin/idkit-core";
 import { SpendingCap } from "../src/budget.js";
 import { recheckAtExecution, type RecheckInput } from "../src/challenge.js";
 import type { ChainPort } from "../src/chain.js";
@@ -470,23 +471,37 @@ test("revoke: mocked is refused when World is configured, and a real proof must 
     const b = JSON.parse(String(init?.body));
     return new Response(JSON.stringify({ success: true, action: b.action, environment: b.environment, results: [{ identifier: "proof_of_human", success: true, nullifier: b.responses[0].nullifier }] }), { status: 200 });
   }) as typeof fetch;
-  const proof = (action: string, nullifier: string) => ({
+  // World derives one nullifier per (person, app, action), so "0x1" under join-council is the same person throughout.
+  const proof = (action: string, nullifier: string, signal: string) => ({
     protocol_version: "4.0", nonce: "0x1", action, environment: "production",
-    responses: [{ identifier: "proof_of_human", issuer_schema_id: 1, nullifier, expires_at_min: 1, proof: ["1", "2", "3", "4", "5"] }],
+    responses: [{ identifier: "proof_of_human", issuer_schema_id: 1, nullifier, expires_at_min: 1, signal_hash: hashSignal(signal), proof: ["1", "2", "3", "4", "5"] }],
   });
   await withServer({ env: WORLD, worldFetch: world }, async (call) => {
     assert.equal((await call("POST", "/council/revoke", { mocked: true, byNullifier: "mock:a", seat: "council-seat:1" })).status, 403);
-    assert.equal((await call("POST", "/council/join", { idkitResult: proof("join-council", "0x1") })).body.joined, true);
-    const wrongAction = await call("POST", "/council/revoke", { idkitResult: proof("join-council", "0x1"), seat: "council-seat:1" });
+    assert.equal((await call("POST", "/council/join", { idkitResult: proof("join-council", "0x1", "council-join") })).body.joined, true);
+    assert.equal((await call("POST", "/council/join", { idkitResult: proof("join-council", "0x2", "council-join") })).body.joined, true);
+    // A join proof cannot be replayed as a revocation, and a revocation names its seat.
+    const replayedJoin = await call("POST", "/council/revoke", { idkitResult: proof("join-council", "0x1", "council-join"), seat: "council-seat:2" });
+    assert.equal(replayedJoin.status, 403);
+    assert.match(replayedJoin.body.error, /signal mismatch/);
+    const otherSeat = await call("POST", "/council/revoke", { idkitResult: proof("join-council", "0x1", "council-revoke:council-seat:1"), seat: "council-seat:2" });
+    assert.equal(otherSeat.status, 403);
+    const wrongAction = await call("POST", "/council/revoke", { idkitResult: proof("revoke-seat", "0x1", "council-revoke:council-seat:2"), seat: "council-seat:2" });
     assert.equal(wrongAction.status, 403);
-    const stranger = await call("POST", "/council/revoke", { idkitResult: proof("revoke-seat", "0x2"), seat: "council-seat:1" });
+    const stranger = await call("POST", "/council/revoke", { idkitResult: proof("join-council", "0x9", "council-revoke:council-seat:2"), seat: "council-seat:2" });
     assert.equal(stranger.status, 403);
     assert.match(stranger.body.error, /seat holder/);
-    // The rp-context for the revoke action is server-chosen.
-    assert.equal((await call("POST", "/world/rp-context", { revoke: true })).body.action, "revoke-seat");
-    const ok = await call("POST", "/council/revoke", { idkitResult: proof("revoke-seat", "0x1"), seat: "council-seat:1" });
+    assert.equal((await call("POST", "/council/revoke", { idkitResult: proof("join-council", "0x1", "council-revoke:council-seat:9"), seat: "council-seat:9" })).status, 404);
+    // The rp-context for revocation is server-chosen: the join action, a signal naming the seat.
+    const ctx = (await call("POST", "/world/rp-context", { revoke: true, seat: "council-seat:2" })).body;
+    assert.deepEqual([ctx.action, ctx.signal], ["join-council", "council-revoke:council-seat:2"]);
+    assert.equal((await call("POST", "/world/rp-context", { revoke: true })).status, 404);
+    assert.equal((await call("POST", "/world/rp-context", { join: true })).body.signal, "council-join");
+    // Seat 1's holder revokes seat 2 with the same nullifier they joined with.
+    const ok = await call("POST", "/council/revoke", { idkitResult: proof("join-council", "0x1", "council-revoke:council-seat:2"), seat: "council-seat:2" });
     assert.equal(ok.status, 200);
-    assert.equal((await call("POST", "/council/join", { idkitResult: proof("join-council", "0x1") })).body.error, "This seat was revoked");
+    assert.equal(ok.body.by, "another seat holder");
+    assert.equal((await call("POST", "/council/join", { idkitResult: proof("join-council", "0x2", "council-join") })).body.error, "This seat was revoked");
   });
 });
 
@@ -528,4 +543,40 @@ test("store: epoch and revoked seats survive a restart", () => {
   // An old state file without the new fields loads with epoch 1.
   writeFileSync(file, JSON.stringify({ seats: [], usedApprovals: [] }));
   assert.equal(new StateStore(file).epoch(), 1);
+});
+
+test("revoke during an in-flight execution: the execution's real outcome stands, it is not overwritten as CANCELLED", async () => {
+  let clock = T0;
+  let release!: () => void;
+  const gate = new Promise<void>((r) => (release = r));
+  let signing!: () => void;
+  const signingStarted = new Promise<void>((r) => (signing = r));
+  const deleted: string[] = [];
+  const sched: OnChainSchedule = {
+    scheduleId: "0.0.7777", memo: "", creator: "0.0.6000", payer: "0.0.6000", executed: false, deleted: false, signedBy: 1,
+    hbarTransfers: [], transfer: { from: "0.0.5000", payee: "0.0.6666", amountTinybars: 10_000_000, token: "HBAR" }, problem: null,
+  };
+  const chain: ChainPort = {
+    resolve: async () => sched,
+    sign: async (id) => { signing(); await gate; return { scheduleId: id, action: "signed" }; },
+    cancel: async (id) => { deleted.push(id); },
+  };
+  await withServer({ env: WIN, chain, now: () => clock }, async (call) => {
+    await joinSeat(call, "a");
+    assert.equal((await call("POST", "/proposals", { proposal: sprop("F-1") })).body.decision, "PENDING_CHALLENGE");
+    clock = at(601);
+    const executing = call("POST", "/proposals/F-1/execute");
+    await signingStarted;
+    const revoking = call("POST", "/council/revoke", { mocked: true, byNullifier: "mock:a", seat: "council-seat:1" });
+    await new Promise((r) => setTimeout(r, 50));
+    release();
+    const [ex, rv] = await Promise.all([executing, revoking]);
+    assert.equal(ex.body.decision, "SIGNED");
+    assert.equal(rv.status, 200);
+    assert.deepEqual(rv.body.cancelledProposals, []);
+    assert.deepEqual(rv.body.settledBeforeRevocation, [{ id: "F-1", decision: "SIGNED" }]);
+    assert.deepEqual(deleted, []);
+    const list = (await call("GET", "/proposals")).body.proposals;
+    assert.equal(list.find((p: any) => p.id === "F-1").decision, "SIGNED");
+  });
 });
