@@ -54,7 +54,8 @@ export function initJudge(ctx) {
     const res = await ctx.whileWorking($("workingBar"), () => ctx.api.submit(proposal), 1500 * speed);
     alive();
     if (res.status >= 400) throw new Error(res.data?.error ?? `submit failed (${res.status})`);
-    ctx.status(res.data.decision === "SIGNED" ? `Agent signed. Scheduled tx ${res.data.scheduledTxId}.` : `Agent refused: ${res.data.reason}`, res.data.decision === "SIGNED" ? "ok" : "bad");
+    const d = res.data.decision;
+    ctx.status(d === "SIGNED" ? `Agent signed. Scheduled tx ${res.data.scheduledTxId}.` : d === "PENDING_CHALLENGE" ? `Passed every check. Waiting out the challenge window until ${res.data.challengeUntil}.` : `Agent refused: ${res.data.reason}`, d === "SIGNED" ? "ok" : d === "PENDING_CHALLENGE" ? "" : "bad");
     await ctx.refreshList(); alive();
     await ctx.select(proposal.id); alive();
     $("folio")?.scrollIntoView({ behavior: ctx.reduced() ? "auto" : "smooth", block: "start" });
@@ -77,8 +78,8 @@ export function initJudge(ctx) {
       };
       await go(0, async () => {
         const o = await submit(routine);
-        expect(o.decision === "SIGNED", `Routine proposal was ${o.decision}, expected SIGNED.`);
-        return "Signed. The check passed, nothing needed approval.";
+        expect(o.decision === "SIGNED" || o.decision === "PENDING_CHALLENGE", `Routine proposal was ${o.decision}, expected SIGNED.`);
+        return o.decision === "SIGNED" ? "Signed. The check passed, nothing needed approval." : "The check passed. It waits out the challenge window, then is re-checked before signing.";
       });
       await go(1, async () => {
         const o = await submit(mismatch);
@@ -103,8 +104,8 @@ export function initJudge(ctx) {
       await ctx.select(large.id); mark(3, "done"); say("Approved (mocked, demo only). Single use, five minutes.", "ok"); await pause(6500);
       await go(4, async () => {
         const o = await submit(large);
-        expect(o.decision === "SIGNED", `Large proposal was ${o.decision} after approval, expected SIGNED.`);
-        return "Signed. The approval is spent.";
+        expect(o.decision === "SIGNED" || o.decision === "PENDING_CHALLENGE", `Large proposal was ${o.decision} after approval, expected SIGNED.`);
+        return o.decision === "SIGNED" ? "Signed. The approval is spent." : "Approved and waiting out the challenge window. The approval is spent at execution.";
       });
       step = 5; mark(5, "active"); say(STEPS[5][1]); await pause(1800);
       await ctx.select(mismatch.id); alive();

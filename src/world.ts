@@ -59,6 +59,7 @@ export function mockedAllowed(config: WorldConfig, hederaNetwork: string): boole
 }
 
 export const JOIN_ACTION = "join-council";
+export const REVOKE_ACTION = "revoke-seat";
 
 export function councilSignAction(proposalId: string): string {
   return `council-sign:${proposalId}`;

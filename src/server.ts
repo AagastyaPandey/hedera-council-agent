@@ -11,6 +11,12 @@
 //     Client-supplied World ID "checks" are ignored: only approvals the
 //     server verified itself count. A proposal id is bound to its content
 //     on first submission, so an approval cannot be reused for a changed transfer.
+//   POST /proposals/:id/execute -> after the challenge window: re-check, then sign or abort
+//   POST /proposals/:id/challenge -> pause ({reason}) or resume ({resume:true}) execution
+//   POST /payees/:account/revoke -> revoke a payee registry entry at runtime
+//   POST /council/revoke        -> a seat holder revokes a seat: epoch +1, pending proposals cancelled
+//   GET  /council/epoch         -> {epoch, revokedSeats}
+//   State-changing routes above need COUNCIL_API_KEY when it is set (src/auth.ts).
 //   GET  /proposals             -> list of registered proposals
 //   GET  /proposals/:id         -> registered proposal, last outcome, approval state
 //   GET  /proposals/:id/evidence -> evidence bundle for the decision, with a digest
@@ -28,11 +34,12 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import QRCode from "qrcode";
 import { atomicToUsd, SpendingCap, usdcToAtomic } from "./budget.js";
-import { processProposal, type CouncilOutcome } from "./council.js";
+import { executePending, processProposal, type CouncilOutcome } from "./council.js";
+import { loadApiAuth } from "./auth.js";
 import { checkProposal } from "./checker.js";
 import { HederaClient, loadHederaConfig } from "./hedera.js";
 import { canonical, sha256, verifyChain, isChainedEntry } from "./auditlog.js";
-import { HederaChain, loadCouncilSetup } from "./chain.js";
+import { HederaChain, loadCouncilSetup, type ChainPort } from "./chain.js";
 import { SimulatedCheckPayer, X402CheckPayer, type CheckPayer } from "./payment.js";
 import { isLargeProposal, proposalFingerprint, validateProposal, type Proposal } from "./proposal.js";
 import { DEMO_PAYEES, loadPayeeRegistry } from "./payee.js";
@@ -45,6 +52,7 @@ import {
   JOIN_ACTION,
   loadWorldConfig,
   proposalSignal,
+  REVOKE_ACTION,
   mockedAllowed,
   mockedWorldCheck,
   rpContextFor,
@@ -61,6 +69,13 @@ const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 function envInt(env: NodeJS.ProcessEnv, name: string, fallback: number): number {
   const v = Number(env[name]);
   return Number.isSafeInteger(v) && v > 0 ? v : fallback;
+}
+
+// 0 (the default) disables the challenge window.
+function windowSeconds(env: NodeJS.ProcessEnv): number {
+  const v = Number((env.CHALLENGE_WINDOW_SECONDS ?? "").trim() || 0);
+  if (!Number.isSafeInteger(v) || v < 0) throw new Error("CHALLENGE_WINDOW_SECONDS must be a whole number of seconds, 0 or more");
+  return v;
 }
 
 export function buildAgent(env: NodeJS.ProcessEnv = process.env, port = Number(env.PORT ?? 3000)) {
@@ -94,6 +109,7 @@ export function buildAgent(env: NodeJS.ProcessEnv = process.env, port = Number(e
     zeroG: loadZeroGConfig(env),
     world: loadWorldConfig(env),
     largeThresholdTinybars: envInt(env, "LARGE_PROPOSAL_TINYBARS", 50_000_000),
+    challengeWindowSeconds: windowSeconds(env),
     payer,
     chain: mode === "real" ? new HederaChain(hedera, council) : undefined,
     councilProposer: council?.memberAccountId ?? null,
@@ -110,20 +126,31 @@ interface RegisteredProposal {
   proposal: Proposal;
   fingerprint: string;
   lastOutcome: CouncilOutcome | null;
+  // Set while the proposal waits in its challenge window.
+  pending: { until: string; epoch: number; challenged: boolean; reason: string | null } | null;
+  // True while an execution is in flight, so two calls cannot both sign.
+  busy?: boolean;
 }
 
 export interface AppOptions {
   env?: NodeJS.ProcessEnv;
   // null keeps seats and spent approvals in memory (tests).
   statePath?: string | null;
+  // Injected clock (tests): drives challenge windows and expiry checks.
+  now?: () => Date;
   // Injected World verify transport (tests).
   worldFetch?: typeof fetch;
+  // Injected Hedera side (tests): lets seat revocation be exercised without a network.
+  chain?: ChainPort;
   port?: number;
 }
 
 export async function createApp(options: AppOptions = {}): Promise<Express> {
   const env = options.env ?? process.env;
-  const agent = buildAgent(env, options.port);
+  const clock = options.now ?? (() => new Date());
+  const built = buildAgent(env, options.port);
+  const agent = { ...built, now: clock, chain: options.chain ?? built.chain };
+  const auth = loadApiAuth(env);
   const store = new StateStore(
     options.statePath === undefined ? (env.STATE_FILE ?? join(ROOT, ".data", "state.json")) : options.statePath,
   );
@@ -143,7 +170,10 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     verdict: { zeroG: agent.zeroG.apiKey ? "configured" : "not configured", requireVerdict: agent.requireVerdict, allowNo0G: agent.allowNo0G },
     worldGate: { requiredForLarge: true, environment: agent.world.environment, approvalTtlMinutes: APPROVAL_TTL_MINUTES, singleUse: true },
     transferSource: agent.mode === "real" ? "hedera-mirror-node" : "request",
+    challenge: { windowSeconds: agent.challengeWindowSeconds, recheckAtExecution: true },
+    auth: { enabled: auth.enabled },
   });
+  const authLabel = auth.enabled ? "API key required for state-changing routes" : "open (demo)";
   agent.hedera.setPolicy(policyHash);
   const proposals = new Map<string, RegisteredProposal>();
   const worldOn = isWorldConfigured(agent.world);
@@ -151,6 +181,9 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
   const app = express();
   app.use(express.json({ limit: "64kb" }));
 
+  if (agent.mode === "real" && !auth.enabled) {
+    console.warn("COUNCIL_API_KEY is not set: POST /proposals and the other state-changing routes are unauthenticated. Set it before exposing this server.");
+  }
   if (agent.mode === "real" && agent.payTo === agent.hedera.config.accountId) {
     console.warn(
       "X402_PAY_TO equals HEDERA_ACCOUNT_ID: the agent would pay its own check fees to itself. " +
@@ -228,6 +261,9 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       payeeRegistry: payeeSummary(),
       world: worldOn ? `real (${agent.world.environment})` : "not configured, MOCKED approvals only",
       councilSeats: store.seats().length,
+      epoch: store.epoch(),
+      auth: authLabel,
+      challengeWindow: agent.challengeWindowSeconds > 0 ? `${agent.challengeWindowSeconds}s, re-checked at execution` : "off (signs as soon as every check passes)",
       note:
         agent.mode === "simulated"
           ? "SIMULATED mode: no Hedera credentials set. Chain ids are SIM- ids, not real."
@@ -262,7 +298,7 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     });
   });
 
-  app.post("/proposals", async (req, res) => {
+  app.post("/proposals", auth.require, async (req, res) => {
     const v = validateProposal((req.body as { proposal?: unknown } | null)?.proposal);
     if (!v.ok) {
       res.status(400).json({ error: v.error });
@@ -275,14 +311,20 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       res.status(409).json({ error: `Proposal ${proposal.id} was already submitted with different content. Use a new id.` });
       return;
     }
-    const entry = known ?? { proposal, fingerprint, lastOutcome: null };
+    // A proposal in its challenge window is not processed again (that would pay for a second check).
+    if (known?.pending && known.lastOutcome) {
+      res.json({ ...known.lastOutcome, note: `Already in its challenge window until ${known.pending.until}; not re-processed. Use POST /proposals/${proposal.id}/execute.` });
+      return;
+    }
+    const entry = known ?? { proposal, fingerprint, lastOutcome: null, pending: null };
     proposals.set(proposal.id, entry);
     // Resubmissions use the proposal as already resolved against Hedera, so
     // the same schedule is checked and signed, not a new one created.
-    const outcome = await processProposal(agent, entry.proposal, approvals.get(proposal.id));
+    const outcome = await processProposal(agent, entry.proposal, approvals.get(proposal.id, clock()));
     if (outcome.usedWorldApproval) approvals.delete(proposal.id);
     entry.proposal = outcome.proposal;
     entry.lastOutcome = outcome;
+    entry.pending = outcome.decision === "PENDING_CHALLENGE" && outcome.challengeUntil ? { until: outcome.challengeUntil, epoch: store.epoch(), challenged: false, reason: null } : null;
     const needsApproval =
       outcome.decision === "REFUSED" && outcome.worldGateReason !== null && outcome.checkMatches;
     res.json(needsApproval ? { ...outcome, approveUrl: `/console.html?proposal=${encodeURIComponent(proposal.id)}` } : outcome);
@@ -298,6 +340,8 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
         matches: checkProposal(e.proposal).matches,
         decision: e.lastOutcome?.decision ?? null,
         scheduledTxId: e.lastOutcome?.scheduledTxId ?? null,
+        challengeUntil: e.pending?.until ?? null,
+        challenged: e.pending?.challenged ?? false,
       })),
     });
   });
@@ -308,13 +352,196 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       res.status(404).json({ error: "Unknown proposal. Submit it to POST /proposals first." });
       return;
     }
-    const approval = approvals.get(entry.proposal.id);
+    const approval = approvals.get(entry.proposal.id, clock());
     res.json({
       proposal: entry.proposal,
       large: isLargeProposal(entry.proposal, agent.largeThresholdTinybars),
       check: checkProposal(entry.proposal),
       lastOutcome: entry.lastOutcome,
       approval: approval ? { source: approval.source, expiresAt: approval.expiresAt } : null,
+      challenge: entry.pending ? { until: entry.pending.until, challenged: entry.pending.challenged, reason: entry.pending.reason, epoch: entry.pending.epoch } : null,
+    });
+  });
+
+
+  // Audit entries that are not a council decision (challenge, revocation).
+  const auditNote = async (proposalId: string, event: string, detail: string, proposalForHash?: Proposal) => {
+    try {
+      const r = await agent.hedera.auditEntry({
+        proposalId,
+        event,
+        detail,
+        at: clock().toISOString(),
+        ...(proposalForHash ? { meta: { proposalHash: sha256(proposalFingerprint(proposalForHash)) } } : {}),
+      });
+      return { auditTxId: r.txId, auditSeq: r.entry.seq, auditHash: r.entry.hash, auditError: null };
+    } catch (err) {
+      return { auditTxId: null, auditSeq: null, auditHash: null, auditError: `HCS audit failed: ${err instanceof Error ? err.message : String(err)}` };
+    }
+  };
+
+  // Execute after the challenge window: re-check everything, then sign or abort.
+  app.post("/proposals/:id/execute", auth.require, async (req, res) => {
+    const entry = proposals.get(String(req.params.id));
+    if (!entry || !entry.lastOutcome) {
+      res.status(404).json({ error: "Unknown proposal. Submit it to POST /proposals first." });
+      return;
+    }
+    if (!entry.pending || entry.busy) {
+      res.status(409).json({ error: `Proposal ${entry.proposal.id} is not waiting to be executed (decision: ${entry.lastOutcome.decision}).` });
+      return;
+    }
+    entry.busy = true;
+    try {
+      const now = clock();
+      const result = await executePending(
+        agent,
+        { outcome: entry.lastOutcome, challengeUntil: entry.pending.until, challenged: entry.pending.challenged, challengeReason: entry.pending.reason, createdEpoch: entry.pending.epoch },
+        { currentEpoch: store.epoch(), approval: approvals.get(entry.proposal.id, now) },
+      );
+      if (result.kind === "too-early") {
+        res.status(425).json({ error: result.reason, secondsRemaining: result.secondsRemaining, challengeUntil: entry.pending.until });
+        return;
+      }
+      if (result.kind === "challenged") {
+        res.status(409).json({ error: result.reason, challenged: true });
+        return;
+      }
+      const outcome = result.outcome;
+      // A spent approval is gone; so is one that backed an aborted execution.
+      approvals.delete(entry.proposal.id);
+      entry.proposal = outcome.proposal;
+      entry.lastOutcome = outcome;
+      entry.pending = null;
+      res.json(outcome);
+    } finally {
+      entry.busy = false;
+    }
+  });
+
+  // Pause (reason) or resume ({resume: true}) a proposal in its challenge window.
+  app.post("/proposals/:id/challenge", auth.require, async (req, res) => {
+    const entry = proposals.get(String(req.params.id));
+    if (!entry) {
+      res.status(404).json({ error: "Unknown proposal." });
+      return;
+    }
+    if (!entry.pending) {
+      res.status(409).json({ error: `Proposal ${entry.proposal.id} is not in a challenge window (decision: ${entry.lastOutcome?.decision ?? "none"}).` });
+      return;
+    }
+    const body = (req.body ?? {}) as { reason?: unknown; resume?: unknown };
+    if (body.resume === true) {
+      if (!entry.pending.challenged) {
+        res.status(409).json({ error: "This proposal is not challenged." });
+        return;
+      }
+      entry.pending.challenged = false;
+      entry.pending.reason = null;
+      const logged = await auditNote(entry.proposal.id, "CHALLENGE_RESOLVED", `Challenge on ${entry.proposal.id} resolved; execution may proceed after ${entry.pending.until}.`, entry.proposal);
+      res.json({ proposalId: entry.proposal.id, state: "pending", challengeUntil: entry.pending.until, ...logged });
+      return;
+    }
+    if (typeof body.reason !== "string" || body.reason.trim().length === 0 || body.reason.length > 300) {
+      res.status(400).json({ error: "reason (1-300 chars) is required to challenge a proposal, or send {resume: true}." });
+      return;
+    }
+    if (entry.pending.challenged) {
+      res.status(409).json({ error: "This proposal is already challenged." });
+      return;
+    }
+    entry.pending.challenged = true;
+    entry.pending.reason = body.reason.trim();
+    const logged = await auditNote(entry.proposal.id, "CHALLENGED", `Challenged: ${entry.pending.reason}`.slice(0, 400), entry.proposal);
+    res.json({ proposalId: entry.proposal.id, state: "challenged", reason: entry.pending.reason, challengeUntil: entry.pending.until, ...logged });
+  });
+
+  app.post("/payees/:account/revoke", auth.require, async (req, res) => {
+    const account = String(req.params.account);
+    const n = agent.payees.revoke(account, clock());
+    if (n === 0) {
+      res.status(404).json({ error: `${account} is not an active entry in the payee registry.` });
+      return;
+    }
+    const logged = await auditNote("PAYEES", "PAYEE_REVOKED", `Payee ${account} revoked in the council payee registry (${agent.payees.source}).`);
+    res.json({ account, revoked: n, source: agent.payees.source, ...logged });
+  });
+
+  app.get("/council/epoch", (_req, res) => {
+    res.json({ epoch: store.epoch(), revokedSeats: store.revokedSeatCount() });
+  });
+
+  // Seat revocation: only a current seat holder, proven human, may revoke.
+  app.post("/council/revoke", auth.require, async (req, res) => {
+    const body = (req.body ?? {}) as { seat?: unknown; nullifier?: unknown; idkitResult?: Record<string, unknown>; mocked?: unknown; byNullifier?: unknown };
+    let holder: string | null = null;
+    if (body.mocked === true) {
+      if (!allowMocked) {
+        res.status(403).json({ error: "Mocked revocations are disabled: World ID is configured (or this is mainnet)." });
+        return;
+      }
+      if (typeof body.byNullifier !== "string" || !store.seats().some((s) => s.source === "mocked" && s.nullifier === body.byNullifier)) {
+        res.status(403).json({ error: "Only a current seat holder may revoke a seat." });
+        return;
+      }
+      holder = body.byNullifier;
+    } else {
+      if (!worldOn || !body.idkitResult || typeof body.idkitResult !== "object") {
+        res.status(400).json({ error: "World ID is not configured, or no idkitResult was supplied." });
+        return;
+      }
+      const verified = await verifyWorldProof(agent.world, body.idkitResult, REVOKE_ACTION, options.worldFetch);
+      if (!verified.ok || !verified.nullifier) {
+        res.status(403).json({ revoked: false, error: verified.detail });
+        return;
+      }
+      if (!store.seats().some((s) => s.source === "world" && s.nullifier === verified.nullifier)) {
+        res.status(403).json({ revoked: false, error: "Only a current seat holder may revoke a seat." });
+        return;
+      }
+      holder = verified.nullifier;
+    }
+    const target = store.seats().find((s) => (typeof body.seat === "string" && s.seat === body.seat) || (typeof body.nullifier === "string" && s.nullifier === body.nullifier));
+    if (!target) {
+      res.status(404).json({ error: "No such seat. Give a seat id (seat) or its nullifier." });
+      return;
+    }
+    const revoked = store.revokeSeat(target.seat)!;
+    // Everything still waiting in a challenge window is cancelled in the same step.
+    const cancelled = [...proposals.values()].filter((e) => e.pending && e.lastOutcome);
+    for (const e of cancelled) {
+      e.pending = null;
+      approvals.delete(e.proposal.id);
+      e.lastOutcome = { ...e.lastOutcome!, decision: "CANCELLED", reason: `Cancelled: seat ${revoked.seat.seat} was revoked (epoch ${revoked.fromEpoch} -> ${revoked.toEpoch}).`, challengeUntil: null };
+    }
+    const scheduleErrors: string[] = [];
+    if (agent.chain?.cancel) {
+      for (const e of cancelled) {
+        const id = e.lastOutcome!.scheduledTxId ?? e.proposal.scheduleId;
+        if (!id) continue;
+        try {
+          await agent.chain.cancel(id);
+        } catch (err) {
+          scheduleErrors.push(`${id}: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+    }
+    const detail =
+      `epoch ${revoked.fromEpoch} -> ${revoked.toEpoch}, seat ${revoked.seat.seat} revoked, ${cancelled.length} pending proposals cancelled` +
+      (scheduleErrors.length ? `, ${scheduleErrors.length} schedule deletions failed` : "");
+    const logged = await auditNote("COUNCIL", "REVOKED", detail);
+    for (const e of cancelled) {
+      e.lastOutcome = { ...e.lastOutcome!, cancelledBy: { auditSeq: logged.auditSeq, auditHash: logged.auditHash, epoch: revoked.toEpoch } };
+    }
+    res.json({
+      revoked: true,
+      seat: revoked.seat.seat,
+      by: holder === target.nullifier ? "self" : "another seat holder",
+      epoch: revoked.toEpoch,
+      cancelledProposals: cancelled.map((e) => e.proposal.id),
+      scheduleDeletion: agent.mode === "real" ? (scheduleErrors.length ? { failed: scheduleErrors } : "deleted") : "simulated: recorded only, no Hedera schedule existed",
+      detail,
+      ...logged,
     });
   });
 
@@ -334,7 +561,7 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
   });
 
   app.get("/policy", (_req, res) => {
-    res.json({ policy, hash: policyHash, note: "Every HCS audit entry carries this hash." });
+    res.json({ policy, hash: policyHash, auth: authLabel, note: "Every HCS audit entry carries this hash." });
   });
 
   const topicLink = (topicId: string | null) =>
@@ -398,6 +625,9 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
         hashscan: real && o.scheduledTxId ? `https://hashscan.io/${net === "mainnet" ? "mainnet" : "testnet"}/schedule/${o.scheduledTxId}` : null,
       },
       audit: { txId: o.auditTxId, seq: o.auditSeq, entryHash: o.auditHash, topicId: agent.hedera.config.topicId || null, hashscan: topicLink(agent.hedera.config.topicId || null) },
+      ...(o.challengeUntil || o.cancelledBy
+        ? { challenge: { until: o.challengeUntil, challenged: entry.pending?.challenged ?? false, cancelledBy: o.cancelledBy ?? null } }
+        : {}),
     };
     res.json({ ...bundle, digest: sha256(canonical(bundle)), digestOf: "sha256 over the canonical JSON of this bundle without the digest field" });
   });
@@ -412,8 +642,9 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
   });
 
   // The action is chosen by the server, never by the client.
-  const actionFor = (body: { proposalId?: unknown; join?: unknown }): { action: string; signal?: string } | { error: string; status: number } => {
+  const actionFor = (body: { proposalId?: unknown; join?: unknown; revoke?: unknown }): { action: string; signal?: string } | { error: string; status: number } => {
     if (body.join === true) return { action: JOIN_ACTION };
+    if (body.revoke === true) return { action: REVOKE_ACTION };
     if (typeof body.proposalId !== "string" || !proposals.has(body.proposalId)) {
       return { error: "Unknown proposal. Submit it to POST /proposals first.", status: 404 };
     }
@@ -425,7 +656,7 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       res.status(503).json({ error: "World ID is not configured on this server (WORLD_RP_ID, WORLD_APP_ID, WORLD_SIGNING_KEY)." });
       return;
     }
-    const a = actionFor(req.body ?? {});
+    const a = actionFor({ proposalId: req.body?.proposalId, join: req.body?.join, revoke: req.body?.revoke });
     if ("error" in a) {
       res.status(a.status).json({ error: a.error });
       return;
@@ -480,6 +711,10 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
         res.status(400).json({ error: "nullifier (1-80 chars) is required for a mocked join." });
         return;
       }
+      if (store.isRevoked(`mock:${body.nullifier}`)) {
+        res.status(403).json({ joined: false, error: "This seat was revoked" });
+        return;
+      }
       const seat = store.addSeat(`mock:${body.nullifier}`, "mocked");
       if (!seat) {
         res.status(409).json({ joined: false, error: "This person already holds a council seat." });
@@ -497,6 +732,10 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       res.status(403).json({ joined: false, error: verified.detail });
       return;
     }
+    if (store.isRevoked(verified.nullifier)) {
+      res.status(403).json({ joined: false, error: "This seat was revoked" });
+      return;
+    }
     const seat = store.addSeat(verified.nullifier, "world");
     if (!seat) {
       res.status(409).json({ joined: false, error: "This person already holds a council seat." });
@@ -508,6 +747,7 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
   app.get("/council/seats", (_req, res) => {
     res.json({
       count: store.seats().length,
+      epoch: store.epoch(),
       seats: store.seats().map((s) => ({ seat: s.seat, source: s.source, joinedAt: s.joinedAt, nullifier: `${s.nullifier.slice(0, 10)}…` })),
     });
   });
