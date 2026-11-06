@@ -243,6 +243,7 @@ import { runWorldFlow, runMockedFlow } from "/assets/world-flow.js";
 import { replay, stagger, whileWorking as animateWorking, reduced, runFlow } from "/assets/motion.js";
 import { initJudge } from "/assets/judge.js";
 import { mountJourney, renderTransfer } from "/assets/council-scene.js";
+import { mountCompanion } from "/assets/scroll-companion.js";
 const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
 const status = (t, tone = "") => {
@@ -303,6 +304,7 @@ let selectedRecord = null;
 let selectionVersion = 0;
 let listVersion = 0;
 const journey = mountJourney($("journey"));
+mountCompanion({ decisionHost: $("journey") });
 
 function restoreJourney() {
   journey.setActivity("idle");

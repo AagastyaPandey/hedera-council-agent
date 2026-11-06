@@ -85,3 +85,16 @@
 .judge-start:disabled { opacity: .5; cursor: default; }
 .judge-process-note { margin: 0 0 10px; border-left: 2px solid var(--m-red); padding-left: 10px; font: 700 14px/1.4 ui-monospace, Menlo, Consolas, monospace; color: var(--m-red); animation: m-in .5s ease both; }
 @media (prefers-reduced-motion: reduce) { .judge-process-note { animation: none !important; opacity: 1 !important; transform: none !important; } }
+
+/* micro-interactions: press, lift and focus on controls and rows */
+button,.doc-btn,a[class*="btn"]{transition:transform .15s cubic-bezier(.2,.8,.2,1),box-shadow .15s,border-color .15s,color .15s,background-color .15s}
+button:not(:disabled):hover{transform:translateY(-1px)}
+button:not(:disabled):active{transform:translateY(1px) scale(.985)}
+button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--m-red);outline-offset:3px}
+input:focus,select:focus,textarea:focus{border-color:var(--m-red);box-shadow:0 0 0 3px rgba(226,59,40,.12);transition:border-color .15s,box-shadow .15s}
+details>summary{transition:color .15s,padding-left .2s}
+details>summary:hover{color:var(--m-red);padding-left:4px}
+details[open]>:not(summary){animation:m-in .4s cubic-bezier(.2,.8,.2,1) both}
+.doc-ledger tr{transition:background-color .2s}
+.doc-ledger tbody tr:hover{background-color:rgba(226,59,40,.05)}
+@media(prefers-reduced-motion:reduce){button,details>summary{transition:none}button:hover,button:active{transform:none!important}details[open]>:not(summary){animation:none}}
