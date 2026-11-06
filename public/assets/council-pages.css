@@ -165,3 +165,30 @@ body.cv-page{overflow-x:clip}
   .cv-yes,.cv-no,.cv-spend-fill,.cv-member,.cv-textarea{transition:none}
   .cv-bump,.cv-stamp,.cv-card,.cv-avatar *{animation:none!important}
 }
+/* Invites */
+.cv-invite-note{margin:0 0 12px;border:1px solid var(--safe);background:rgba(28,107,69,.06);padding:10px 12px;font-size:12px;line-height:1.55;color:var(--ink)}
+.cv-invite-note b{margin-right:6px;color:var(--safe);font:700 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.cv-invite{max-width:620px;margin-top:14px;border:1px solid var(--ink);border-left:3px solid var(--safe);background:rgba(255,255,255,.4);padding:12px 14px}
+.cv-invite-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;margin:0}
+.cv-invite-code{font:600 15px/1.2 var(--mono);letter-spacing:.04em;color:var(--ink);overflow-wrap:anywhere}
+.cv-invite-head small{font-size:10.5px;color:var(--muted)}
+.cv-invite-row{display:flex;gap:8px;margin-top:10px}
+.cv-invite-link{flex:1 1 auto;width:100%}
+.cv-invite-row .btn{flex:none;height:auto;min-height:36px}
+.cv-invite .cv-note{display:block;margin:8px 0 0}
+/* Removal votes */
+.cv-card[data-kind="revocation"]{border-top-style:dashed;background:rgba(226,59,40,.035)}
+.cv-card[data-kind="revocation"] .cv-card-head .doc-folio{color:var(--red)}
+.cv-kind-tag{display:inline-block;margin-right:6px;border:1px solid var(--red);padding:1px 5px;font:600 8.5px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--red);vertical-align:1px}
+/* Member cards with actions */
+.cv-member-wrap{display:flex;flex-direction:column;min-width:0}
+.cv-member-wrap .cv-member{flex:1 1 auto}
+.cv-member-acts{display:flex;flex-wrap:wrap;align-items:center;gap:6px;border:1px solid var(--hair);border-top:0;padding:6px 8px}
+.cv-member-act{appearance:none;border:0;background:none;padding:2px 0;font:600 10px/1.4 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--red);cursor:pointer;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px;transition:text-decoration-color .15s}
+.cv-member-act:hover{text-decoration-color:currentColor}
+.cv-member-act:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.cv-member-act:disabled{color:var(--muted);cursor:default;text-decoration:none}
+.cv-member-acts small{font-size:10px;color:var(--muted)}
+.cv-member-wrap[data-mine="true"] .cv-member-acts{border-color:var(--red)}
+@media (max-width:760px){.cv-invite-row{flex-direction:column}.cv-invite-row .btn{align-self:flex-start}}
+@media (prefers-reduced-motion:reduce){.cv-member-act{transition:none}}
