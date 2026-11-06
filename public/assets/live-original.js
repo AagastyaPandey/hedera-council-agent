@@ -136,8 +136,8 @@ if (document.body.querySelector(".hero .scene")) {
     applyAtlas(now, sv.data.count, hh.data, v, pol);
     const n = changed.at(-1);
     const dot = document.querySelector(".topval .live"); if (dot) { dot.classList.remove("flash"); void dot.offsetWidth; dot.classList.add("flash"); }
-    toast.className = n.decision === "SIGNED" ? "pass" : "";
-    toast.innerHTML = ""; const b = document.createElement("b"); b.textContent = n.decision === "PENDING_CHALLENGE" ? "PENDING" : n.decision ?? "NEW";
+    toast.className = n.decision === "SIGNED" ? "pass" : n.decision === "PENDING_VOTE" ? "vote" : "";
+    toast.innerHTML = ""; const b = document.createElement("b"); b.textContent = n.decision === "PENDING_CHALLENGE" ? "PENDING" : n.decision === "PENDING_VOTE" ? "WAITING FOR THE COUNCIL" : n.decision ?? "NEW";
     toast.append(b, document.createTextNode(` ${n.id} \u00b7 ${n.purpose}${n.decision === "REFUSED" && !n.matches ? " \u00b7 transfer mismatch" : ""}`));
     requestAnimationFrame(() => toast.classList.add("on")); clearTimeout(hideT); hideT = setTimeout(() => toast.classList.remove("on"), 5200);
     const sc = $("scrub"); if (sc) { sc.value = sc.max; sc.dispatchEvent(new Event("input", { bubbles: true })); }
@@ -162,36 +162,37 @@ if (document.body.querySelector(".hero .scene")) {
     col(foot[2], "Commitment", [["policy", short(policy.hash, 12)]]);
   } else {
     const { proposal: p, check, lastOutcome: o, large } = r.data;
-    // A proposal waiting in its challenge window is not yet decided: PENDING, never REFUSED.
-    const decision = o?.decision === "PENDING_CHALLENGE" ? "PENDING" : o?.decision ?? "PENDING";
+    // A proposal waiting in its challenge window or for a council vote is not yet decided: never REFUSED.
+    const voting = o?.decision === "PENDING_VOTE";
+    const decision = o?.decision === "PENDING_CHALLENGE" || voting ? "PENDING" : o?.decision ?? "PENDING";
     const waiting = decision === "PENDING" && Boolean(o);
     const d = hbar(p.description.amountTinybars), a = hbar(p.transfer.amountTinybars);
     const num = (t) => (t / 1e8).toLocaleString(undefined, { maximumFractionDigits: 2 });
-    text($("tVerdict"), check.matches ? (decision === "SIGNED" ? "Signed" : decision === "REFUSED" ? "Refused" : decision === "CANCELLED" ? "Cancelled" : waiting ? "Pending" : "Matches") : "Mismatch");
+    text($("tVerdict"), check.matches ? (decision === "SIGNED" ? "Signed" : decision === "REFUSED" ? "Refused" : decision === "CANCELLED" ? "Cancelled" : voting ? "Waiting for the council" : waiting ? "Pending" : "Matches") : "Mismatch");
     text($("tLayer"), `${h.mode} · ${o?.transferSource === "hedera-mirror-node" ? "on-chain" : "request"}`);
     text($("tProp"), p.id);
     countTo($("numL"), p.description.amountTinybars / 1e8, 950);
     countTo($("numR"), p.transfer.amountTinybars / 1e8, 1190);
-    scrambleIn($("stampText"), decision === "PENDING" ? "Pending" : decision === "SIGNED" ? "Signed" : decision === "CANCELLED" ? "Cancelled" : "Refused", 1900);
+    scrambleIn($("stampText"), voting ? "Council vote" : decision === "PENDING" ? "Pending" : decision === "SIGNED" ? "Signed" : decision === "CANCELLED" ? "Cancelled" : "Refused", 1900);
     text($("stampSub"), o?.auditHash ? `0x${o.auditHash.slice(0, 8)}` : p.id);
     const st = document.querySelectorAll(".statement");
     lines(st[0], check.matches
-      ? [`${p.id} matches.`, `${d} to ${p.description.payee}.`, large ? "It is a large one." : "It is a routine one.", large ? "World ID decides." : "No gate needed.", decision === "SIGNED" ? "The agent signed." : decision === "REFUSED" ? "The agent refused." : decision === "CANCELLED" ? "A seat revocation cancelled it." : waiting ? "It waits out its challenge window." : "Not yet submitted."]
+      ? [`${p.id} matches.`, `${d} to ${p.description.payee}.`, large ? "It is a large one." : "It is a routine one.", large ? "World ID decides." : "No gate needed.", decision === "SIGNED" ? "The agent signed." : decision === "REFUSED" ? "The agent refused." : decision === "CANCELLED" ? "A seat revocation cancelled it." : voting ? "It waits for the council." : waiting ? "It waits out its challenge window." : "Not yet submitted."]
       : ["The description said", `${d} to ${p.description.payee}.`, "The transfer does", "something else:", `${a} to ${p.transfer.payee}.`, "The agent refused."]);
     lines(st[1], ["Binding decisions to", "what is on Hedera,", "with a paid check,", "a published policy", "and a log you can", "verify yourself.", `Policy ${short(policy.hash, 8)}`], 1.6);
     window.LIVE_STATUSES.push(`${p.id} ${decision}`);
     // The decision path: a packet runs from the claim and stops at the stage that decided it.
-    const gateState = !check.matches ? ["wait", "skipped"] : !large ? ["pass", "not required"] : o?.worldGateReason && decision === "REFUSED" ? ["fail", "blocked"] : decision === "SIGNED" ? ["pass", "approved"] : ["wait", "pending"];
+    const gateState = !check.matches ? ["wait", "skipped"] : voting ? ["wait", "council vote open"] : o?.mandate?.within ? ["pass", `within ${o.mandate.id}`] : !large ? ["pass", "not required"] : o?.worldGateReason && decision === "REFUSED" ? ["fail", "blocked"] : decision === "SIGNED" ? ["pass", "approved"] : ["wait", "pending"];
     const nodes = [
       ["pass", "Claim", `${d} to ${p.description.payee}`],
       [check.matches ? "pass" : "fail", "Check", check.matches ? "payee, amount, token agree" : check.mismatches.map((m) => m.field).join(", ") + " differ"],
       [gateState[0], "World ID", gateState[1]],
-      [decision === "SIGNED" ? "pass" : decision === "REFUSED" || decision === "CANCELLED" ? "fail" : "wait", "Signature", decision === "SIGNED" ? `co-signed ${o?.scheduledTxId ?? ""}` : decision === "REFUSED" ? "not signed" : decision === "CANCELLED" ? "cancelled" : waiting ? "challenge window" : "waiting"],
+      [decision === "SIGNED" ? "pass" : decision === "REFUSED" || decision === "CANCELLED" ? "fail" : "wait", "Signature", decision === "SIGNED" ? `co-signed ${o?.scheduledTxId ?? ""}` : decision === "REFUSED" ? "not signed" : decision === "CANCELLED" ? "cancelled" : voting ? "waiting for the council" : waiting ? "challenge window" : "waiting"],
     ];
     const flow = $("flow"); flow.hidden = false;
     $("flowNodes").replaceChildren(...nodes.map(([st, name, sub]) => { const n = document.createElement("div"); n.className = `node ${st}`; n.innerHTML = "<i></i><b></b><span></span>"; n.querySelector("b").textContent = name; n.querySelector("span").textContent = sub; return n; }));
-    text($("flowCap"), decision === "SIGNED" ? "reached the signature" : decision === "REFUSED" ? `stopped at ${!check.matches ? "the check" : "the gate"}` : decision === "CANCELLED" ? "cancelled by a seat revocation" : waiting ? "waiting out the challenge window" : "not yet decided");
-    const stop = decision === "SIGNED" || decision === "CANCELLED" ? 3 : decision === "REFUSED" ? (!check.matches ? 1 : 2) : 0;
+    text($("flowCap"), decision === "SIGNED" ? "reached the signature" : decision === "REFUSED" ? `stopped at ${!check.matches ? "the check" : "the gate"}` : decision === "CANCELLED" ? "cancelled by a seat revocation" : voting ? "waiting for the council vote" : waiting ? "waiting out the challenge window" : "not yet decided");
+    const stop = decision === "SIGNED" || decision === "CANCELLED" ? 3 : voting ? 2 : decision === "REFUSED" ? (!check.matches ? 1 : 2) : 0;
     // start when the poster has landed
     setTimeout(() => runFlow(flow, { stop, ok: decision === "SIGNED" }), reduced() ? 0 : 2600);
     if (decision === "SIGNED") { const sc = $("stampText").closest(".stamp"); sc.style.color = "#3f9b45"; sc.style.borderColor = "#3f9b45"; }
