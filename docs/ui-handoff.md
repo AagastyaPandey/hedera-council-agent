@@ -6,8 +6,9 @@
 > SVG scenery and animation are unchanged. Only the copy and links were edited (Aegis / IntentLock /
 > AIP-042 became this project's), the fake random metrics and the external price fetch were removed,
 > and `public/assets/live-original.js` fills in live data (proposal amounts, decision, stamp, counts,
-> policy hash, audit-log status). `console.html` is still the hand-built page, because the original console
-> is a Next.js app.
+> policy hash, audit-log status). `console.html` wears the same original shell (rail, top bar, ticker, footer, grain, from
+> `public/assets/original.css`); its record, process strip and forms are components drawn for this project on the
+> original's tokens, because the original console is a Next.js app with another project's data.
 >
 > **Read before merging into the submission branch.** Those two files were written on Oct 25 2026, before
 > the event (Nov 5-7). ETHGlobal's From Scratch rule says prior project-specific "code, designs, or assets
