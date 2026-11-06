@@ -1,0 +1,63 @@
+{
+  "1": {
+    "title": "Q4 Development Grant",
+    "govId": "1",
+    "state": "Executed",
+    "commitment": "0x54f563bc386b179fb74667de20c35bc4087b5570b4931d4ade2c1f3353b7f8cb",
+    "versionChain": [
+      "0x78d9b0d83942cabdd44432e6f71042f21f34c6c74d30f9b8e6ac399a39815281",
+      "0x6f83f941cc4a5dc677476bebd8aa7336c7bcf81d449e1d6d66d2f68db038508c"
+    ],
+    "notes": "2 versions (draft -> final); evidenceRoots 0x36d4f6fe…ee9861 / 0xd9ce7ed5…85f511; 5,000 USDC executed to 0x14dC79964da2C08b23698B3D3cc7Ca32193d9955."
+  },
+  "2": {
+    "title": "Routine parameter tuning of the fee module",
+    "govId": "2",
+    "state": "Queued",
+    "commitment": "0xbbab7efeb88f6ee741225522ca7d819ec38204a0fab7455f40045499494ea780",
+    "versionChain": [
+      "0xafac20bbc4108500a8a4dd278812afcc05ae9a0d1ad9f40abc89fa00bdf6ad61"
+    ],
+    "notes": "Queued benign setFee(35); malicious upgradeTo(0xD0141E89…7fDD7A) was presented and flagged by the Sentinel (Static bytecode analysis detected: Dangerous opcode detected: DELEGATECALL (0xf4) in implementation bytecode; Dangerous opcode detected: SELFDESTRUCT (0xff) in implementation bytecode); report 0x6ad28ccc…83ac6f is awaiting a guardian signature (hardware-confirmed mode); evidenceRoot 0xeb0f856c…62cc56."
+  },
+  "3": {
+    "title": "Ecosystem grant with hidden link",
+    "govId": "3",
+    "state": "Challenged",
+    "commitment": "0xb039565a60d58e3365d5a36012eac80c4b78d5805c96aab9d7da2f319c474f0b",
+    "versionChain": [
+      "0x0383222c99d793303d0c22b9aa9b04fa54ec46d4ef6d6b3e11ac0675febc95e9"
+    ],
+    "notes": "Governor state VotingOpen; disclosure challenged and verified (1 ETH bond slashed to challenger); linkEvidenceHash 0x8b8958ef…815baa; evidenceRoot 0x9d457c9c…6ab382; intermediary path is SIMULATED graph data."
+  },
+  "4": {
+    "title": "Infrastructure budget",
+    "govId": "4",
+    "state": "VotingOpen",
+    "commitment": "0xa67f34f785651f0c922c83f0231dff73f70820c90d40398bb1f2be25ba071f51",
+    "versionChain": [
+      "0x8fefe5d7250600e38fa6aa5eadd9fb9f051ceb6475cfef40352ccc6ce2e88624"
+    ],
+    "notes": "Voting open with mixed informed/uninformed votes; no disclosure challenge and no Sentinel halt; awaiting finalization."
+  },
+  "5": {
+    "title": "Community Grants Expansion",
+    "govId": null,
+    "state": "Drafted",
+    "commitment": null,
+    "versionChain": [
+      "0xa99601c0dfd0a36a7250c4c47c2bd658659ed1cbb436f26ff8f33a7dd75fb78c"
+    ],
+    "notes": "Draft only (not submitted to governor). 4 UNRESOLVED item(s): What exact amount should be transferred? The proposal delegates discretion. What exact recipient and value should be committed before voting? Is this a one-time action or a recurring commitment? The current ActionKind model encodes one-time actions only. No executable action could be grounded in the proposal text."
+  },
+  "6": {
+    "title": "Routine parameter tuning (obfuscated)",
+    "govId": "5",
+    "state": "VotingOpen",
+    "commitment": "0x31514e437c157c3d550af543e258f0dd16d62d4b33f5fe3b0c51cc5c853b1902",
+    "versionChain": [
+      "0x211f11baf690c593c5f2d9fe3c9b0a01e580f1bd6f8c48dc15aa4cbad0f5e0d9"
+    ],
+    "notes": "Committed calldata is a multicall([upgradeTo, transferOwnership]) while the stated intent and committed rules describe only setFee(35). The pre-vote effect preview must flag the implementation and owner changes BEFORE the vote."
+  }
+}

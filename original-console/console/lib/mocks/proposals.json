@@ -1,0 +1,18 @@
+[
+  {
+    "id": "8",
+    "label": "Proposal #8 · Fee Tuning: attack (recorded)",
+    "title": "Fee Tuning: attack (recorded)",
+    "scenarioId": 3,
+    "govId": "1",
+    "provenance": "RECORDED"
+  },
+  {
+    "id": "41",
+    "label": "Proposal #41 · Q3 Developer Grant",
+    "title": "Q3 Developer Grant",
+    "scenarioId": 0,
+    "govId": "2",
+    "provenance": "MOCK"
+  }
+]

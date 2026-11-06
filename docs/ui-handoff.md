@@ -19,6 +19,14 @@
 > `6e252e7`). To go back to the redrawn pages, run `git revert -m 1 6e252e7`. The earlier redrawn
 > pages are also still in history (commit `688204b`).
 
+## The original console app is in this repo
+
+`original-console/` is the original Next.js console, copied verbatim from CODE_TANTRAFEST (commit `a6c8497`) with only the
+Solidity contracts, Hardhat config and contract tests left out (it builds and runs without them). Run it with
+`npm run console:install` once, then `npm run console` (http://localhost:3380/trail). It shows that project's data, not this
+Hedera backend; `/original-console` on this server redirects to it. The project's own screens (`public/`) use the same
+stylesheet and component markup.
+
 ## Where to work
 
 The paper-and-red design is implemented on every page, matched against the rendered reference

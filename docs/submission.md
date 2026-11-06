@@ -28,9 +28,10 @@ Large proposals, at or above 0.5 HBAR, need a fresh World ID check tied to that 
 Fill this in at submission time, honestly. At build time the demo ran in simulated mode, no real Hedera payment had settled, because no testnet credentials were available. If a real payment settles before submission, paste its Hedera transaction ID and HashScan link in the README "Hedera transaction IDs" section and in the submission form, and re-record the demo in real mode. Do not present SIM-PAY, SIM-SCHED, or SIM-HCS ids as real.
 
 ## Submission checklist
+- [ ] UI: `original-console/` is the CODE_TANTRAFEST console, copied in at the owner's instruction (Oct 25, partly other authors, no Solidity included). Confirm with ETHGlobal or delete the folder and the `/original-console` link
 - [ ] UI: the Atlas and report pages are the original CODE_TANTRAFEST designs (Oct 25, before the event). Confirm with ETHGlobal that this satisfies From Scratch, or revert the UI merge (docs/ui-handoff.md)
 - [ ] Repo public, README complete, .env never committed
-- [ ] `npm test` 42/42, `npm run demo` 4/4 scenes correct
+- [ ] `npm test` 43/43, `npm run demo` 4/4 scenes correct
 - [ ] `npm run preflight` has no FAIL lines
 - [ ] Real x402 payment settled, HashScan link in README (or simulated mode stated plainly)
 - [ ] 0G request ids shown in the demo

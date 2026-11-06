@@ -1,0 +1,120 @@
+{
+  "proposalId": "AIP-042",
+  "version": 3,
+  "title": "Ecosystem Growth Grant — GrowthLabs × Developer Guild",
+  "actions": [
+    {
+      "kind": "ERC20_TRANSFER",
+      "target": "0xcEd3aa37e925F42ef2400b51029A142637923445",
+      "selector": "0xa9059cbb",
+      "counterparty": "0x2DFCD12F1b34DA6a6E87840b1c3eFCF391b9bC15",
+      "maxAmount": "200000000000",
+      "codeHash": null,
+      "source": {
+        "docKey": "forum-post",
+        "page": 1,
+        "section": "§2 What this proposal funds",
+        "quote": "200,000 USDC (one-time)"
+      },
+      "confidence": 0.95,
+      "label": "One-time grant to GrowthLabs"
+    },
+    {
+      "kind": "ERC20_TRANSFER",
+      "target": "0xcEd3aa37e925F42ef2400b51029A142637923445",
+      "selector": "0xa9059cbb",
+      "counterparty": "0x45013B78dbF0c800f418D40C2995A1880aaBeB64",
+      "maxAmount": "50000000000",
+      "codeHash": null,
+      "source": {
+        "docKey": "forum-post",
+        "page": 1,
+        "section": "§2 What this proposal funds",
+        "quote": "50,000 USDC (one-time)"
+      },
+      "confidence": 0.93,
+      "label": "One-time grant to Developer Guild"
+    },
+    {
+      "kind": "ERC20_APPROVE",
+      "target": "0xcEd3aa37e925F42ef2400b51029A142637923445",
+      "selector": "0x095ea7b3",
+      "counterparty": "0x667C5b75390946b010F14FC124a92cBEf4146889",
+      "maxAmount": "5000000000",
+      "codeHash": null,
+      "source": {
+        "docKey": "financial-model",
+        "page": 1,
+        "section": "allowance_ceiling_usdc",
+        "quote": "allowance_ceiling_usdc,5000,USDC,TreasuryOps review costs"
+      },
+      "confidence": 0.9,
+      "label": "Bounded TreasuryOps allowance"
+    },
+    {
+      "kind": "UPGRADE",
+      "target": "0xC4F32e9eb19Bd57cC6b2ca285b24eE8b7809F031",
+      "selector": "0x3659cfe6",
+      "counterparty": "0x11d0aeFcdBBb002D803ae37253bEAAB782DDfD9c",
+      "maxAmount": "0",
+      "codeHash": null,
+      "source": {
+        "docKey": "forum-post",
+        "page": 1,
+        "section": "§5 Implementation note",
+        "quote": "align the treasury implementation with the program's delivery roadmap"
+      },
+      "confidence": 0.42,
+      "label": "TENTATIVE — possible implementation upgrade"
+    }
+  ],
+  "unresolved": [
+    {
+      "id": "upgrade-scope",
+      "question": "Does \"align the treasury implementation with the program's delivery roadmap\" authorize an on-chain upgrade?",
+      "context": "The technical assessment says no upgrade is authorized, but the forum post uses implementation language. The extractor produced a tentative upgrade rule with 42% confidence.",
+      "source": {
+        "docKey": "forum-post",
+        "page": 1,
+        "section": "§5 Implementation note",
+        "quote": "align the treasury implementation with the program's delivery roadmap"
+      },
+      "options": [
+        {
+          "value": "reject",
+          "label": "No — reject the tentative upgrade",
+          "effect": "Removes the upgrade rule. Matches the technical assessment."
+        },
+        {
+          "value": "authorize",
+          "label": "Yes — authorize an upgrade to TreasuryImplV2",
+          "effect": "Keeps an upgrade rule; the intentHash changes and will no longer match the commitment."
+        }
+      ]
+    },
+    {
+      "id": "cadence",
+      "question": "Is the 200,000 USDC GrowthLabs payment a single transfer or a recurring quarterly commitment?",
+      "context": "The forum post says the grant is one-time, but the phrase \"six-month program\" can imply installments. The financial model assumes a single outflow.",
+      "source": {
+        "docKey": "forum-post",
+        "page": 1,
+        "section": "§2 What this proposal funds",
+        "quote": "The grant is a one-time payment. It is not a recurring commitment"
+      },
+      "options": [
+        {
+          "value": "one_time",
+          "label": "One-time payment",
+          "effect": "Keeps the 200,000 USDC ceiling."
+        },
+        {
+          "value": "recurring_quarterly",
+          "label": "Four quarterly payments",
+          "effect": "Raises the transfer rule to 800,000 USDC; the intentHash changes."
+        }
+      ]
+    }
+  ],
+  "assumptions": []
+}

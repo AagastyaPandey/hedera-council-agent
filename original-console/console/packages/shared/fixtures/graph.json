@@ -1,0 +1,151 @@
+{
+  "label": "SIMULATED DATA",
+  "generatedBy": "AegisDAO demo fixture — not chain data",
+  "nodes": [
+    {
+      "id": "novaTreasury",
+      "address": "0x7dCFb79633b2bb3679944044912d585fff33a9D6",
+      "label": "Nova Treasury",
+      "role": "Proposer · disclosed",
+      "group": "proposer",
+      "disclosed": true,
+      "shape": "wallet",
+      "x": 120,
+      "y": 80
+    },
+    {
+      "id": "novaMain",
+      "address": "0xA626DE6334e38a8C7e91f9Ee43c6819BdAC68279",
+      "label": "Nova Main",
+      "role": "Proposer · disclosed",
+      "group": "proposer",
+      "disclosed": true,
+      "shape": "wallet",
+      "x": 120,
+      "y": 220
+    },
+    {
+      "id": "novaOps",
+      "address": "0xD2D2cD7dF76D377281A114d0A8cd41e3aC7F018A",
+      "label": "Nova Ops",
+      "role": "Undisclosed operations wallet",
+      "group": "proposer",
+      "disclosed": false,
+      "shape": "wallet",
+      "x": 350,
+      "y": 220
+    },
+    {
+      "id": "funderX",
+      "address": "0x6d2459e80baBCf58e2594d61a1FaAbaB59239B72",
+      "label": "Funder X",
+      "role": "Common funder · time-correlated",
+      "group": "intermediary",
+      "disclosed": false,
+      "shape": "wallet",
+      "x": 350,
+      "y": 380
+    },
+    {
+      "id": "glDeployer",
+      "address": "0xF066C45e344B4EEB2b2D8d2be7C6e99Ec8595a30",
+      "label": "GrowthLabs Deployer",
+      "role": "Recipient deployer",
+      "group": "recipient",
+      "disclosed": false,
+      "shape": "wallet",
+      "x": 570,
+      "y": 220
+    },
+    {
+      "id": "growthLabs",
+      "address": "0x2DFCD12F1b34DA6a6E87840b1c3eFCF391b9bC15",
+      "label": "GrowthLabs Multisig",
+      "role": "Recipient",
+      "group": "recipient",
+      "disclosed": false,
+      "shape": "multisig",
+      "x": 780,
+      "y": 220
+    },
+    {
+      "id": "developerGuild",
+      "address": "0x45013B78dbF0c800f418D40C2995A1880aaBeB64",
+      "label": "Developer Guild",
+      "role": "Recipient · no discovered link",
+      "group": "recipient",
+      "disclosed": false,
+      "shape": "multisig",
+      "x": 780,
+      "y": 80
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "novaTreasury",
+      "to": "novaMain",
+      "type": "INTERNAL",
+      "amountUsdc": "0",
+      "txHash": "0x5322dd467e1e6dce61415fef6736bfa38e1c03995854a0e827a384ef5ee493dd",
+      "timestamp": "2026-10-02T12:10:00Z",
+      "block": 17934211,
+      "note": "Internal transfer between two disclosed wallets."
+    },
+    {
+      "id": "e1",
+      "from": "novaMain",
+      "to": "novaOps",
+      "type": "DIRECT_TRANSFER",
+      "amountUsdc": "120000",
+      "txHash": "0xa4883d6086c15b33c61f484a7a9f19f7ca2c5f634530facd2fa30b8731500126",
+      "timestamp": "2026-09-08T11:04:00Z",
+      "block": 17735842,
+      "note": "Disclosed Nova wallet funds an undisclosed operations wallet."
+    },
+    {
+      "id": "e2",
+      "from": "novaOps",
+      "to": "glDeployer",
+      "type": "DIRECT_TRANSFER",
+      "amountUsdc": "40000",
+      "txHash": "0xdf3d41b20e748ed43ab57e987cb91e60bb43f88a8f77445ea989a7b6c6edc388",
+      "timestamp": "2026-09-23T15:42:00Z",
+      "block": 17839770,
+      "note": "Undisclosed wallet funds the GrowthLabs deployer 19 days before the proposal."
+    },
+    {
+      "id": "e3",
+      "from": "funderX",
+      "to": "novaOps",
+      "type": "FUNDING",
+      "amountUsdc": "25000",
+      "txHash": "0xd1dfac20066824b20efc1a8d4ae979b118b53d6c75d1582494cfa95ef671a401",
+      "timestamp": "2026-09-29T09:12:00Z",
+      "block": 17885310,
+      "note": "Common funder supports the undisclosed operations wallet."
+    },
+    {
+      "id": "e4",
+      "from": "funderX",
+      "to": "glDeployer",
+      "type": "FUNDING",
+      "amountUsdc": "25000",
+      "txHash": "0x73248fd5e9d3d0f865fe571a6ead5fe794102ac55fd4f95da66dbf32bd1eda95",
+      "timestamp": "2026-09-29T09:18:00Z",
+      "block": 17885340,
+      "note": "The same funder supports the GrowthLabs deployer six minutes later."
+    },
+    {
+      "id": "e5",
+      "from": "glDeployer",
+      "to": "growthLabs",
+      "type": "CONTRACT_CREATION",
+      "amountUsdc": "0",
+      "txHash": "0xc9e4cf5f88611c990ff01a479d22ce67d52678c8ca3a1abd6a8573d54756d24d",
+      "timestamp": "2025-11-02T08:00:00Z",
+      "block": 13952104,
+      "note": "The funded wallet deployed the GrowthLabs multisig."
+    }
+  ]
+}

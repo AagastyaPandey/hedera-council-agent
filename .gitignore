@@ -3,3 +3,6 @@ dist/
 .env
 *.log
 .data/
+original-console/node_modules/
+original-console/console/node_modules/
+original-console/console/.next/

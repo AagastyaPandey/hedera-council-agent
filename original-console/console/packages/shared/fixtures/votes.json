@@ -1,0 +1,97 @@
+{
+  "eligibleWeight": "1000000",
+  "quorumBps": 4000,
+  "votingClosedAt": "2026-10-23T01:59:00Z",
+  "votes": [
+    {
+      "id": "v1",
+      "voter": "0xDf1389F57F33c260ABb1fdda7a07280BA6fcD240",
+      "label": "Delegate 01",
+      "weight": "150000",
+      "support": "FOR",
+      "sawCurrentBrief": true,
+      "briefVersion": 3,
+      "overlap": null
+    },
+    {
+      "id": "v2",
+      "voter": "0xD775d9D2CA52c1979c9301BAe7Af165677b0A545",
+      "label": "Delegate 02",
+      "weight": "120000",
+      "support": "FOR",
+      "sawCurrentBrief": false,
+      "briefVersion": null,
+      "overlap": null
+    },
+    {
+      "id": "v3",
+      "voter": "0x8cAa95191AE2aa7CFE9Ca31B4B6c88165d99214e",
+      "label": "Delegate 03",
+      "weight": "100000",
+      "support": "FOR",
+      "sawCurrentBrief": true,
+      "briefVersion": 3,
+      "overlap": null
+    },
+    {
+      "id": "v4",
+      "voter": "0x6FC9b6967F944F456A3B3E9206aee8204693Ff0D",
+      "label": "Delegate 04",
+      "weight": "130000",
+      "support": "AGAINST",
+      "sawCurrentBrief": true,
+      "briefVersion": 3,
+      "overlap": null
+    },
+    {
+      "id": "v5",
+      "voter": "0xD2D2cD7dF76D377281A114d0A8cd41e3aC7F018A",
+      "label": "Nova Ops (undisclosed)",
+      "weight": "90000",
+      "support": "FOR",
+      "sawCurrentBrief": false,
+      "briefVersion": null,
+      "overlap": "Undisclosed wallet linked to the proposer"
+    },
+    {
+      "id": "v6",
+      "voter": "0xC83A935fda685F48d68416B75Cdd9E461564Af71",
+      "label": "Delegate 06",
+      "weight": "60000",
+      "support": "AGAINST",
+      "sawCurrentBrief": false,
+      "briefVersion": null,
+      "overlap": null
+    },
+    {
+      "id": "v7",
+      "voter": "0xC4338788544Bb64E092403D2E5E4d4a785FC380F",
+      "label": "Delegate 07",
+      "weight": "40000",
+      "support": "FOR",
+      "sawCurrentBrief": true,
+      "briefVersion": 3,
+      "overlap": null
+    },
+    {
+      "id": "v8",
+      "voter": "0x556947b87Ff42bF7BD6843EffAe95b0e7b4F3eD7",
+      "label": "Delegate 08",
+      "weight": "40000",
+      "support": "AGAINST",
+      "sawCurrentBrief": true,
+      "briefVersion": 3,
+      "overlap": null
+    },
+    {
+      "id": "v9",
+      "voter": "0x94C0b49BEfbAFf6e74AF45C07b5910b77190eA4c",
+      "label": "Delegate 09",
+      "weight": "50000",
+      "support": "ABSTAIN",
+      "sawCurrentBrief": false,
+      "briefVersion": null,
+      "overlap": null
+    }
+  ]
+}

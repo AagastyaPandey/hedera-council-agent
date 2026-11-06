@@ -1,0 +1,204 @@
+[
+  {
+    "proposalId": "8",
+    "stages": [
+      {
+        "stage": "CLAIMS",
+        "score": 0.97,
+        "status": "GREEN",
+        "reason": "One grounded PARAM_SET claim: setFee(35 bps) on FeeModule, with no unresolved items.",
+        "factors": [
+          {
+            "label": "Grounded actions",
+            "value": "1 / 1",
+            "detail": "The setFee parameter is grounded in a verbatim source span."
+          },
+          {
+            "label": "Draft confidence",
+            "value": "0.97",
+            "detail": "The committed intent contains only the PARAM_SET rule."
+          },
+          {
+            "label": "Unresolved",
+            "value": "0",
+            "detail": "No unresolved claims in the reviewed intent."
+          }
+        ],
+        "drilldown": "intent-draft"
+      },
+      {
+        "stage": "COI",
+        "score": 0.986,
+        "status": "RED",
+        "reason": "3 undisclosed links to the payment recipient (shared deployer, common funder, time-correlated hop).",
+        "factors": [
+          {
+            "label": "Overall risk",
+            "value": "0.986 CRITICAL",
+            "detail": "Noisy-OR of 4 links; disclosed links discounted ×0.15."
+          },
+          {
+            "label": "Undisclosed links",
+            "value": "3",
+            "detail": "Shared deployer 0.84, common funder 0.78, time-correlated hop 0.54."
+          },
+          {
+            "label": "Disclosed risk",
+            "value": "0.135",
+            "detail": "DAO treasury → recipient grant was disclosed and discounted."
+          }
+        ],
+        "drilldown": "wallet-graph"
+      },
+      {
+        "stage": "VOTING",
+        "score": 0.62,
+        "status": "AMBER",
+        "reason": "Informed-vote ratio 58%; 300 tokens voted against.",
+        "factors": [
+          {
+            "label": "For",
+            "value": "1,200",
+            "detail": "Includes 700 informed votes."
+          },
+          {
+            "label": "Against",
+            "value": "300",
+            "detail": "One voter acknowledged the brief and voted against."
+          },
+          {
+            "label": "Quorum",
+            "value": "1,600 / 1,000",
+            "detail": "Quorum reached."
+          },
+          {
+            "label": "Informed ratio",
+            "value": "58%",
+            "detail": "Share of for-votes cast with a brief acknowledgment."
+          }
+        ],
+        "drilldown": "voting"
+      },
+      {
+        "stage": "EXECUTION",
+        "score": null,
+        "status": "RED",
+        "reason": "Deterministic MISMATCH: submitted calldata calls upgradeTo on TreasuryProxy, outside the committed intent.",
+        "factors": [
+          {
+            "label": "Gate",
+            "value": "MISMATCH",
+            "detail": "Decoded calldata does not match the committed intent."
+          },
+          {
+            "label": "Layer",
+            "value": "Sentinel + executor",
+            "detail": "Executor rejects the selector; Sentinel flags implementation bytecode."
+          },
+          {
+            "label": "Constraint",
+            "value": "SelectorNotAllowed / DangerousBytecode",
+            "detail": "Upgrade selector is not in the committed PARAM_SET rule."
+          }
+        ],
+        "drilldown": "violation-report"
+      }
+    ]
+  },
+  {
+    "proposalId": "41",
+    "stages": [
+      {
+        "stage": "CLAIMS",
+        "score": 0.92,
+        "status": "GREEN",
+        "reason": "One grounded action: 5,000 USDC transfer to the approved recipient.",
+        "factors": [
+          {
+            "label": "Grounded actions",
+            "value": "1 / 1",
+            "detail": "Transfer grounded in a verbatim source span."
+          },
+          {
+            "label": "Draft confidence",
+            "value": "0.95",
+            "detail": "Recipient and amount resolved."
+          },
+          {
+            "label": "Unresolved",
+            "value": "0",
+            "detail": "No unresolved claims."
+          }
+        ],
+        "drilldown": "intent-draft"
+      },
+      {
+        "stage": "COI",
+        "score": 0.12,
+        "status": "GREEN",
+        "reason": "Recipient is the disclosed development wallet; no undisclosed links.",
+        "factors": [
+          {
+            "label": "Overall risk",
+            "value": "0.120 LOW",
+            "detail": "Only a disclosed funding path was found."
+          },
+          {
+            "label": "Undisclosed links",
+            "value": "0",
+            "detail": "No undisclosed shared funder, deployer, or time-correlated hop."
+          }
+        ],
+        "drilldown": "wallet-graph"
+      },
+      {
+        "stage": "VOTING",
+        "score": 0.84,
+        "status": "GREEN",
+        "reason": "Informed-vote ratio 84%; quorum reached.",
+        "factors": [
+          {
+            "label": "For",
+            "value": "1,800",
+            "detail": "1,500 informed votes."
+          },
+          {
+            "label": "Against",
+            "value": "150",
+            "detail": "Quorum reached at 1,950 / 1,000."
+          },
+          {
+            "label": "Informed ratio",
+            "value": "84%",
+            "detail": "High acknowledgment of the risk brief."
+          }
+        ],
+        "drilldown": "voting"
+      },
+      {
+        "stage": "EXECUTION",
+        "score": null,
+        "status": "GREEN",
+        "reason": "Deterministic MATCH: 5,000 USDC transfer matches the approved rule.",
+        "factors": [
+          {
+            "label": "Gate",
+            "value": "MATCH",
+            "detail": "Commitment, intent, and calldata all agree."
+          },
+          {
+            "label": "Layer",
+            "value": "Executor",
+            "detail": "Executor executes within the committed rule."
+          },
+          {
+            "label": "Constraint",
+            "value": "None",
+            "detail": "No rule or state violation."
+          }
+        ],
+        "drilldown": "violation-report"
+      }
+    ]
+  }
+]
