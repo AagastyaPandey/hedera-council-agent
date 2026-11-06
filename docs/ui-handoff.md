@@ -117,6 +117,9 @@ Attributes: `document.body.dataset.state` (`loading`, `ready`, `error`),
 The four story beats to animate: routine proposal signs; mismatch refuses (the two
 numbers diverge); large proposal waits for World ID; denied or expired, no signature.
 
+`/verify.html` is the public, server-independent log verifier (reads the mirror node in the browser via
+`/assets/chain-verify.js`; `?topic=&network=` prefill, `?mirror=http://127.0.0.1:PORT` for a local stub only).
+
 ## Run it
 
 ```bash

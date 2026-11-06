@@ -90,6 +90,10 @@ These make the agent auditable, not just correct. They are Hedera-native and nee
   genesis: an edited, dropped, reordered or forged entry is reported with the entry number. The topic is created
   with the agent's submit key, so nobody else can append to it. After a restart the chain continues from the
   topic's latest entry.
+- **Check it without trusting our server.** `/verify.html` is a static page that reads the topic straight from a
+  Hedera mirror node and re-computes every hash in your own browser (`public/assets/chain-verify.js`, no
+  dependencies). Open `/verify.html?topic=0.0.1234&network=testnet`; each entry turns green as it is re-checked, and
+  a break shows the entry number. It also lists the policy hash found in the entries to compare with `/policy`.
 - **Published policy.** `GET /policy` is the rule set the agent signs under (`src/policy.ts`); its hash is inside
   every audit entry, so each decision commits to the policy in force when it was made.
 - **Evidence bundle per decision.** `GET /proposals/:id/evidence` gathers the transfer actually checked and where it
