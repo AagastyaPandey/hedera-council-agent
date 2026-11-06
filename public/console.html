@@ -119,6 +119,7 @@
 import { api, bus, hbar, qs } from "/assets/api.js";
 import { runWorldFlow, runMockedFlow } from "/assets/world-flow.js";
 import { countTo, typewrite, replay, stagger, whileWorking, reduced } from "/assets/motion.js";
+import { initJudge } from "/assets/judge.js";
 const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
 const status = (t, tone = "") => { $("status").textContent = t; $("status").className = `mt-4 text-[12px] ${tone === "ok" ? "text-safe" : tone === "bad" ? "text-danger" : "text-dim"}`; };
@@ -208,6 +209,11 @@ async function select(id) {
   const sub = el("button", o ? "Submit again" : "Submit to the agent", "btn btn-primary");
   sub.onclick = async () => { sub.disabled = true; const res = await whileWorking($("workingBar"), () => api.submit(p)); show(res.data); status(res.data.decision === "SIGNED" ? `Agent signed. Scheduled tx ${res.data.scheduledTxId}.` : `Agent refused: ${res.data.reason}`, res.data.decision === "SIGNED" ? "ok" : "bad"); await select(id); };
   actions.append(sub);
+  lastLanding = o ? { decision, check, large, approval, o } : null;
+  if (o) {
+    const rp = el("button", "Replay decision", "btn"); rp.id = "replay-btn"; rp.onclick = () => replayDecision();
+    actions.append(rp);
+  }
   if (large && check.matches) {
     const ap = el("button", approval ? `World ID approved (${approval.source}), valid to ${new Date(approval.expiresAt).toLocaleTimeString()}` : world.configured ? "Approve with World ID" : "Approve (MOCKED demo)", "btn");
     ap.disabled = Boolean(approval) || (!world.configured && !world.mockedAllowed);
@@ -259,16 +265,17 @@ function choreograph({ decision, check, o }) {
   if (reduced()) return;
   stagger($("ledger").querySelectorAll("tr"), 0.05, 0.07);
   stagger($("hashes").children, 0.45, 0.1);
-  [...$("hashes").querySelectorAll("code")].forEach((c, i) => { const t = c.textContent; if (t !== "none yet") typewrite(c, t, { delay: 600 + i * 120, cps: 220 }); });
+  [...$("hashes").querySelectorAll("code")].forEach((c, i) => { const t = c.dataset.full ?? (c.dataset.full = c.textContent); if (t !== "none yet") typewrite(c, t, { delay: 600 + i * 120, cps: 220 }); });
   const stages = [...$("process").children];
   const T = 0.5;
   stages.forEach((st, i) => { st.style.setProperty("--d", `${(T + i * 0.55).toFixed(2)}s`); st.classList.remove("m-reveal"); void st.offsetWidth; st.classList.add("m-reveal"); });
-  stages.forEach((st, i) => { const sc = st.querySelector(".doc-score"); if (!sc) return; const v = parseFloat(sc.textContent); if (Number.isFinite(v)) countTo(sc, v, { delay: (T + i * 0.55) * 1000 + 250, decimals: 2, duration: 900 }); });
+  stages.forEach((st, i) => { const sc = st.querySelector(".doc-score"); if (!sc) return; const v = parseFloat(sc.dataset.full ?? (sc.dataset.full = sc.textContent)); if (Number.isFinite(v)) countTo(sc, v, { delay: (T + i * 0.55) * 1000 + 250, decimals: 2, duration: 900 }); });
   const end = T + stages.length * 0.55;
   // the stage that decided it flashes: the failed check, or the blocked gate, or the signature
   const decided = !check.matches ? 1 : decision === "REFUSED" ? 2 : 3;
   if (decision) {
     const inner = stages[decided].firstElementChild;
+    inner.classList.remove("m-flash-green", "m-flash-red", "m-shake"); void inner.offsetWidth;
     inner.style.setProperty("--d", `${end.toFixed(2)}s`);
     inner.classList.add(decision === "SIGNED" ? "m-flash-green" : "m-flash-red");
     if (decision === "REFUSED") inner.classList.add("m-shake");
@@ -278,6 +285,20 @@ function choreograph({ decision, check, o }) {
   replay($("mStamp"), "m-slam", end);
   replay($("topPill"), "m-reveal", end + 0.3);
 }
+
+// Replay the landing of the stored outcome: no request is made, the agent-working strip runs around a no-op.
+let lastLanding = null, replaying = false;
+async function replayDecision() {
+  if (!lastLanding || replaying) return;
+  replaying = true;
+  const data = lastLanding;
+  try {
+    await whileWorking($("workingBar"), async () => {});
+    choreograph(data);
+    document.body.dataset.replays = String(Number(document.body.dataset.replays ?? 0) + 1);
+  } finally { replaying = false; }
+}
+window.__replay = replayDecision;
 
 async function approve(proposalId) {
   const res = world.configured
@@ -326,5 +347,10 @@ if (selected) await select(selected);
 else if (rowsCache.length) { /* keep the hero until a proposal is chosen */ }
 if (location.hash === "#join") $("join").scrollIntoView();
 document.body.dataset.state = "ready";
+initJudge({
+  api, whileWorking, reduced, select, refreshList, status,
+  approve: async (id) => { world = (await api.worldConfig()).data; await approve(id); },
+  setHealth: () => health,
+});
 </script>
 </body></html>

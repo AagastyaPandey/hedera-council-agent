@@ -72,3 +72,25 @@
   .m-working::after, #workingBar li.now::before, .flow .node.fail.lit i::after { animation: none !important; }
   .flow .fill, .flow .packet { transition: none !important; }
 }
+
+/* Judge mode panel (console): same paper, ink and red as the page */
+.judge-panel { position: fixed; right: 20px; bottom: 20px; z-index: 70; width: min(330px, calc(100vw - 40px)); border: 1px solid var(--m-ink); background: var(--paper, #f2efe7); padding: 12px 14px; font: 10px/1.5 ui-monospace, Menlo, Consolas, monospace; text-transform: uppercase; letter-spacing: .08em; color: var(--m-ink); box-shadow: 4px 4px 0 var(--m-ink); }
+.judge-panel[hidden] { display: none; }
+.judge-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; border-bottom: 1px solid var(--m-hair); padding-bottom: 7px; }
+.judge-head b { color: var(--m-red); letter-spacing: .15em; }
+.judge-head span { color: var(--m-muted); font-size: 9px; }
+.judge-steps { list-style: none; counter-reset: j; margin: 9px 0 0; padding: 0; }
+.judge-steps li { counter-increment: j; padding: 3px 0 3px 22px; position: relative; color: var(--m-muted); }
+.judge-steps li::before { content: counter(j); position: absolute; left: 0; width: 15px; height: 15px; line-height: 14px; text-align: center; border: 1px solid var(--m-hair); font-size: 9px; }
+.judge-steps li[data-state="active"] { color: var(--m-ink); font-weight: 700; }
+.judge-steps li[data-state="active"]::before { border-color: var(--m-red); background: var(--m-red); color: var(--paper, #f2efe7); }
+.judge-steps li[data-state="done"] { color: var(--m-green); }
+.judge-steps li[data-state="done"]::before { content: "✓"; border-color: var(--m-green); }
+.judge-steps li[data-state="failed"], .judge-steps li[data-state="needs-scan"], .judge-steps li[data-state="stopped"] { color: var(--m-red); }
+.judge-steps li[data-state="failed"]::before, .judge-steps li[data-state="needs-scan"]::before, .judge-steps li[data-state="stopped"]::before { border-color: var(--m-red); }
+.judge-cap { margin: 9px 0 0; min-height: 4.5em; border-left: 2px solid var(--m-red); padding-left: 8px; text-transform: none; letter-spacing: .01em; font-size: 11px; line-height: 1.45; }
+.judge-cap[data-tone="ok"] { border-left-color: var(--m-green); }
+.judge-start { margin-top: 9px; width: 100%; border: 1px solid var(--m-ink); background: var(--m-ink); color: var(--paper, #f2efe7); padding: 7px 10px; font: inherit; letter-spacing: .15em; text-transform: uppercase; cursor: pointer; }
+.judge-start:disabled { opacity: .5; cursor: default; }
+.judge-process-note { margin: 0 0 10px; border-left: 2px solid var(--m-red); padding-left: 10px; font: 700 14px/1.4 ui-monospace, Menlo, Consolas, monospace; color: var(--m-red); animation: m-in .5s ease both; }
+@media (prefers-reduced-motion: reduce) { .judge-process-note { animation: none !important; opacity: 1 !important; transform: none !important; } }
