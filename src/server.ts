@@ -14,7 +14,10 @@
 //   POST /proposals/:id/execute -> after the challenge window: re-check, then sign or abort
 //   POST /proposals/:id/challenge -> pause ({reason}) or resume ({resume:true}) execution
 //   POST /payees/:account/revoke -> revoke a payee registry entry at runtime
-//   POST /council/revoke        -> a seat holder revokes a seat: epoch +1, pending proposals cancelled
+//   POST /council/revoke        -> leave the council (own seat, immediate: epoch +1, pending proposals
+//     cancelled), or propose removing another seat (202: opens revocation vote R-n)
+//   POST /council/revocations/:id/vote -> ballot on a revocation vote; a majority of the other seats removes it
+//   POST /council/invites       -> a seat holder issues a single-use, 24 hour invite to join
 //   GET  /council/epoch         -> {epoch, revokedSeats}
 //   State-changing routes above need COUNCIL_API_KEY when it is set (src/auth.ts).
 //   GET  /proposals             -> list of registered proposals
@@ -26,7 +29,8 @@
 //   POST /world/rp-context      -> RP-signed IDKit request for one server-chosen action
 //   POST /world/verify          -> verify the owner's World ID for one proposal,
 //     store the approval server-side (5 min, single use)
-//   POST /council/join          -> Proof of Human council join, one seat per nullifier
+//   POST /council/join          -> Proof of Human council join, one seat per nullifier. The first
+//     seat founds the council; every later seat needs an invite ({invite}).
 //   GET  /council/seats         -> current seats
 //   Standing instructions and council votes (docs/mandate-spec.md):
 //   GET  /mandate, POST /mandate/draft, POST /mandate/:id/vote, POST /proposals/:id/vote,
@@ -60,7 +64,7 @@ import { SimulatedCheckPayer, X402CheckPayer, type CheckPayer } from "./payment.
 import { isLargeProposal, proposalFingerprint, validateProposal, type Proposal } from "./proposal.js";
 import { DEMO_PAYEES, loadPayeeRegistry } from "./payee.js";
 import { buildPolicy } from "./policy.js";
-import { StateStore } from "./store.js";
+import { StateStore, type RevocationVote } from "./store.js";
 import {
   ApprovalStore,
   councilSignAction,
@@ -69,6 +73,7 @@ import {
   loadWorldConfig,
   proposalSignal,
   JOIN_SIGNAL,
+  inviteSignal,
   revokeSignal,
   mockedAllowed,
   mockedWorldCheck,
@@ -201,8 +206,6 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
   const proposals = new Map<string, RegisteredProposal>();
   const worldOn = isWorldConfigured(agent.world);
   const allowMocked = mockedAllowed(agent.world, agent.hedera.config.network);
-  // Proposal state is in memory: a vote left open by a previous process cannot be resolved.
-  for (const v of store.votes()) if (v.decision === "PENDING_VOTE") store.putVote({ ...v, decision: "CANCELLED" });
 
   const mandateCtx = (): MandateContext | null => {
     const m = store.activeMandate();
@@ -230,11 +233,26 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     decision: m.status,
     openedAt: m.createdAt,
   });
+  const revocationItem = (r: RevocationVote): VoteItem => ({
+    subject: r.subject,
+    kind: "revocation",
+    title: `Remove ${r.target}`,
+    target: r.target,
+    openedBy: r.openedBy,
+    summary: [`Proposed by ${r.openedBy}. Only the other seats vote; a majority of them removes ${r.target}.`, ...(r.closedReason ? [r.closedReason] : [])],
+    vote: r.vote,
+    decision: r.status,
+    openedAt: r.openedAt,
+  });
   const allVotes = () => {
-    const items = [...store.votes(), ...store.mandates().map(mandateItem)].sort((a, b) => b.openedAt.localeCompare(a.openedAt));
-    const isOpen = (i: VoteItem) => (i.kind === "mandate" ? i.decision === "open" : proposalVoteOpen(i));
+    const items = [...store.votes(), ...store.mandates().map(mandateItem), ...store.revocations().map(revocationItem)].sort((a, b) => b.openedAt.localeCompare(a.openedAt));
+    const isOpen = (i: VoteItem) => (i.kind === "proposal" ? proposalVoteOpen(i) : i.decision === "open");
     return { items, isOpen };
   };
+  // A ballot on a revocation is bound to the seat it removes and the epoch it opened in.
+  const revocationFingerprint = (r: RevocationVote) => `revoke:${r.target}:${r.epoch}`;
+  // Public id for an invite: the code itself is a bearer secret and never logged.
+  const inviteId = (code: string) => sha256(code).slice(0, 10);
   const app = express();
   app.use(express.json({ limit: "64kb" }));
 
@@ -475,6 +493,13 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     }
   };
 
+  // Proposal state is in memory: a vote left open by a previous process cannot be resolved.
+  for (const v of store.votes()) {
+    if (v.decision !== "PENDING_VOTE") continue;
+    store.putVote({ ...v, decision: "CANCELLED" });
+    await auditNote(v.subject, "VOTE_CANCELLED_RESTART", `Council vote on ${v.subject} closed: the agent restarted and pending proposals are held in memory, so it cannot be resolved. Submit the payment again under a new id.`);
+  }
+
   // Execute after the challenge window: re-check everything, then sign or abort.
   app.post("/proposals/:id/execute", auth.require, async (req, res) => {
     const entry = proposals.get(String(req.params.id));
@@ -578,7 +603,76 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     res.json({ epoch: store.epoch(), revokedSeats: store.revokedSeatCount() });
   });
 
-  // Seat revocation: only a current seat holder, proven human, may revoke.
+  // Applies a seat revocation: epoch +1, the person blocked from rejoining, pending
+  // proposals and open votes cancelled, schedules deleted. Used for leaving the
+  // council (immediate) and for a revocation vote that passed.
+  const applyRevocation = async (targetSeat: string, by: { subject: string; vote: VoteItem["vote"] } | null) => {
+    const revoked = store.revokeSeat(targetSeat)!;
+    // An execution already past its epoch re-check may be signing right now. Let it record its
+    // real outcome first; cancelling under it would leave CANCELLED on a transfer that went out.
+    // Executions that start after the epoch bump abort on the re-check, so busy entries are skipped.
+    const inFlight = [...proposals.values()].filter((e) => e.inflight);
+    await Promise.all(inFlight.map((e) => e.inflight));
+    const cancelled = [...proposals.values()].filter((e) => (e.pending || e.lastOutcome?.decision === "PENDING_VOTE") && e.lastOutcome && !e.busy);
+    for (const e of cancelled) {
+      e.pending = null;
+      approvals.delete(e.proposal.id);
+      e.lastOutcome = { ...e.lastOutcome!, decision: "CANCELLED", reason: `Cancelled: seat ${revoked.seat.seat} was revoked (epoch ${revoked.fromEpoch} -> ${revoked.toEpoch}).`, challengeUntil: null };
+      const v = store.vote(e.proposal.id);
+      if (v) store.putVote({ ...v, decision: "CANCELLED" });
+    }
+    // Open adoption votes were taken over a council that no longer exists.
+    const closedMandates = store.mandates().filter((m) => m.status === "open");
+    for (const m of closedMandates) {
+      store.updateMandate({ ...m, status: "rejected", closedReason: `Closed: seat ${revoked.seat.seat} was revoked (epoch ${revoked.fromEpoch} -> ${revoked.toEpoch}). Draft it again.` });
+    }
+    // So were other open revocation votes; their ballots are bound to the old epoch.
+    const closedRevocations = store.revocations().filter((r) => r.status === "open" && r.subject !== by?.subject);
+    for (const r of closedRevocations) {
+      store.putRevocation({ ...r, status: "cancelled", closedAt: clock().toISOString(), closedReason: `Closed: seat ${revoked.seat.seat} was revoked (epoch ${revoked.fromEpoch} -> ${revoked.toEpoch}). Propose it again.` });
+    }
+    const scheduleErrors: string[] = [];
+    if (agent.chain?.cancel) {
+      for (const e of cancelled) {
+        const id = e.lastOutcome!.scheduledTxId ?? e.proposal.scheduleId;
+        if (!id) continue;
+        try {
+          await agent.chain.cancel(id);
+        } catch (err) {
+          scheduleErrors.push(`${id}: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+    }
+    const detail =
+      `epoch ${revoked.fromEpoch} -> ${revoked.toEpoch}, seat ${revoked.seat.seat} revoked, ${cancelled.length} pending proposals cancelled` +
+      (closedMandates.length ? `, ${closedMandates.length} open instruction votes closed` : "") +
+      (closedRevocations.length ? `, ${closedRevocations.length} open removal votes closed` : "") +
+      (scheduleErrors.length ? `, ${scheduleErrors.length} schedule deletions failed` : "") +
+      (by ? `, removed by council vote ${by.subject} (${by.vote.yes} of ${by.vote.eligible.length})` : ", left the council");
+    const logged = await auditNote("COUNCIL", "REVOKED", detail);
+    for (const e of cancelled) {
+      e.lastOutcome = { ...e.lastOutcome!, cancelledBy: { auditSeq: logged.auditSeq, auditHash: logged.auditHash, epoch: revoked.toEpoch } };
+    }
+    for (const m of closedMandates) {
+      await auditNote(m.id, "MANDATE_REJECTED", `Standing instruction ${m.id} closed without adoption: seat ${revoked.seat.seat} was revoked (epoch ${revoked.fromEpoch} -> ${revoked.toEpoch}).`, undefined, { rulesHash: m.rulesHash });
+    }
+    return {
+      revoked: true,
+      seat: revoked.seat.seat,
+      by: by ? `council vote ${by.subject}` : "self",
+      epoch: revoked.toEpoch,
+      cancelledProposals: cancelled.map((e) => e.proposal.id),
+      closedMandateVotes: closedMandates.map((m) => m.id),
+      closedRevocationVotes: closedRevocations.map((r) => r.subject),
+      settledBeforeRevocation: inFlight.map((e) => ({ id: e.proposal.id, decision: e.lastOutcome?.decision ?? null })),
+      scheduleDeletion: agent.mode === "real" ? (scheduleErrors.length ? { failed: scheduleErrors } : "deleted") : "simulated: recorded only, no Hedera schedule existed",
+      detail,
+      ...logged,
+    };
+  };
+
+  // Leaving the council (own seat) is immediate. Removing another seat opens a
+  // revocation vote among the other seats. Only a current seat holder, proven human, may do either.
   app.post("/council/revoke", auth.require, async (req, res) => {
     const body = (req.body ?? {}) as { seat?: unknown; nullifier?: unknown; idkitResult?: Record<string, unknown>; mocked?: unknown; byNullifier?: unknown };
     let holder: string | null = null;
@@ -618,57 +712,28 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       res.status(404).json({ error: "No such seat. Give a seat id (seat) or its nullifier." });
       return;
     }
-    const revoked = store.revokeSeat(target.seat)!;
-    // An execution already past its epoch re-check may be signing right now. Let it record its
-    // real outcome first; cancelling under it would leave CANCELLED on a transfer that went out.
-    // Executions that start after the epoch bump abort on the re-check, so busy entries are skipped.
-    const inFlight = [...proposals.values()].filter((e) => e.inflight);
-    await Promise.all(inFlight.map((e) => e.inflight));
-    const cancelled = [...proposals.values()].filter((e) => (e.pending || e.lastOutcome?.decision === "PENDING_VOTE") && e.lastOutcome && !e.busy);
-    for (const e of cancelled) {
-      e.pending = null;
-      approvals.delete(e.proposal.id);
-      e.lastOutcome = { ...e.lastOutcome!, decision: "CANCELLED", reason: `Cancelled: seat ${revoked.seat.seat} was revoked (epoch ${revoked.fromEpoch} -> ${revoked.toEpoch}).`, challengeUntil: null };
-      const v = store.vote(e.proposal.id);
-      if (v) store.putVote({ ...v, decision: "CANCELLED" });
+    const holderSeat = store.seats().find((s) => s.nullifier === holder)!;
+    if (holder === target.nullifier) {
+      res.json(await applyRevocation(target.seat, null));
+      return;
     }
-    // Open adoption votes were taken over a council that no longer exists.
-    const closedMandates = store.mandates().filter((m) => m.status === "open");
-    for (const m of closedMandates) {
-      store.updateMandate({ ...m, status: "rejected", closedReason: `Closed: seat ${revoked.seat.seat} was revoked (epoch ${revoked.fromEpoch} -> ${revoked.toEpoch}). Draft it again.` });
+    const already = store.revocations().find((r) => r.status === "open" && r.target === target.seat);
+    if (already) {
+      res.status(409).json({ voteOpened: false, error: `A vote on removing ${target.seat} is already open (${already.subject}).`, subject: already.subject, vote: already.vote });
+      return;
     }
-    const scheduleErrors: string[] = [];
-    if (agent.chain?.cancel) {
-      for (const e of cancelled) {
-        const id = e.lastOutcome!.scheduledTxId ?? e.proposal.scheduleId;
-        if (!id) continue;
-        try {
-          await agent.chain.cancel(id);
-        } catch (err) {
-          scheduleErrors.push(`${id}: ${err instanceof Error ? err.message : String(err)}`);
-        }
-      }
+    const eligible = store.seats().map((s) => s.seat).filter((s) => s !== target.seat);
+    if (eligible.length === 0) {
+      res.status(409).json({ voteOpened: false, error: `No other seat could vote on removing ${target.seat}.` });
+      return;
     }
-    const detail =
-      `epoch ${revoked.fromEpoch} -> ${revoked.toEpoch}, seat ${revoked.seat.seat} revoked, ${cancelled.length} pending proposals cancelled` +
-      (closedMandates.length ? `, ${closedMandates.length} open instruction votes closed` : "") +
-      (scheduleErrors.length ? `, ${scheduleErrors.length} schedule deletions failed` : "");
-    const logged = await auditNote("COUNCIL", "REVOKED", detail);
-    for (const e of cancelled) {
-      e.lastOutcome = { ...e.lastOutcome!, cancelledBy: { auditSeq: logged.auditSeq, auditHash: logged.auditHash, epoch: revoked.toEpoch } };
-    }
-    res.json({
-      revoked: true,
-      seat: revoked.seat.seat,
-      by: holder === target.nullifier ? "self" : "another seat holder",
-      epoch: revoked.toEpoch,
-      cancelledProposals: cancelled.map((e) => e.proposal.id),
-      closedMandateVotes: closedMandates.map((m) => m.id),
-      settledBeforeRevocation: inFlight.map((e) => ({ id: e.proposal.id, decision: e.lastOutcome?.decision ?? null })),
-      scheduleDeletion: agent.mode === "real" ? (scheduleErrors.length ? { failed: scheduleErrors } : "deleted") : "simulated: recorded only, no Hedera schedule existed",
-      detail,
-      ...logged,
-    });
+    const r = store.openRevocation({ target: target.seat, openedBy: holderSeat.seat, epoch: store.epoch(), vote: openTally(eligible), status: "open", openedAt: clock().toISOString() });
+    const logged = await auditNote(
+      r.subject,
+      "REVOCATION_VOTE_OPENED",
+      `${holderSeat.seat} proposed removing ${target.seat}. Council vote ${r.subject} opened: ${r.vote.needed} of the ${eligible.length} other seats needed.`,
+    );
+    res.status(202).json({ voteOpened: true, subject: r.subject, kind: "revocation", target: target.seat, by: holderSeat.seat, vote: r.vote, ...logged });
   });
 
   // Link to the original console app (run separately: npm run console).
