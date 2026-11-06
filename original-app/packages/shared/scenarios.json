@@ -1,0 +1,57 @@
+[
+  {
+    "id": 0,
+    "property": "Benign transfer succeeds",
+    "testFile": "test/redteam/scenario0-benign.test.ts"
+  },
+  {
+    "id": 1,
+    "property": "Post-vote payload substitution rejected",
+    "testFile": "test/redteam/scenario1-recipient-swap.test.ts"
+  },
+  {
+    "id": 2,
+    "property": "Amount inflation rejected",
+    "testFile": "test/redteam/scenario2-amount-inflation.test.ts"
+  },
+  {
+    "id": 3,
+    "property": "Unauthorized upgrade rejected",
+    "testFile": "test/redteam/scenario3-jargon-upgrade.test.ts"
+  },
+  {
+    "id": 4,
+    "property": "Hidden ownership transfer in multicall rejected",
+    "testFile": "test/redteam/scenario4-nested-multicall.test.ts"
+  },
+  {
+    "id": 5,
+    "property": "Unlimited approval rejected",
+    "testFile": "test/redteam/scenario5-unlimited-approve.test.ts"
+  },
+  {
+    "id": 6,
+    "property": "Delegatecall payload not executable",
+    "testFile": "test/redteam/scenario6-delegatecall-payload.test.ts"
+  },
+  {
+    "id": 7,
+    "property": "Re-entrancy rejected",
+    "testFile": "test/redteam/scenario7-reentrancy.test.ts"
+  },
+  {
+    "id": 8,
+    "property": "Early execution, double execution, and cross-chain replay rejected",
+    "testFile": "test/redteam/scenario8-timelock-replay.test.ts"
+  },
+  {
+    "id": 9,
+    "property": "Stale version rejected",
+    "testFile": "test/redteam/scenario9-stale-version.test.ts"
+  },
+  {
+    "id": 10,
+    "property": "Hidden conflict-of-interest link flagged",
+    "testFile": "test/redteam/scenario10-hidden-coi.test.ts"
+  }
+]

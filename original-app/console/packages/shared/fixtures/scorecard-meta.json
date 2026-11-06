@@ -1,0 +1,11 @@
+{
+  "generatedAt": "2026-10-25T11:26:09.468Z",
+  "generator": "scripts/scorecard.ts",
+  "mode": "reference-model (TypeScript)",
+  "summary": {
+    "pass": 25,
+    "fail": 0,
+    "testRequired": 9
+  },
+  "note": "Checks executed in-process against the reference executor and shared code. Solidity-only properties are TEST_REQUIRED."
+}

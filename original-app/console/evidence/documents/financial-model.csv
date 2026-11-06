@@ -1,0 +1,8 @@
+item,value,unit,note
+treasury_balance_usdc,1200000,USDC,balance at 2026-10-01
+monthly_operating_burn_usdc,122000,USDC,trailing three-month average
+runway_before_months,9.8,months,treasury_balance / monthly_burn
+grant_to_growthlabs_usdc,200000,USDC,one-time
+grant_to_developer_guild_usdc,50000,USDC,one-time
+allowance_ceiling_usdc,5000,USDC,TreasuryOps review costs
+runway_after_months,7.8,months,(balance - grants) / monthly_burn

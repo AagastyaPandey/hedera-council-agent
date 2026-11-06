@@ -1,0 +1,176 @@
+{
+  "simulated": true,
+  "schema": "aegisdao.wallet-graph.v1",
+  "snapshotAt": "2026-09-12T00:00:00.000Z",
+  "disclaimer": "SIMULATED DATA. Wallets, transactions, amounts, and timestamps are fabricated for the AegisDAO demo.",
+  "proposalId": "8",
+  "disclosure": {
+    "walletListHash": "0x69ff2b4fa5dc9a9211e9e0eb625ad1ff2bbc7a88a679d27ada793fff7f05851b",
+    "disclosedWallets": [
+      "0x000000000000000000000000000000000000a001",
+      "0x000000000000000000000000000000000000a002",
+      "0x000000000000000000000000000000000000d001"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "0x000000000000000000000000000000000000a001",
+      "label": "Proposer Council Safe",
+      "role": "proposer",
+      "disclosed": true,
+      "simulated": true
+    },
+    {
+      "id": "0x000000000000000000000000000000000000a002",
+      "label": "DAO Treasury",
+      "role": "treasury",
+      "disclosed": true,
+      "simulated": true
+    },
+    {
+      "id": "0x000000000000000000000000000000000000b001",
+      "label": "Development Wallet (undisclosed)",
+      "role": "recipient",
+      "disclosed": false,
+      "simulated": true
+    },
+    {
+      "id": "0x000000000000000000000000000000000000b002",
+      "label": "Intermediary Wallet",
+      "role": "intermediary",
+      "disclosed": false,
+      "simulated": true
+    },
+    {
+      "id": "0x000000000000000000000000000000000000c001",
+      "label": "Shared Funder",
+      "role": "funder",
+      "disclosed": false,
+      "simulated": true
+    },
+    {
+      "id": "0x000000000000000000000000000000000000c002",
+      "label": "Shared Deployer",
+      "role": "deployer",
+      "disclosed": false,
+      "simulated": true
+    },
+    {
+      "id": "0x000000000000000000000000000000000000d001",
+      "label": "Disclosed Contributor Wallet",
+      "role": "disclosed",
+      "disclosed": true,
+      "simulated": true
+    }
+  ],
+  "edges": [
+    {
+      "id": "treasury-funds-proposer",
+      "from": "0x000000000000000000000000000000000000a002",
+      "to": "0x000000000000000000000000000000000000a001",
+      "type": "funding",
+      "asset": "ETH",
+      "amount": "50000000000000000000",
+      "timestamp": "2026-09-01T09:00:00.000Z",
+      "txHash": "0x133b97f0cc36bddd65604ad4e4263cb05cf3d6e18c7d2f052d7218012d9c63d5",
+      "disclosed": true,
+      "simulated": true
+    },
+    {
+      "id": "funder-funds-proposer",
+      "from": "0x000000000000000000000000000000000000c001",
+      "to": "0x000000000000000000000000000000000000a001",
+      "type": "funding",
+      "asset": "ETH",
+      "amount": "12000000000000000000",
+      "timestamp": "2026-09-10T09:00:00.000Z",
+      "txHash": "0xab8838881371dd65afde68db3b531373036bc2be3f8d7612dad6c98b82a79d6c",
+      "disclosed": false,
+      "simulated": true
+    },
+    {
+      "id": "funder-funds-recipient",
+      "from": "0x000000000000000000000000000000000000c001",
+      "to": "0x000000000000000000000000000000000000b001",
+      "type": "funding",
+      "asset": "ETH",
+      "amount": "12000000000000000000",
+      "timestamp": "2026-09-10T09:04:00.000Z",
+      "txHash": "0x0edcfeef3d58467a1a2c74e789f5560fcc0d026c3924d96ebc384160d50537aa",
+      "disclosed": false,
+      "simulated": true
+    },
+    {
+      "id": "proposer-to-intermediary",
+      "from": "0x000000000000000000000000000000000000a001",
+      "to": "0x000000000000000000000000000000000000b002",
+      "type": "transfer",
+      "asset": "USDC",
+      "amount": "25000000000",
+      "timestamp": "2026-09-10T10:00:00.000Z",
+      "txHash": "0x67257865d7ebc9bf2ff6b6c218fa6a3cde704d67872c0d728f0717f15db157f7",
+      "disclosed": false,
+      "simulated": true
+    },
+    {
+      "id": "intermediary-to-recipient",
+      "from": "0x000000000000000000000000000000000000b002",
+      "to": "0x000000000000000000000000000000000000b001",
+      "type": "transfer",
+      "asset": "USDC",
+      "amount": "24500000000",
+      "timestamp": "2026-09-10T10:06:00.000Z",
+      "txHash": "0xd1b9b7c21eb7f13314e4ff5b84305048d4ede81c63b90067ca0f8b31f86632ae",
+      "disclosed": false,
+      "simulated": true
+    },
+    {
+      "id": "treasury-disclosed-grant",
+      "from": "0x000000000000000000000000000000000000a002",
+      "to": "0x000000000000000000000000000000000000b001",
+      "type": "transfer",
+      "asset": "USDC",
+      "amount": "4000000000",
+      "timestamp": "2026-09-05T11:00:00.000Z",
+      "txHash": "0x0df9864b12bd5b66c16bd1c4b10a5e5ac36fde48ed8b7569f5055ddcca0e3eb8",
+      "disclosed": true,
+      "simulated": true
+    },
+    {
+      "id": "proposer-disclosed-contributor",
+      "from": "0x000000000000000000000000000000000000a001",
+      "to": "0x000000000000000000000000000000000000d001",
+      "type": "transfer",
+      "asset": "USDC",
+      "amount": "3000000000",
+      "timestamp": "2026-09-08T15:30:00.000Z",
+      "txHash": "0x82ed8e0c98ad69713234295708afd572bc557de6736b63257fe1e32df2291653",
+      "disclosed": true,
+      "simulated": true
+    },
+    {
+      "id": "deployer-deploys-proposer",
+      "from": "0x000000000000000000000000000000000000c002",
+      "to": "0x000000000000000000000000000000000000a001",
+      "type": "deployment",
+      "asset": "none",
+      "amount": "0",
+      "timestamp": "2026-08-20T08:00:00.000Z",
+      "txHash": "0x0dff175ec9b88ce77cb5420bf68622462df7460adc216fc7403bc8aca4bec836",
+      "disclosed": false,
+      "simulated": true
+    },
+    {
+      "id": "deployer-deploys-recipient",
+      "from": "0x000000000000000000000000000000000000c002",
+      "to": "0x000000000000000000000000000000000000b001",
+      "type": "deployment",
+      "asset": "none",
+      "amount": "0",
+      "timestamp": "2026-08-20T08:07:00.000Z",
+      "txHash": "0x9e9ea278d418ab955a401ca8f8c964309300cce93a9ad2cb06fa3f31f4b532d6",
+      "disclosed": false,
+      "simulated": true
+    }
+  ]
+}

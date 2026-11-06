@@ -1,0 +1,46 @@
+{
+  "name": "aegisdao",
+  "version": "1.0.0",
+  "description": "AegisDAO IntentLock - Verifiable governance execution",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "test:parity": "hardhat test test/commitment-parity.test.ts",
+    "test:redteam": "ts-node scripts/run-arena.ts",
+    "arena": "ts-node scripts/run-arena.ts",
+    "scorecard": "ts-node scripts/run-arena.ts",
+    "deploy": "hardhat run scripts/deploy.ts --network localhost",
+    "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
+    "verify:sepolia": "hardhat run scripts/verify-all.ts --network sepolia",
+    "seed": "hardhat run scripts/seed-demo.ts --network localhost",
+    "seed:sepolia": "hardhat run scripts/seed-sepolia.ts --network sepolia",
+    "preview": "ts-node sentinel/preview-cli.ts",
+    "previews:record": "hardhat run scripts/generate-previews.ts --network localhost",
+    "previews:record:sepolia": "hardhat run scripts/generate-previews.ts --network hardhat",
+    "sentinel:watch": "hardhat run sentinel/watcher.ts --network localhost",
+    "sentinel:fork": "hardhat run sentinel/watcher.ts --network hardhat",
+    "demo:attack": "hardhat run scripts/demo-attack.ts --network localhost",
+    "generate:errors": "ts-node scripts/generate-errors-map.ts",
+    "test:intelligence": "ts-mocha --timeout 10000 intelligence/__tests__/intelligence.test.ts",
+    "test:decide": "ts-mocha --timeout 10000 intelligence/__tests__/tiny-model.test.ts",
+    "decide": "ts-node scripts/decide.ts"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@types/chai": "^4.3.0",
+    "@types/mocha": "^10.0.0",
+    "@types/node": "^20.0.0",
+    "hardhat": "^2.22.0",
+    "ts-mocha": "^11.1.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.6.1",
+    "ethers": "^6.13.0"
+  },
+  "allowScripts": {
+    "keccak@3.0.4": true,
+    "secp256k1@4.0.5": true
+  }
+}

@@ -1,0 +1,194 @@
+<style>
+  .card.blue{border-color:rgba(103,201,240,.25)}
+  @media (max-width:1100px){ .stages{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media (max-width:720px){
+    .stages{grid-template-columns:1fr}
+    .sys-strip{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+    .sys-node:nth-child(2n){border-right:0!important}
+  }
+  @media (max-width:720px){ .backtop{display:none} }
+  @media print{
+    .stages{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+    .card.blue{border-color:#bbb!important}
+  }
+</style>
+
+<section class="section" id="status">
+  <div class="eyebrow">09 / Status board</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">What is proven today.<br><span class="muted">What is only checked in.</span></h2></div>
+    <span class="chip">honest accounting</span>
+  </div>
+  <p class="lead">The most useful page in the atlas. A checked-in artifact is not a live run; a reference model is not a contract; an unmerged integration is not a guarantee.</p>
+
+  <div class="score-grid">
+    <div class="score">
+      <div class="kicker">Person B · b/judge-mode</div>
+      <div class="big" style="color:var(--safe)">25 <span style="font-size:14px;color:var(--faint)">PASS</span></div>
+      <div class="sub">tests 57 / 9 files · scorecard generated</div>
+      <div class="bar"><i class="p" style="width:73.5%"></i><i class="t" style="width:26.5%"></i></div>
+      <div class="tagrow"><span class="chip green">0 FAIL</span><span class="chip sig">9 TEST_REQUIRED</span><span class="chip">34 entries</span></div>
+      <p class="small muted" style="margin-top:8px">The 57-test suite, scorecard, production build and desktop/mobile browser QA were run in this workspace on the B code before the docs-only commit. The reference executor still executes nothing on-chain.</p>
+    </div>
+    <div class="score">
+      <div class="kicker">Person A · main</div>
+      <div class="big" style="color:var(--info)">11/11 <span style="font-size:14px;color:var(--faint)">scenarios</span></div>
+      <div class="sub">checked-in scorecard · 44 intelligence tests</div>
+      <div class="bar"><i class="p" style="width:100%"></i></div>
+      <div class="tagrow"><span class="chip green">all PASS in artifact</span><span class="chip">15 test files</span><span class="chip">not rerun here</span></div>
+      <p class="small muted" style="margin-top:8px">A's contracts, tests, deployments, vectors and Sentinel reports are present. Neither worktree used for this atlas has <code>node_modules/</code> or a full <code>artifacts/</code> build, so A's suite was not rerun.</p>
+    </div>
+  </div>
+
+  <div style="overflow-x:auto; margin-top:16px">
+    <table class="status-table">
+      <tbody>
+        <tr><td>B reference executor + decoder + report + hashes</td><td><strong style="color:var(--safe)">Verified in this workspace</strong> · 57 tests, scorecard, build and browser QA</td></tr>
+        <tr><td>A Solidity contracts + Hardhat suite</td><td><strong style="color:var(--info)">Checked-in artifacts</strong> · 11/11 scenario scorecard, 10 vectors, 43 errors, 11 ABIs; not rerun here</td></tr>
+        <tr><td>A intelligence modules</td><td><strong style="color:var(--info)">44 unit tests counted</strong> · source present; two bridge divergences found</td></tr>
+        <tr><td>A/B end-to-end integration</td><td><strong style="color:var(--danger)">Pending</strong> · unrelated histories; no imports; 9 TEST_REQUIRED in B</td></tr>
+        <tr><td>Sentinel halt / on-chain disclosure / guardian</td><td><strong style="color:var(--signal)">Fixture or code present</strong> · not a running end-to-end guarantee</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note"><b>Never flatten these into “25/25”</b> The B scorecard is an in-process reference run, not line coverage. The A scorecard is a red-team artifact, not the B app's on-chain proof. The integration scorecard cannot exist until the two trees have one commitment and one executor.</div>
+</section>
+
+<section class="section" id="positioning">
+  <div class="eyebrow">10 / Positioning</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">Why this is not<br><span class="muted">just another Governor.</span></h2></div>
+    <span class="chip sig">the precise claim</span>
+  </div>
+  <p class="lead">Binding a vote to calldata is already solved by Compound and OpenZeppelin Governors. The honest gap is comprehension, evidence, conflicts and code identity at execution. Say that before a judge says it for you.</p>
+
+  <div style="overflow-x:auto">
+    <table class="prior">
+      <thead><tr><th>System</th><th>It already has</th><th>It leaves open</th></tr></thead>
+      <tbody>
+        <tr><td>Compound / OZ Governor</td><td>Proposal id = hash of encoded calls</td><td>Description is a separate string; no evidence or disclosure commitment</td></tr>
+        <tr><td>Tally / Tenderly / OZ Defender</td><td>Decoding, simulation, state diffs</td><td>Advisory display; the executor does not consult it</td></tr>
+        <tr><td>Zodiac Roles</td><td>Standing calldata permissions at execution</td><td>A policy, not a per-proposal commitment</td></tr>
+        <tr><td style="color:var(--signal)">IntentLock</td><td>Per-proposal commitment + refusal semantics</td><td>Evidence and disclosure are in the commitment; the report makes the gap legible</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:22px">Say these limits out loud</h3>
+  <div class="limits">
+    <div class="limit"><strong>A vote that honestly authorizes something bad still executes.</strong> We bind intent to action; we do not judge whether the intent is wise.</div>
+    <div class="limit"><strong>Self-authored evidence can be internally consistent.</strong> The Merkle root proves the documents did not change after signing; it does not prove they are true.</div>
+    <div class="limit"><strong>A compromised governor or executor invalidates the guarantee.</strong> Commitment immutability is a security property, not a nicety.</div>
+    <div class="limit"><strong>The informed-vote receipt raises the cost of voting blind.</strong> It does not stop a delegate voting against their mandate with their eyes open.</div>
+  </div>
+  <p class="small muted" style="margin-top:10px">The fuller prior-art review and build direction are in <a class="link" href="person-a-direction.md">person-a-direction.md</a>.</p>
+</section>
+
+<section class="section" id="demo">
+  <div class="eyebrow">11 / Demo path</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">Seven stops.<br><span class="muted">Then the deck.</span></h2></div>
+    <span class="chip">B branch · offline</span>
+  </div>
+  <p class="lead">Judge Mode in the header walks the same path; <code>/present</code> gives the seven-slide close. The app is a local, offline demo; it is not deployed as a site.</p>
+  <div class="demo">
+    <span><b>01</b> / · the verdict</span>
+    <span><b>02</b> /intent · resolve two ambiguities</span>
+    <span><b>03</b> /graph · the undisclosed path</span>
+    <span><b>04</b> /vote · read, acknowledge, cast</span>
+    <span><b>05</b> /arena · run 00 and 03</span>
+    <span><b>06</b> report · download the artifact</span>
+    <span><b>07</b> /scorecard · the nine amber gaps</span>
+    <span><b>↳</b> /present · seven slides</span>
+  </div>
+  <div class="tagrow" style="margin-top:10px"><span class="chip green">Judge Mode · 7 stops</span><span class="chip">Alt + ← / →</span><span class="chip">Esc exits</span><span class="chip">F fullscreen in the deck</span><span class="chip">HTML + JSON takeaway</span></div>
+</section>
+
+<section class="section" id="sources">
+  <div class="eyebrow">12 / Read next + glossary</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">The atlas has sources.<br><span class="muted">Follow them before trusting a claim.</span></h2></div>
+    <span class="chip">source of truth</span>
+  </div>
+
+  <div class="sources">
+    <a class="source" href="atlas/01-chain-intelligence.md"><b>01 · Chain + intelligence</b><span>contracts · tests · Sentinel · intelligence bridge · collision table</span></a>
+    <a class="source" href="atlas/02-experience-layer.md"><b>02 · Experience layer</b><span>routes · Judge Mode · evidence · decoder · graph · scoring · report</span></a>
+    <a class="source" href="PROJECT-MAP.md"><b>GitHub-readable project map</b><span>Mermaid system map · branch topology · status</span></a>
+    <a class="source" href="person-a-direction.md"><b>Positioning + prior art</b><span>what is already solved · where the value is · limits</span></a>
+    <a class="source" href="demo-script.md"><b>Demo script</b><span>rehearsable click path · exact expected values</span></a>
+    <a class="source" href="../README.md"><b>B runbook</b><span>quickstart · formulas · fixtures · limitations</span></a>
+  </div>
+
+  <h3 style="margin-top:24px">Glossary</h3>
+  <div class="glossary">
+    <div><b>Intent</b><span>The machine-readable rule set the reviewer confirms.</span></div>
+    <div><b>Commitment</b><span>The hash the vote binds to: chain, executor, proposal, version, actions, intent, evidence, disclosure.</span></div>
+    <div><b>intentHash</b><span>Hash of compiled action rules; sources and confidence do not enter it.</span></div>
+    <div><b>contentHash</b><span>Hash of proposal content: rules, assumptions, title and version.</span></div>
+    <div><b>Evidence root</b><span>Merkle root over the content-addressed source documents.</span></div>
+    <div><b>Disclosure hash</b><span>Commitment to the proposer's signed wallet disclosure.</span></div>
+    <div><b>Noisy-OR</b><span>R = 1 − Π(1 − sⱼ); independent conflict links combine into one risk score.</span></div>
+    <div><b>Reference executor</b><span>B's TypeScript model of the rules; it executes nothing on-chain.</span></div>
+    <div><b>Hard gate</b><span>Execution is binary; it is never averaged with advisory scores.</span></div>
+    <div><b>TEST_REQUIRED</b><span>A property that cannot be honestly proven in the current workspace; amber, never green.</span></div>
+    <div><b>Sentinel</b><span>Simulation and diff early warning; not the enforcement boundary.</span></div>
+    <div><b>Chain-side console</b><span>A's <code>app/</code> prototype on <code>main</code>, backed by Hardhat and intelligence.</span></div>
+    <div><b>Judge-facing console</b><span>B's Next.js app on <code>b/judge-mode</code>, with Judge Mode, <code>/present</code> and report export.</span></div>
+  </div>
+
+  <div class="note" style="margin-top:20px"><b>Document, not site</b> This atlas is a standalone HTML field manual. It has no external assets, no analytics and no network calls. The product is the Next.js console on <code>b/judge-mode</code>; this file is the map.</div>
+
+  <footer class="footer">
+    <span>AegisDAO IntentLock · project atlas · 2026-10-25</span>
+    <span>main 55c636a · b/judge-mode ea78e84 · not merged</span>
+    <span>document, not site · offline · printable</span>
+  </footer>
+</section>
+</main>
+</div>
+
+<a class="backtop print-hide" href="#top" aria-label="Back to top">↑</a>
+
+<script>
+  (function () {
+    var progress = document.getElementById('progress');
+    var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+    var sections = links.map(function (link) {
+      var id = link.getAttribute('href');
+      return id && id.charAt(0) === '#' ? document.querySelector(id) : null;
+    }).filter(Boolean);
+
+    function onScroll() {
+      var doc = document.documentElement;
+      var max = doc.scrollHeight - window.innerHeight;
+      var ratio = max > 0 ? window.scrollY / max : 0;
+      if (progress) progress.style.width = (ratio * 100) + '%';
+      var active = sections.length ? sections[0].id : null;
+      sections.forEach(function (section) {
+        if (section.getBoundingClientRect().top <= 170) active = section.id;
+      });
+      links.forEach(function (link) {
+        var id = link.getAttribute('href');
+        link.classList.toggle('active', id === '#' + active);
+      });
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
+      anchor.addEventListener('click', function (event) {
+        var selector = anchor.getAttribute('href');
+        if (!selector || selector === '#') return;
+        var target = document.querySelector(selector);
+        if (!target) return;
+        event.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.replaceState(null, '', selector);
+      });
+    });
+  })();
+</script>
+</body>
+</html>

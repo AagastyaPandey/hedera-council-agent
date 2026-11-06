@@ -1,0 +1,88 @@
+{
+  "proposalId": "AIP-042",
+  "version": 3,
+  "title": "Ecosystem Growth Grant — GrowthLabs × Developer Guild",
+  "actions": [
+    {
+      "kind": "ERC20_TRANSFER",
+      "target": "0xcEd3aa37e925F42ef2400b51029A142637923445",
+      "selector": "0xa9059cbb",
+      "counterparty": "0x2DFCD12F1b34DA6a6E87840b1c3eFCF391b9bC15",
+      "maxAmount": "200000000000",
+      "codeHash": null,
+      "source": {
+        "docKey": "forum-post",
+        "page": 1,
+        "section": "§2 What this proposal funds",
+        "quote": "200,000 USDC (one-time)"
+      },
+      "confidence": 0.95,
+      "label": "One-time grant to GrowthLabs"
+    },
+    {
+      "kind": "ERC20_TRANSFER",
+      "target": "0xcEd3aa37e925F42ef2400b51029A142637923445",
+      "selector": "0xa9059cbb",
+      "counterparty": "0x45013B78dbF0c800f418D40C2995A1880aaBeB64",
+      "maxAmount": "50000000000",
+      "codeHash": null,
+      "source": {
+        "docKey": "forum-post",
+        "page": 1,
+        "section": "§2 What this proposal funds",
+        "quote": "50,000 USDC (one-time)"
+      },
+      "confidence": 0.93,
+      "label": "One-time grant to Developer Guild"
+    },
+    {
+      "kind": "ERC20_APPROVE",
+      "target": "0xcEd3aa37e925F42ef2400b51029A142637923445",
+      "selector": "0x095ea7b3",
+      "counterparty": "0x667C5b75390946b010F14FC124a92cBEf4146889",
+      "maxAmount": "5000000000",
+      "codeHash": null,
+      "source": {
+        "docKey": "financial-model",
+        "page": 1,
+        "section": "allowance_ceiling_usdc",
+        "quote": "allowance_ceiling_usdc,5000,USDC,TreasuryOps review costs"
+      },
+      "confidence": 0.9,
+      "label": "Bounded TreasuryOps allowance"
+    }
+  ],
+  "unresolved": [],
+  "assumptions": [
+    {
+      "name": "upgrade_authorized",
+      "value": "false",
+      "source": {
+        "docKey": "technical-assessment",
+        "page": 1,
+        "section": "Treasury implementation",
+        "quote": "No implementation upgrade is authorized by this proposal."
+      }
+    },
+    {
+      "name": "grant_cadence",
+      "value": "one_time",
+      "source": {
+        "docKey": "growthlabs-letter",
+        "page": 1,
+        "section": "Disbursement",
+        "quote": "This is a single disbursement, not a recurring grant."
+      }
+    },
+    {
+      "name": "allowance_ceiling_usdc",
+      "value": "5000",
+      "source": {
+        "docKey": "financial-model",
+        "page": 1,
+        "section": "allowance_ceiling_usdc",
+        "quote": "allowance_ceiling_usdc,5000,USDC,TreasuryOps review costs"
+      }
+    }
+  ]
+}

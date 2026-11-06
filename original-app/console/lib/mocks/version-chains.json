@@ -1,0 +1,56 @@
+[
+  {
+    "proposalId": "8",
+    "valid": true,
+    "versions": [
+      {
+        "version": 1,
+        "versionHash": "0xbd7b6ef0d062627c89a7999091a69dc1011e64e87fa66bd9e7a61ef5db3de6a3",
+        "prevVersionHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "contentHash": "0x16d6bd33bde1a44dfaae1fd3fe5fa54e467b5eb468dfb9e025a26cc9e9cfdf2e",
+        "evidenceRoot": "0xe9d0cde80b0ddf06b404d0aed6845095c1ab7bce1994aa74ce8843c0918b9d9c",
+        "financialAssumptionsHash": "0xebe8a23b391de0d90ac5ac7425c66e331ac4c9cbe57bca1335e8cfb8a2198afb",
+        "technicalAssessmentHash": "0x1288384790af2d07141f7bcc4f4931993e2d83cd9fdbda2443721de9c016d1aa",
+        "intentHash": "0xc94e9ea348bbe0bfb7af065df8b56e8bed60ec656be5b8d049101ae5fb19eb84",
+        "disclosureHash": "0x65886809147001d93c10ddfbf8f1607ce72d151278a933ad836c115ab17dcea3",
+        "timestamp": "2026-09-10T09:00:00.000Z",
+        "author": "0x000000000000000000000000000000000000a001",
+        "contentPreview": "Routine parameter tuning of the fee module."
+      },
+      {
+        "version": 2,
+        "versionHash": "0xb17bb4499c110eebb24571965db45dec6d1afb93f8c02ed1c95a3536181bd72e",
+        "prevVersionHash": "0xbd7b6ef0d062627c89a7999091a69dc1011e64e87fa66bd9e7a61ef5db3de6a3",
+        "contentHash": "0x1305a7f9ee5da7f567b4142703a31f05c16686569f37ab94a58c4af9705759cb",
+        "evidenceRoot": "0x497cfa2e8c505c9c6cb41e778c4dc97415811a6e269eac72ffcf55b96863baf0",
+        "financialAssumptionsHash": "0x833d6ed478ac01e4004435593cd3b6ff92cfa86c59301091ecc747cb67b78248",
+        "technicalAssessmentHash": "0x324e08ad46238084e48ce9691b36f2caced03aed154aa7c8dbacb6a1fa17d824",
+        "intentHash": "0x902ad5cf17aa28accac01a9c03532764148d46598cf5ff3b471530974ea2f95b",
+        "disclosureHash": "0x94d820ebeed1716aa7b1cc457f3e9158623e908fe889ec8c1fe312432c5c4186",
+        "timestamp": "2026-09-11T14:30:00.000Z",
+        "author": "0x000000000000000000000000000000000000a001",
+        "contentPreview": "Amended scope: parameter tuning plus a recipient update delegated to the team."
+      }
+    ]
+  },
+  {
+    "proposalId": "41",
+    "valid": true,
+    "versions": [
+      {
+        "version": 1,
+        "versionHash": "0x70e5ea0c1268e01802969eae099644505d09d4f2a228db680691668b3bde376a",
+        "prevVersionHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "contentHash": "0xeaf524a6b3fb1c388f510552d98caf472b126da042eca4c3a7c22c1f6fba0475",
+        "evidenceRoot": "0x35efa2be51fde16df3ccc32f2b091b34b6c6849b65d40387ba9f5d687460333d",
+        "financialAssumptionsHash": "0xc42a0bdcc2d526747693b4d4e41a9ce66235d49cd0d74f776539024de7f4552a",
+        "technicalAssessmentHash": "0x5bd9e79f38465f744fa89a070659e4cc247b798ef373750d756da8e76df473c9",
+        "intentHash": "0x595acb5686582224c880d5e8833a7d46fede7713faa73b67c2c3b7deac3ace3b",
+        "disclosureHash": "0xddf04bb3c87c55ae974d06f49c96cd3f4b7ffd60f547fcff69dfaca708b5255a",
+        "timestamp": "2026-09-09T11:00:00.000Z",
+        "author": "0x000000000000000000000000000000000000a001",
+        "contentPreview": "Q3 developer grant of 5,000 USDC to the disclosed dev wallet."
+      }
+    ]
+  }
+]

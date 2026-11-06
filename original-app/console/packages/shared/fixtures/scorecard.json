@@ -1,0 +1,283 @@
+[
+  {
+    "id": "H1",
+    "property": "Intent hash changes when any rule field changes",
+    "status": "PASS",
+    "testFile": "tests/hash.test.ts",
+    "durationMs": 1,
+    "evidenceKind": "unit"
+  },
+  {
+    "id": "H2",
+    "property": "Commitment binds chain, executor, version, calldata, intent, evidence and disclosure",
+    "status": "PASS",
+    "testFile": "tests/hash.test.ts",
+    "durationMs": 0,
+    "evidenceKind": "unit"
+  },
+  {
+    "id": "H3",
+    "property": "Hash vectors are stable",
+    "status": "PASS",
+    "testFile": "tests/hash.test.ts",
+    "durationMs": 1,
+    "evidenceKind": "unit"
+  },
+  {
+    "id": "H4",
+    "property": "Version chain links content hashes and preserves rules across v2→v3",
+    "status": "PASS",
+    "testFile": "tests/hash.test.ts",
+    "durationMs": 0,
+    "evidenceKind": "unit"
+  },
+  {
+    "id": "E1",
+    "property": "Every evidence document re-hashes and verifies against the Merkle root",
+    "status": "PASS",
+    "testFile": "tests/evidence.test.ts",
+    "durationMs": 1,
+    "evidenceKind": "unit"
+  },
+  {
+    "id": "D1",
+    "property": "Decoder resolves ERC-20, proxy, ownership and recursive multicall",
+    "status": "PASS",
+    "testFile": "tests/decode.test.ts",
+    "durationMs": 1,
+    "evidenceKind": "unit"
+  },
+  {
+    "id": "D2",
+    "property": "Error selectors map to human constraint names",
+    "status": "PASS",
+    "testFile": "tests/report.test.ts",
+    "durationMs": 0,
+    "evidenceKind": "unit"
+  },
+  {
+    "id": "S0",
+    "property": "Benign grant disbursement",
+    "status": "PASS",
+    "testFile": "tests/executor.test.ts",
+    "durationMs": 0,
+    "evidenceKind": "reference-model"
+  },
+  {
+    "id": "S1",
+    "property": "Post-vote recipient substitution",
+    "status": "PASS",
+    "testFile": "tests/executor.test.ts",
+    "durationMs": 0,
+    "evidenceKind": "reference-model"
+  },
+  {
+    "id": "S2",
+    "property": "Amount inflation",
+    "status": "PASS",
+    "testFile": "tests/executor.test.ts",
+    "durationMs": 0,
+    "evidenceKind": "reference-model"
+  },
+  {
+    "id": "S3",
+    "property": "Jargon upgrade",
+    "status": "PASS",
+    "testFile": "tests/executor.test.ts",
+    "durationMs": 0,
+    "evidenceKind": "reference-model"
+  },
+  {
+    "id": "S4",
+    "property": "Hidden ownership transfer in a multicall",
+    "status": "PASS",
+    "testFile": "tests/executor.test.ts",
+    "durationMs": 0,
+    "evidenceKind": "reference-model"
+  },
+  {
+    "id": "S5",
+    "property": "Unlimited approve disguised as payment setup",
+    "status": "PASS",
+    "testFile": "tests/executor.test.ts",
+    "durationMs": 0,
+    "evidenceKind": "reference-model"
+  },
+  {
+    "id": "S6",
+    "property": "Delegatecall payload",
+    "status": "PASS",
+    "testFile": "tests/executor.test.ts",
+    "durationMs": 1,
+    "evidenceKind": "reference-model"
+  },
+  {
+    "id": "S7",
+    "property": "Re-entrancy via recipient contract",
+    "status": "PASS",
+    "testFile": "tests/executor.test.ts",
+    "durationMs": 0,
+    "evidenceKind": "reference-model"
+  },
+  {
+    "id": "S8",
+    "property": "Early execution and replay",
+    "status": "PASS",
+    "testFile": "tests/executor.test.ts",
+    "durationMs": 0,
+    "evidenceKind": "reference-model"
+  },
+  {
+    "id": "S9",
+    "property": "Stale version after supersession",
+    "status": "PASS",
+    "testFile": "tests/executor.test.ts",
+    "durationMs": 0,
+    "evidenceKind": "reference-model"
+  },
+  {
+    "id": "S10",
+    "property": "Undisclosed conflict of interest",
+    "status": "PASS",
+    "testFile": "tests/executor.test.ts",
+    "durationMs": 1,
+    "evidenceKind": "reference-model"
+  },
+  {
+    "id": "R1",
+    "property": "Violation report is deterministic and carries the approved vs submitted diff",
+    "status": "PASS",
+    "testFile": "tests/report.test.ts",
+    "durationMs": 1,
+    "evidenceKind": "unit"
+  },
+  {
+    "id": "G1",
+    "property": "Undisclosed link discovery reaches the noisy-OR threshold",
+    "status": "PASS",
+    "testFile": "tests/graph.test.ts",
+    "durationMs": 0,
+    "evidenceKind": "unit"
+  },
+  {
+    "id": "V1",
+    "property": "Voting score uses quorum, support, informed ratio, concentration and overlap",
+    "status": "PASS",
+    "testFile": "tests/scoring.test.ts",
+    "durationMs": 0,
+    "evidenceKind": "unit"
+  },
+  {
+    "id": "C1",
+    "property": "Claim score reacts to unresolved items and reviewer resolutions",
+    "status": "PASS",
+    "testFile": "tests/scoring.test.ts",
+    "durationMs": 0,
+    "evidenceKind": "unit"
+  },
+  {
+    "id": "A1",
+    "property": "Strict source validation accepts the baked extraction and rejects a sourceless claim",
+    "status": "PASS",
+    "testFile": "tests/ai.test.ts",
+    "durationMs": 1,
+    "evidenceKind": "unit"
+  },
+  {
+    "id": "A2",
+    "property": "Correct review resolutions reproduce the committed intent exactly",
+    "status": "PASS",
+    "testFile": "tests/ai.test.ts",
+    "durationMs": 1,
+    "evidenceKind": "unit"
+  },
+  {
+    "id": "X1",
+    "property": "Execution is a hard gate, not an average of the other stages",
+    "status": "PASS",
+    "testFile": "tests/scoring.test.ts",
+    "durationMs": 0,
+    "evidenceKind": "unit"
+  },
+  {
+    "id": "P1",
+    "property": "Solidity intentHash is byte-identical to TypeScript",
+    "status": "TEST_REQUIRED",
+    "testFile": "contracts/ + test/ (Person A)",
+    "durationMs": 0,
+    "evidenceKind": "pending-solidity",
+    "reason": "No Solidity layer in this workspace. Shown amber, never green."
+  },
+  {
+    "id": "P2",
+    "property": "ProposalRegistry is append-only and hash-chained on-chain",
+    "status": "TEST_REQUIRED",
+    "testFile": "contracts/ProposalRegistry.sol (Person A)",
+    "durationMs": 0,
+    "evidenceKind": "pending-solidity",
+    "reason": "No Solidity layer in this workspace. Shown amber, never green."
+  },
+  {
+    "id": "P3",
+    "property": "Commitment cannot change after voting opens",
+    "status": "TEST_REQUIRED",
+    "testFile": "contracts/IntentGovernor.sol (Person A)",
+    "durationMs": 0,
+    "evidenceKind": "pending-solidity",
+    "reason": "No Solidity layer in this workspace. Shown amber, never green."
+  },
+  {
+    "id": "P4",
+    "property": "nonReentrant blocks a real EVM re-entrancy",
+    "status": "TEST_REQUIRED",
+    "testFile": "contracts/IntentLockExecutor.sol (Person A)",
+    "durationMs": 0,
+    "evidenceKind": "pending-solidity",
+    "reason": "No Solidity layer in this workspace. Shown amber, never green."
+  },
+  {
+    "id": "P5",
+    "property": "EIP-1967 implementation post-condition holds",
+    "status": "TEST_REQUIRED",
+    "testFile": "contracts/IntentLockExecutor.sol (Person A)",
+    "durationMs": 0,
+    "evidenceKind": "pending-solidity",
+    "reason": "No Solidity layer in this workspace. Shown amber, never green."
+  },
+  {
+    "id": "P6",
+    "property": "Timelock and executed flag are enforced on-chain",
+    "status": "TEST_REQUIRED",
+    "testFile": "test/redteam/ (Person A)",
+    "durationMs": 0,
+    "evidenceKind": "pending-solidity",
+    "reason": "No Solidity layer in this workspace. Shown amber, never green."
+  },
+  {
+    "id": "P7",
+    "property": "Guardian halt stops a queued proposal",
+    "status": "TEST_REQUIRED",
+    "testFile": "sentinel/halt.ts (Person A)",
+    "durationMs": 0,
+    "evidenceKind": "pending-solidity",
+    "reason": "No Solidity layer in this workspace. Shown amber, never green."
+  },
+  {
+    "id": "P8",
+    "property": "Sentinel fork simulation produces a real trace",
+    "status": "TEST_REQUIRED",
+    "testFile": "sentinel/simulate.ts (Person A)",
+    "durationMs": 0,
+    "evidenceKind": "pending-solidity",
+    "reason": "No Solidity layer in this workspace. Shown amber, never green."
+  },
+  {
+    "id": "P9",
+    "property": "DisclosureRegistry verifies a challenge on-chain",
+    "status": "TEST_REQUIRED",
+    "testFile": "contracts/DisclosureRegistry.sol (Person A)",
+    "durationMs": 0,
+    "evidenceKind": "pending-solidity",
+    "reason": "No Solidity layer in this workspace. Shown amber, never green."
+  }
+]

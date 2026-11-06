@@ -1,0 +1,79 @@
+[
+  {
+    "id": "S0",
+    "property": "Benign transfer succeeds",
+    "status": "PASS",
+    "testFile": "test/redteam/scenario0-benign.test.ts",
+    "durationMs": 836
+  },
+  {
+    "id": "S1",
+    "property": "Post-vote payload substitution rejected",
+    "status": "PASS",
+    "testFile": "test/redteam/scenario1-recipient-swap.test.ts",
+    "durationMs": 898
+  },
+  {
+    "id": "S2",
+    "property": "Amount inflation rejected",
+    "status": "PASS",
+    "testFile": "test/redteam/scenario2-amount-inflation.test.ts",
+    "durationMs": 282
+  },
+  {
+    "id": "S3",
+    "property": "Unauthorized upgrade rejected",
+    "status": "PASS",
+    "testFile": "test/redteam/scenario3-jargon-upgrade.test.ts",
+    "durationMs": 326
+  },
+  {
+    "id": "S4",
+    "property": "Hidden ownership transfer in multicall rejected",
+    "status": "PASS",
+    "testFile": "test/redteam/scenario4-nested-multicall.test.ts",
+    "durationMs": 436
+  },
+  {
+    "id": "S5",
+    "property": "Unlimited approval rejected",
+    "status": "PASS",
+    "testFile": "test/redteam/scenario5-unlimited-approve.test.ts",
+    "durationMs": 276
+  },
+  {
+    "id": "S6",
+    "property": "Delegatecall payload not executable",
+    "status": "PASS",
+    "testFile": "test/redteam/scenario6-delegatecall-payload.test.ts",
+    "durationMs": 240
+  },
+  {
+    "id": "S7",
+    "property": "Re-entrancy rejected",
+    "status": "PASS",
+    "testFile": "test/redteam/scenario7-reentrancy.test.ts",
+    "durationMs": 135
+  },
+  {
+    "id": "S8",
+    "property": "Early execution, double execution, and cross-chain replay rejected",
+    "status": "PASS",
+    "testFile": "test/redteam/scenario8-timelock-replay.test.ts",
+    "durationMs": 421
+  },
+  {
+    "id": "S9",
+    "property": "Stale version rejected",
+    "status": "PASS",
+    "testFile": "test/redteam/scenario9-stale-version.test.ts",
+    "durationMs": 142
+  },
+  {
+    "id": "S10",
+    "property": "Hidden conflict-of-interest link flagged",
+    "status": "PASS",
+    "testFile": "test/redteam/scenario10-hidden-coi.test.ts",
+    "durationMs": 133
+  }
+]

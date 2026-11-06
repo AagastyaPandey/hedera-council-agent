@@ -1,0 +1,916 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AegisDAO IntentLock — Whole-Project Atlas</title>
+<style>
+  :root{
+    color-scheme: dark;
+    --ink:#07090c; --panel:#0b0f14; --panel2:#0f151c; --edge:#1b2530; --edge2:#2b3745;
+    --body:#e7eef6; --dim:#8b99a9; --faint:#596675;
+    --signal:#f1b54a; --danger:#ff6464; --safe:#43d99a; --info:#67c9f0;
+    --sans:"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    --mono:"Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    --max:1240px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth; background:var(--ink)}
+  body{margin:0; color:var(--body); background:
+    radial-gradient(1100px 520px at 14% -8%, rgba(241,181,74,.07), transparent 62%),
+    radial-gradient(900px 500px at 100% 0%, rgba(103,201,240,.035), transparent 60%),
+    var(--ink);
+    font-family:var(--sans); line-height:1.6; -webkit-font-smoothing:antialiased}
+  body::before{content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:linear-gradient(rgba(255,255,255,.016) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.016) 1px, transparent 1px);
+    background-size:52px 52px;
+    -webkit-mask-image:linear-gradient(to bottom, #000, transparent 80%);
+    mask-image:linear-gradient(to bottom, #000, transparent 80%)}
+  a{color:inherit; text-decoration:none}
+  code, pre, .mono{font-family:var(--mono)}
+  code{font-size:.88em; color:#b9c8d7}
+  h1,h2,h3,h4{margin:0; letter-spacing:-.025em; line-height:1.05}
+  h1{font-size:clamp(42px,6.2vw,86px); font-weight:650}
+  h2{font-size:clamp(28px,3.2vw,42px); font-weight:600}
+  h3{font-size:clamp(18px,1.8vw,24px); font-weight:600; letter-spacing:-.015em}
+  h4{font-size:12px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; font-family:var(--mono); color:var(--dim)}
+  p{margin:0}
+  .wrap{max-width:var(--max); margin:0 auto; padding:0 28px}
+  .progress{position:fixed; top:0; left:0; height:2px; width:0; background:var(--signal); z-index:100; transition:width .1s linear}
+  .topbar{position:sticky; top:0; z-index:60; border-bottom:1px solid var(--edge); background:rgba(7,9,12,.9); backdrop-filter:blur(12px)}
+  .topbar-inner{max-width:var(--max); margin:0 auto; min-height:58px; padding:0 28px; display:flex; align-items:center; gap:16px}
+  .brand{display:flex; align-items:center; gap:11px; min-width:0}
+  .mark{width:29px; height:32px; display:grid; place-items:center; border:1px solid rgba(241,181,74,.45); border-radius:6px; color:var(--signal); background:rgba(241,181,74,.07)}
+  .brand b{display:block; font-family:var(--mono); font-size:12px; letter-spacing:.2em; font-weight:600; white-space:nowrap; line-height:1.35}
+  .brand span{display:block; font-family:var(--mono); font-size:8px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); white-space:nowrap; line-height:1.35; margin-top:2px}
+  .topmeta{margin-left:auto; display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end}
+  .chip{display:inline-flex; align-items:center; gap:6px; border:1px solid var(--edge); background:rgba(255,255,255,.02); border-radius:4px; padding:3px 7px; font-family:var(--mono); font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); white-space:nowrap}
+  .chip.sig{border-color:rgba(241,181,74,.35); color:var(--signal)}
+  .chip.red{border-color:rgba(255,100,100,.35); color:var(--danger)}
+  .chip.green{border-color:rgba(67,217,154,.35); color:var(--safe)}
+  .chip.blue{border-color:rgba(103,201,240,.35); color:var(--info)}
+  .dot{width:5px; height:5px; border-radius:50%; background:currentColor; box-shadow:0 0 8px currentColor; flex:none}
+  .btn{display:inline-flex; align-items:center; gap:7px; height:30px; padding:0 10px; border:1px solid var(--edge2); border-radius:5px; background:transparent; color:var(--body); font-family:var(--mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase; cursor:pointer}
+  .btn:hover{border-color:#46586b; background:rgba(255,255,255,.035)}
+  .layout{display:grid; grid-template-columns:220px minmax(0,1fr); gap:40px; max-width:var(--max); margin:0 auto; padding:0 28px 80px}
+  .toc{position:sticky; top:82px; align-self:start; padding-top:34px; max-height:calc(100svh - 100px); overflow:auto}
+  .toc .toc-title{font-family:var(--mono); font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); margin-bottom:12px}
+  .toc a{display:flex; gap:8px; align-items:baseline; padding:5px 0; color:var(--dim); font-size:11.5px; line-height:1.3; border-left:1px solid transparent; padding-left:9px; margin-left:-10px}
+  .toc a:hover{color:var(--body)}
+  .toc a.active{color:var(--signal); border-left-color:var(--signal)}
+  .toc a b{font-family:var(--mono); font-size:8.5px; color:var(--faint); font-weight:500; min-width:18px}
+  main{min-width:0}
+  .section{padding:74px 0 12px; border-top:1px solid var(--edge); margin-top:54px; scroll-margin-top:78px}
+  .section:first-of-type{border-top:0; margin-top:0; padding-top:46px}
+  .eyebrow{font-family:var(--mono); font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--signal); display:flex; align-items:center; gap:10px}
+  .eyebrow::after{content:""; width:44px; height:1px; background:rgba(241,181,74,.45)}
+  .section-head{display:flex; justify-content:space-between; align-items:flex-end; gap:20px; margin-bottom:24px; flex-wrap:wrap}
+  .section-head p{max-width:680px; color:var(--dim); font-size:14px; margin-top:10px}
+  .lead{font-size:clamp(15px,1.5vw,18px); line-height:1.6; color:#b9c6d4; max-width:780px}
+  .muted{color:var(--dim)}
+  .faint{color:var(--faint)}
+  .small{font-size:12px}
+  .grid{display:grid; gap:13px}
+  .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .card{border:1px solid var(--edge); border-radius:9px; background:linear-gradient(180deg, rgba(255,255,255,.02), transparent 42%), var(--panel); padding:17px; min-width:0}
+  .card.accent{border-color:rgba(241,181,74,.30)}
+  .card.red{border-color:rgba(255,100,100,.28); background:linear-gradient(180deg, rgba(255,100,100,.04), transparent 55%), var(--panel)}
+  .card.green{border-color:rgba(67,217,154,.25)}
+  .card h4{margin-bottom:7px}
+  .card p{font-size:12.5px; color:var(--dim); line-height:1.55}
+  .card .big{font-family:var(--mono); font-size:clamp(26px,3vw,38px); line-height:1; color:var(--body); margin:5px 0 3px}
+  .card .big.sig{color:var(--signal)} .card .big.red{color:var(--danger)} .card .big.green{color:var(--safe)} .card .big.blue{color:var(--info)}
+  .kicker{font-family:var(--mono); font-size:8.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint)}
+  .rule{height:1px; background:var(--edge); margin:16px 0}
+  .tagrow{display:flex; flex-wrap:wrap; gap:5px; margin-top:10px}
+  .link{color:var(--signal); text-decoration:underline; text-decoration-color:rgba(241,181,74,.4); text-underline-offset:3px}
+  .link:hover{text-decoration-color:var(--signal)}
+
+  /* cover */
+  .cover{padding-top:56px}
+  .cover .meta{display:flex; flex-wrap:wrap; gap:6px; margin:18px 0 24px}
+  .cover h1{max-width:1000px; text-wrap:balance}
+  .cover h1 em{font-style:normal; color:var(--danger)}
+  .cover .lead{margin-top:22px}
+  .promises{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:30px 0}
+  .promise{border-top:2px solid var(--signal); border-bottom:1px solid var(--edge); padding:15px 2px 13px}
+  .promise:nth-child(2){border-top-color:var(--danger)} .promise:nth-child(3){border-top-color:var(--info)}
+  .promise b{display:block; font-size:13px; margin-bottom:5px}
+  .promise p{font-size:11.5px; color:var(--dim); line-height:1.5}
+  .promise .n{font-family:var(--mono); font-size:9px; color:var(--faint); display:block; margin-bottom:7px}
+  .sys-strip{display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); gap:0; border:1px solid var(--edge); background:rgba(255,255,255,.012); margin:24px 0 10px}
+  .sys-node{padding:12px 9px; border-right:1px solid var(--edge); position:relative; min-width:0}
+  .sys-node:last-child{border-right:0}
+  .sys-node b{display:block; font-family:var(--mono); font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--body); margin-bottom:3px}
+  .sys-node span{font-family:var(--mono); font-size:7.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); display:block}
+  .sys-node .sd{position:absolute; top:9px; right:8px; width:4px; height:4px; border-radius:50%; background:var(--faint)}
+  .sys-node.real .sd{background:var(--safe); box-shadow:0 0 7px var(--safe)}
+  .sys-node.ref .sd{background:var(--signal); box-shadow:0 0 7px var(--signal)}
+  .sys-node.pending .sd{background:var(--danger); box-shadow:0 0 7px var(--danger)}
+  .closing{border-left:2px solid var(--signal); padding:6px 0 6px 16px; margin-top:26px; color:#cfdae6; font-size:15px; line-height:1.55; max-width:850px}
+  .closing small{display:block; color:var(--faint); font-family:var(--mono); font-size:9px; letter-spacing:.06em; margin-top:7px; text-transform:uppercase}
+
+  /* truth / branches */
+  .truth{display:grid; grid-template-columns:1fr 120px 1fr; align-items:stretch; gap:0; margin-top:22px}
+  .truth-card{padding:18px; border:1px solid var(--edge); background:var(--panel)}
+  .truth-card + .truth-card{border-left:0}
+  .truth-mid{display:flex; flex-direction:column; align-items:center; justify-content:center; border-top:1px solid rgba(255,100,100,.32); border-bottom:1px solid rgba(255,100,100,.32); background:rgba(255,100,100,.04); text-align:center; padding:12px 8px}
+  .truth-mid b{font-family:var(--mono); font-size:8px; letter-spacing:.1em; text-transform:uppercase; color:var(--danger); line-height:1.5}
+  .truth-mid span{font-family:var(--mono); font-size:18px; color:var(--danger); margin:3px 0}
+  .branch-head{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:7px}
+  .branch-head b{font-family:var(--mono); font-size:12px; letter-spacing:.08em}
+  .truth-card p{font-size:12px; color:var(--dim)}
+  .truth-card .stats{display:flex; flex-wrap:wrap; gap:5px; margin-top:12px}
+  .collision-table{width:100%; border-collapse:collapse; font-size:11.5px; margin-top:6px}
+  .collision-table th{text-align:left; font-family:var(--mono); font-size:8px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); padding:7px 8px; border-bottom:1px solid var(--edge2); vertical-align:bottom}
+  .collision-table td{padding:8px; border-bottom:1px solid var(--edge); vertical-align:top; color:var(--dim)}
+  .collision-table td:first-child{color:var(--body); font-weight:600; width:16%}
+  .collision-table code{font-size:9.5px; color:#b9c8d7}
+  .collision-table tr:last-child td{border-bottom:0}
+
+  /* chain / states */
+  .contract-grid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px}
+  .contract{border:1px solid var(--edge); background:var(--panel); padding:14px; min-width:0}
+  .contract h4{color:var(--signal); margin-bottom:4px}
+  .contract .role{font-size:11.5px; color:var(--body); line-height:1.4}
+  .contract .check{font-size:10.5px; color:var(--dim); margin-top:6px; line-height:1.45}
+  .contract .path{font-family:var(--mono); font-size:8.5px; color:var(--faint); margin-top:9px; word-break:break-all}
+  .stateflow{display:flex; align-items:center; flex-wrap:wrap; gap:5px; margin:12px 0}
+  .state{border:1px solid var(--edge2); background:var(--panel); padding:7px 9px; font-family:var(--mono); font-size:9px; color:var(--body); letter-spacing:.02em}
+  .state.gate{border-color:rgba(255,100,100,.35); color:#ffb0b0}
+  .state.ok{border-color:rgba(67,217,154,.3); color:#9be7c6}
+  .state.off{border-color:var(--edge); color:var(--faint)}
+  .arrow{font-family:var(--mono); color:var(--faint); font-size:11px; padding:0 2px}
+  .gateflow{display:flex; flex-direction:column; gap:0; margin-top:8px}
+  .gateflow .step{padding:8px 0 8px 14px; border-left:1px solid var(--edge2); position:relative}
+  .gateflow .step::before{content:""; position:absolute; left:-3px; top:14px; width:5px; height:5px; border-radius:50%; background:var(--signal)}
+  .gateflow .step.fail::before{background:var(--danger)}
+  .gateflow .step b{font-family:var(--mono); font-size:9px; text-transform:uppercase; letter-spacing:.08em; color:var(--body); margin-right:6px}
+  .gateflow .step span{font-size:11px; color:var(--dim)}
+  .note{border:1px solid rgba(241,181,74,.25); background:rgba(241,181,74,.04); padding:10px 12px; font-size:10.5px; line-height:1.55; color:var(--dim); margin-top:12px}
+  .note b{color:var(--signal); font-family:var(--mono); font-size:8.5px; letter-spacing:.08em; text-transform:uppercase}
+
+  /* experience */
+  .routes{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px}
+  .route{border:1px solid var(--edge); background:var(--panel); padding:10px 12px; display:flex; gap:9px; min-width:0}
+  .route code{color:var(--signal); font-size:10px; white-space:nowrap}
+  .route span{font-size:10.5px; color:var(--dim); line-height:1.4}
+  .stages{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin-top:10px}
+  .stage{border:1px solid var(--edge); border-top:2px solid var(--faint); background:var(--panel); padding:12px}
+  .stage:nth-child(1){border-top-color:var(--safe)} .stage:nth-child(2){border-top-color:var(--danger)} .stage:nth-child(3){border-top-color:var(--signal)} .stage:nth-child(4){border-top-color:var(--danger)}
+  .stage .k{font-family:var(--mono); font-size:8px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint)}
+  .stage .v{font-family:var(--mono); font-size:23px; line-height:1; margin:6px 0 3px; color:var(--body)}
+  .stage .v.green{color:var(--safe)} .stage .v.red{color:var(--danger)} .stage .v.sig{color:var(--signal)}
+  .stage p{font-size:10px; color:var(--dim); line-height:1.4}
+  .judge{display:flex; flex-wrap:wrap; gap:5px; margin-top:12px}
+  .judge span{font-family:var(--mono); font-size:8.5px; letter-spacing:.04em; border:1px solid var(--edge); padding:4px 6px; color:var(--dim)}
+  .judge span:last-child{border-color:rgba(241,181,74,.3); color:var(--signal)}
+
+  /* artifact */
+  .artifact{display:grid; grid-template-columns:1fr 42px 1fr; gap:0; align-items:stretch; margin-top:12px}
+  .artifact .side{padding:16px; border:1px solid var(--edge); background:var(--panel); min-width:0}
+  .artifact .side.red{border-color:rgba(255,100,100,.3); background:linear-gradient(180deg, rgba(255,100,100,.04), transparent 60%), var(--panel)}
+  .artifact .mid{display:grid; place-items:center; color:var(--danger); font-family:var(--mono); font-size:22px}
+  .quote{font-size:clamp(16px,1.9vw,22px); line-height:1.45; color:var(--body); margin-top:9px; letter-spacing:-.01em}
+  .decode{font-family:var(--mono); color:var(--danger); font-size:14px; margin-top:8px}
+  .decode-human{font-size:clamp(15px,1.7vw,20px); line-height:1.35; color:var(--body); margin-top:6px}
+  .constraint{display:inline-flex; border:1px solid rgba(255,100,100,.32); background:rgba(255,100,100,.05); padding:5px 8px; font-family:var(--mono); font-size:9px; color:#ffb0b0; margin-top:12px; letter-spacing:.06em}
+  .evidence{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-top:12px}
+  .evidence div{border:1px solid var(--edge); background:var(--ink); padding:7px; min-width:0}
+  .evidence .k{font-family:var(--mono); font-size:7px; text-transform:uppercase; letter-spacing:.1em; color:var(--faint)}
+  .evidence .v{font-family:var(--mono); font-size:7.5px; color:var(--dim); word-break:break-all; margin-top:3px}
+
+  /* attack table */
+  .attack{width:100%; border-collapse:collapse; font-size:10.5px}
+  .attack th{text-align:left; padding:7px 8px; border-bottom:1px solid var(--edge2); font-family:var(--mono); font-size:8px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint)}
+  .attack td{padding:7px 8px; border-bottom:1px solid var(--edge); color:var(--dim); vertical-align:top}
+  .attack tr:last-child td{border-bottom:0}
+  .attack .id{font-family:var(--mono); color:var(--faint); font-size:9px}
+  .attack .pass{color:var(--safe)} .attack .rej{color:var(--danger)} .attack .flag{color:var(--signal)}
+  .layer{font-family:var(--mono); font-size:7.5px; letter-spacing:.06em; border:1px solid var(--edge); padding:2px 4px; color:var(--dim); white-space:nowrap}
+  .layer.sentinel{border-color:rgba(103,201,240,.3); color:var(--info)} .layer.disclosure{border-color:rgba(241,181,74,.3); color:var(--signal)}
+
+  /* status board */
+  .score-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px}
+  .score{padding:16px; border:1px solid var(--edge); background:var(--panel)}
+  .score .big{font-family:var(--mono); font-size:clamp(26px,3vw,36px); color:var(--body); line-height:1; margin:6px 0}
+  .score .sub{font-family:var(--mono); font-size:8px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint)}
+  .score .bar{height:4px; background:var(--edge); margin-top:10px; display:flex; overflow:hidden}
+  .score .bar i{display:block; height:100%}
+  .score .bar .p{background:var(--safe)} .score .bar .t{background:var(--signal)} .score .bar .f{background:var(--danger)}
+  .status-table{width:100%; border-collapse:collapse; font-size:11px; margin-top:10px}
+  .status-table td{padding:7px 8px; border-bottom:1px solid var(--edge); color:var(--dim)}
+  .status-table tr:last-child td{border-bottom:0}
+  .status-table td:first-child{color:var(--body); width:36%}
+
+  /* positioning / demo / sources */
+  .prior{width:100%; border-collapse:collapse; font-size:11.5px; margin-top:8px}
+  .prior th{text-align:left; padding:7px 8px; font-family:var(--mono); font-size:8px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); border-bottom:1px solid var(--edge2)}
+  .prior td{padding:8px; border-bottom:1px solid var(--edge); color:var(--dim); vertical-align:top}
+  .prior tr:last-child td{border-bottom:0}
+  .prior td:first-child{color:var(--body); white-space:nowrap; font-weight:600}
+  .limits{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; margin-top:10px}
+  .limit{border-left:2px solid var(--signal); background:rgba(241,181,74,.035); padding:8px 10px; font-size:10.5px; color:var(--dim); line-height:1.5}
+  .demo{display:flex; flex-wrap:wrap; gap:6px; margin-top:12px}
+  .demo span{display:inline-flex; align-items:center; gap:6px; border:1px solid var(--edge); background:var(--panel); padding:6px 8px; font-family:var(--mono); font-size:9px; color:var(--dim)}
+  .demo b{color:var(--signal); font-weight:500}
+  .sources{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px}
+  .source{display:block; border:1px solid var(--edge); background:var(--panel); padding:10px 12px}
+  .source:hover{border-color:var(--edge2); background:rgba(255,255,255,.02)}
+  .source b{display:block; font-size:11.5px; color:var(--body)}
+  .source span{display:block; font-family:var(--mono); font-size:8px; color:var(--faint); margin-top:3px; word-break:break-all}
+  .glossary{display:grid; grid-template-columns:1fr 1fr; gap:0 22px}
+  .glossary div{display:grid; grid-template-columns:120px 1fr; gap:10px; padding:7px 0; border-bottom:1px solid var(--edge); font-size:10.5px; color:var(--dim)}
+  .glossary b{font-family:var(--mono); font-size:9px; color:var(--body); font-weight:500}
+  .footer{border-top:1px solid var(--edge); margin-top:70px; padding:22px 0 40px; color:var(--faint); font-family:var(--mono); font-size:8.5px; letter-spacing:.05em; text-transform:uppercase; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap}
+  .backtop{position:fixed; right:18px; bottom:18px; z-index:50; width:34px; height:34px; display:grid; place-items:center; border:1px solid var(--edge2); background:var(--panel); color:var(--dim); border-radius:50%; font-family:var(--mono); font-size:12px; opacity:.75}
+  .backtop:hover{opacity:1; border-color:var(--signal); color:var(--signal)}
+  .mobile-note{display:none}
+  @media (max-width:1100px){
+    .section{scroll-margin-top:112px}
+    .layout{grid-template-columns:1fr; gap:0; padding:0 22px 70px}
+    .toc{position:sticky; top:58px; z-index:40; background:rgba(7,9,12,.96); border-bottom:1px solid var(--edge); margin:0 -22px; padding:8px 22px; max-height:none; overflow-x:auto; white-space:nowrap; display:flex; gap:14px; align-items:center}
+    .toc .toc-title{display:none} .toc a{border-left:0; padding:4px 0; margin:0; font-size:10px} .toc a.active{color:var(--signal)} .toc a b{display:none}
+    .section{padding-top:58px; margin-top:40px}
+    .sys-strip{grid-template-columns:repeat(4,minmax(0,1fr))} .sys-node:nth-child(4){border-right:0} .sys-node:nth-child(-n+4){border-bottom:1px solid var(--edge)}
+    .truth{grid-template-columns:1fr} .truth-mid{flex-direction:row; gap:10px; border:1px solid rgba(255,100,100,.3); border-top:0; border-bottom:0; padding:8px} .truth-card + .truth-card{border-left:1px solid var(--edge); border-top:0}
+    .contract-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .routes{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .score-grid{grid-template-columns:1fr}
+  }
+  @media (max-width:720px){
+    .wrap,.topbar-inner{padding-left:16px; padding-right:16px}
+    .layout{padding:0 16px 60px}
+    .toc{margin:0 -16px; padding-left:16px; padding-right:16px}
+    .topmeta .hide-sm{display:none}
+    .brand span{display:none}
+    .cover{padding-top:34px}
+    h1{font-size:clamp(36px,10vw,54px)}
+    h2{font-size:28px}
+    .promises,.g3,.g4,.g2,.contract-grid,.routes,.stages,.artifact,.evidence,.score-grid,.limits,.sources,.glossary{grid-template-columns:1fr}
+    .sys-strip{grid-template-columns:repeat(2,minmax(0,1fr))} .sys-node:nth-child(2n){border-right:0} .sys-node:nth-child(-n+6){border-bottom:1px solid var(--edge)}
+    .stages{gap:6px}
+    .artifact .mid{height:30px; font-size:18px}
+    .attack{font-size:9.5px} .attack th,.attack td{padding:6px 5px}
+    .glossary div{grid-template-columns:100px 1fr}
+    .section-head{flex-direction:column; align-items:flex-start}
+    .collision-table{font-size:10px}
+    .collision-table th,.collision-table td{padding:6px 5px}
+  }
+  @media print{
+    :root{color-scheme:light}
+    body{background:#fff!important; color:#111!important; font-size:10.5pt}
+    body::before{display:none}
+    .progress,.topbar,.toc,.backtop,.print-hide{display:none!important}
+    .layout{display:block; max-width:none; padding:0}
+    main{max-width:none}
+    .section{break-inside:auto; page-break-inside:auto; padding-top:22px; margin-top:22px; border-top:1px solid #ccc}
+    .cover{page-break-after:always; padding-top:0}
+    .card,.contract,.route,.score,.truth-card,.artifact .side,.source,.limit,.sys-strip,.stage,.evidence div{background:#fff!important; border-color:#bbb!important; break-inside:avoid; page-break-inside:avoid}
+    .card p,.card .kicker,.muted,.faint,.truth-card p,.contract .check,.contract .path,.route span,.stage p,.limit,.glossary div,.source span{color:#555!important}
+    .card .big,.stage .v,.decode-human{color:#111!important}
+    .quote,.lead,.card .big.sig,.decode{color:#111!important}
+    .section h2,.section h3,.card h4,.contract h4{color:#111!important}
+    .eyebrow,.chip,.tagrow,.collision-table th,.attack th,.prior th,.status-table td:first-child{color:#333!important}
+    .sys-node{background:#fff!important; border-color:#bbb!important} .sys-node b,.sys-node span{color:#222!important}
+    .sys-strip{border-color:#bbb!important}
+    .truth-mid{background:#fff!important; border-color:#999!important} .truth-mid b,.truth-mid span{color:#8b2020!important}
+    .note{background:#fff8e8!important; border-color:#d8a13c!important; color:#333!important}
+    .link{color:#7a5200!important}
+    .footer{border-top:1px solid #bbb; color:#555!important}
+    a{color:#333!important}
+    .backtop{display:none}
+    code{color:#1e1e1e!important; background:#f1f1f1!important; border:1px solid #ddd!important}
+    .closing,.closing small{color:#222!important}
+    .state,.gateflow .step b,.glossary b,.source b,.prior td:first-child,.collision-table td:first-child,.score .big,.score .kicker{color:#111!important}
+    .gateflow .step span,.attack td,.prior td,.collision-table td,.evidence .v,.score .sub,.stage .k,.judge span,.demo span,.score .kicker{color:#333!important}
+    .attack .pass{color:#19633f!important} .attack .rej{color:#8d2020!important} .attack .flag{color:#7c5300!important}
+    .attack .id{color:#666!important} .layer{color:#444!important; border-color:#bbb!important}
+    .constraint{color:#8d2020!important; border-color:#d16a6a!important; background:#fdeeee!important}
+    .evidence .k{color:#555!important} .stage .v{color:#111!important}
+    .route code{color:#7a5200!important}
+    .score .bar{background:#ddd!important}
+    .state.gate{color:#8d2020!important; border-color:#d16a6a!important}
+    .state.ok{color:#19633f!important; border-color:#6db592!important}
+    .state.off{color:#666!important}
+    .glossary div{color:#333!important}
+    .judge span,.demo span{border-color:#bbb!important}
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<header class="topbar print-hide">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">
+        <svg width="17" height="19" viewBox="0 0 24 28" fill="none"><path d="M12 1.5 22 5v8.5c0 6-4.2 10.4-10 13C6.2 22.9 2 18.5 2 13.5V5l10-3.5Z" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="11" width="6" height="5" rx="1" fill="currentColor"/><path d="M10.5 11V9.5a1.5 1.5 0 0 1 3 0V11" stroke="currentColor" stroke-width="1.2"/></svg>
+      </span>
+      <div><b>AEGIS / INTENTLOCK</b><span>Whole-project atlas · not the site</span></div>
+    </div>
+    <div class="topmeta">
+      <span class="chip hide-sm">snapshot · 2026-10-25</span>
+      <span class="chip hide-sm">main 55c636a · b/judge-mode ea78e84</span>
+      <button class="btn" onclick="window.print()" type="button">Print / PDF</button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="toc print-hide" aria-label="Atlas sections">
+    <div class="toc-title">Atlas / 12 sections</div>
+    <a href="#truth"><b>01</b> The truth first</a>
+    <a href="#branches"><b>02</b> Branch topology</a>
+    <a href="#system"><b>03</b> System map</a>
+    <a href="#chain"><b>04</b> Chain layer</a>
+    <a href="#intelligence"><b>05</b> Intelligence bridge</a>
+    <a href="#experience"><b>06</b> Experience layer</a>
+    <a href="#artifact"><b>07</b> The artifact</a>
+    <a href="#attacks"><b>08</b> Attack map</a>
+    <a href="#status"><b>09</b> Status board</a>
+    <a href="#positioning"><b>10</b> Why this is not a Governor</a>
+    <a href="#demo"><b>11</b> Demo path</a>
+    <a href="#sources"><b>12</b> Read next + glossary</a>
+  </nav>
+
+  <main>
+    <section class="cover" id="top">
+      <div class="eyebrow">AegisDAO IntentLock · whole-project atlas</div>
+      <h1 style="margin-top:20px">Two layers.<br><em>One binding problem.</em></h1>
+      <p class="lead">A chain layer that can enforce a proposal commitment, and an experience layer that makes the gap between what a proposal said and what it would execute impossible to miss. They were built in parallel. They are not yet merged.</p>
+      <div class="meta">
+        <span class="chip sig"><span class="dot"></span>system atlas</span>
+        <span class="chip">A: chain + intelligence · main</span>
+        <span class="chip">B: judge experience · b/judge-mode</span>
+        <span class="chip red">no common ancestor</span>
+        <span class="chip green">57 B tests</span>
+      </div>
+
+      <div class="promises">
+        <div class="promise"><span class="n">01 / COMMIT</span><b>Evidence and disclosure, not just calldata</b><p>A single commitment over rules, calldata, evidence root, disclosure hash and version. Binding a vote to bytes is table stakes; binding the evidence and the conflicts is the addition.</p></div>
+        <div class="promise"><span class="n">02 / COMPREHEND</span><b>Make the description gap legible</b><p>Source-linked claims, a strict validator, a human resolution loop, a recursive decoder and a deterministic report that puts the proposal quote beside the decoded call.</p></div>
+        <div class="promise"><span class="n">03 / REFUSE</span><b>Refuse uncommitted shapes; verify code identity</b><p>No hidden multicall child, no unapproved upgrade, no stale version, no code swapped after approval. The executor is the gate; Sentinel is early warning.</p></div>
+      </div>
+
+      <div class="sys-strip" aria-label="System flow">
+        <div class="sys-node real"><span class="sd"></span><b>Sources</b><span>4 documents</span></div>
+        <div class="sys-node real"><span class="sd"></span><b>Evidence</b><span>Merkle root</span></div>
+        <div class="sys-node real"><span class="sd"></span><b>Intent</b><span>claims + rules</span></div>
+        <div class="sys-node real"><span class="sd"></span><b>Commitment</b><span>hashes</span></div>
+        <div class="sys-node pending"><span class="sd"></span><b>Vote</b><span>A contracts</span></div>
+        <div class="sys-node pending"><span class="sd"></span><b>Executor</b><span>A contracts</span></div>
+        <div class="sys-node ref"><span class="sd"></span><b>Report</b><span>B decoder</span></div>
+        <div class="sys-node ref"><span class="sd"></span><b>Console</b><span>B judge UI</span></div>
+      </div>
+      <div class="tagrow"><span class="chip green"><span class="dot"></span>real / verified</span><span class="chip sig"><span class="dot"></span>reference model</span><span class="chip red"><span class="dot"></span>pending integration</span><span class="chip">read time · ~10 min</span></div>
+
+      <div class="closing">
+        “Voting transparency isn’t informed consent. We made the vote bind to the exact action, and we make the evidence, the conflicts, and the execution verifiable.”
+        <small>The binding is table stakes. Comprehension, evidence, conflicts and code identity are the product.</small>
+      </div>
+    </section>
+
+    <section class="section" id="truth">
+      <div class="eyebrow">01 / The truth before the diagrams</div>
+      <div class="section-head"><div><h2 style="margin-top:12px">Two complete halves.<br><span class="muted">One unmerged project.</span></h2></div><span class="chip red">read this first</span></div>
+      <p class="lead">The public repository contains two unrelated histories. The chain layer has checked-in Hardhat artifacts. The experience layer has a working judge console and a TypeScript reference executor. Neither side imports the other.</p>
+
+      <div class="truth">
+        <div class="truth-card">
+          <div class="branch-head"><b>main</b><span class="chip blue">55c636a</span></div>
+          <h3 style="font-size:20px">Chain + intelligence</h3>
+          <p style="margin-top:8px">Solidity contracts, Hardhat tests, Sentinel, deployments, <code>intelligence/</code> modules, and a chain-side console prototype.</p>
+          <div class="tagrow"><span class="chip green">11/11 scenario scorecard · checked-in</span><span class="chip">44 intelligence tests</span><span class="chip">10 parity vectors</span><span class="chip">11 contract ABIs</span></div>
+          <div class="stats"><span class="chip">43 error selectors</span><span class="chip">15 test files</span><span class="chip">no npm run here</span></div>
+        </div>
+        <div class="truth-mid"><span>×</span><b>NO COMMON<br>ANCESTOR</b><span>≠</span></div>
+        <div class="truth-card">
+          <div class="branch-head"><b>b/judge-mode</b><span class="chip sig">ea78e84</span></div>
+          <h3 style="font-size:20px">Judge experience</h3>
+          <p style="margin-top:8px">Next.js decision console, evidence/AI/hash pipeline, red-team arena, scorecard, Judge Mode, <code>/present</code>, and downloadable HTML/JSON reports.</p>
+          <div class="tagrow"><span class="chip green">57 tests / 9 files</span><span class="chip sig">25 PASS</span><span class="chip red">9 TEST_REQUIRED</span><span class="chip">25/0/9</span></div>
+          <div class="stats"><span class="chip">11 scenarios</span><span class="chip">9 routes</span><span class="chip">reference executor</span></div>
+        </div>
+      </div>
+
+      <div class="note"><b>What this means</b> The B app does not call A's contracts, open A's governor, or use A's deployed addresses. Its nine <code>TEST_REQUIRED</code> scorecard rows mean <strong>the app is not wired to the chain layer</strong>, not that A produced nothing. A's checked-in 11/11 red-team scorecard is an artifact from A's tree; it was not rerun in the B workspace. The two scorecards must never be merged wholesale.</div>
+      <div class="tagrow" style="margin-top:10px"><span class="chip">local Archipelago visual-site experiment · out of scope</span><span class="chip">this document is not the site</span></div>
+    </section>
+<section class="section" id="branches">
+  <div class="eyebrow">02 / Branch topology</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">Two timelines.<br><span class="muted">No merge base.</span></h2></div>
+    <span class="chip red">integration pending</span>
+  </div>
+  <p class="lead">The repo is public. <code>main</code> is Person A's chain + intelligence tree. <code>b/judge-mode</code> is Person B's judge experience. They do not share history; the merge is a deliberate integration project, not a rebase.</p>
+
+  <div class="grid g2" style="margin-top:18px">
+    <div class="card blue">
+      <div class="branch-head"><b>main</b><span class="chip blue">55c636a · public</span></div>
+      <h3 style="font-size:19px">Chain + intelligence</h3>
+      <div class="gateflow">
+        <div class="step"><b>fda932c</b><span>Contracts, Hardhat suite, Sentinel, deployments</span></div>
+        <div class="step"><b>df3a6fc</b><span>Direction brief, prior art, parity traps</span></div>
+        <div class="step"><b>112ce18</b><span>Chain-side console, evidence pipeline, scenario reports</span></div>
+        <div class="step"><b>55c636a</b><span>Intelligence modules: evidence, chain, graph, ai-draft, intent-bridge · 44 tests</span></div>
+      </div>
+      <div class="tagrow"><span class="chip green">11/11 scenario scorecard · checked-in</span><span class="chip">10 parity vectors</span><span class="chip">43 errors</span><span class="chip">11 ABIs</span></div>
+      <p class="small faint" style="margin-top:10px">Checked-in artifacts, not rerun in this B workspace. No node_modules or full artifacts/ directory in the worktree.</p>
+    </div>
+    <div class="card accent">
+      <div class="branch-head"><b>b/judge-mode</b><span class="chip sig">ea78e84 · public</span></div>
+      <h3 style="font-size:19px">Judge experience</h3>
+      <div class="gateflow">
+        <div class="step"><b>92515a6</b><span>Reference executor correctness; audit; status brief</span></div>
+        <div class="step"><b>792cd0c</b><span>Judge Mode, <code>/present</code>, HTML/JSON report export · 57 tests</span></div>
+        <div class="step"><b>ea78e84</b><span>Positioning, prior art and Person A direction brief</span></div>
+      </div>
+      <div class="tagrow"><span class="chip green">57 tests / 9 files</span><span class="chip sig">25 PASS</span><span class="chip red">9 TEST_REQUIRED</span><span class="chip">11 scenarios</span></div>
+      <p class="small faint" style="margin-top:10px">The app computes verdicts with the TypeScript reference executor. It imports nothing from A's contracts, intelligence or deployments.</p>
+    </div>
+  </div>
+
+  <div class="note" style="border-color:rgba(255,100,100,.3); background:rgba(255,100,100,.04)"><b style="color:var(--danger)">No common ancestor</b><br>A PR cannot merge these histories as-is without a deliberate composition. The default public branch is <code>main</code>; the judge experience is on <code>b/judge-mode</code>. A local Archipelago visual-site experiment on a newer local <code>main</code> is intentionally out of scope.</div>
+
+  <h3 style="margin-top:28px">Three surfaces</h3>
+  <div class="grid g3" style="margin-top:10px">
+    <div class="card"><h4>Chain-side console</h4><p><code>main</code> / <code>app/</code> — a prototype backed by a Hardhat runner and the intelligence modules. Goal: prove the arena and the execution logic end-to-end.</p><div class="tagrow"><span class="chip blue">A · main</span><span class="chip">Hardhat backend</span></div></div>
+    <div class="card"><h4>Judge-facing console</h4><p><code>b/judge-mode</code> / <code>app/</code> — the decision console with Judge Mode, <code>/present</code>, downloadable reports, and a reference executor. Goal: explain and verify the trail for judges.</p><div class="tagrow"><span class="chip sig">B · b/judge-mode</span><span class="chip">57 tests</span></div></div>
+    <div class="card"><h4>Visual site experiment</h4><p>A separate Archipelago / ecosystem page on a newer local <code>main</code>. It is not part of this atlas and is not the product architecture.</p><div class="tagrow"><span class="chip">out of scope</span><span class="chip red">not documented here</span></div></div>
+  </div>
+
+  <h3 style="margin-top:28px">The merge collisions</h3>
+  <p class="small muted" style="margin-top:6px">These are concrete, not stylistic. Source: <a class="link" href="atlas/01-chain-intelligence.md">chain + intelligence source doc</a>.</p>
+  <div style="overflow-x:auto; margin-top:10px">
+    <table class="collision-table">
+      <thead><tr><th>Boundary</th><th>A · main</th><th>B · b/judge-mode</th><th>Consequence</th></tr></thead>
+      <tbody>
+        <tr><td>Commitment hash</td><td><code>COMMIT_TYPEHASH</code> + version hash; ethers</td><td>custom tuple: chain, executor, proposalKey, version, actions, intent, evidence root, disclosure; viem</td><td>Commitments are not interchangeable</td></tr>
+        <tr><td>Error map</td><td>43 selectors across four contracts</td><td>17 <code>ERROR_DEFINITIONS</code></td><td>Only a few names/selectors overlap; report mapping is not portable</td></tr>
+        <tr><td>Executor ABI</td><td><code>execute(..., (address,uint,bytes)[], Rule[])</code></td><td><code>execute(uint256,uint256,bytes[])</code></td><td>Adapter required before the console can call the contract</td></tr>
+        <tr><td>Addresses + manifest</td><td>Fixed Hardhat deployments <code>{ address, abi }</code></td><td>Deterministic fixture addresses; <code>{ Name: "0x…" }</code></td><td>Labels and commitments differ</td></tr>
+        <tr><td>Scorecards</td><td>11 red-team rows, all PASS</td><td>34 rows: 25 PASS / 9 TEST_REQUIRED</td><td>Merging either file flips the honesty ledger</td></tr>
+        <tr><td><code>packages/shared/hash.ts</code></td><td>ethers, typehash scheme, kind codes 0–5</td><td>viem, custom scheme, kind codes 1–6</td><td>One path, two incompatible schemes</td></tr>
+        <tr><td>Multicall</td><td><code>multicall(bytes[])</code> · <code>0xac9650d8</code></td><td>custom <code>multicall((address,bytes)[])</code> · <code>0xcaa5c23f</code></td><td>Encoded bundles are not interchangeable</td></tr>
+        <tr><td>Graph / voting constants</td><td>disclosed ×0.15, undisclosed ×1.2; harmonic voting</td><td>disclosed ×0.35, undisclosed ×1.0; B formulas</td><td>The same graph yields different scores</td></tr>
+        <tr><td><code>app/</code></td><td>Chain-side console + Hardhat backend</td><td>Judge console + reference executor</td><td>Both claim the same path; compose or choose a shell</td></tr>
+        <tr><td>Intelligence bridge</td><td><code>intentHash</code> = canonical JSON; empty multicall bytes inside <code>intent-bridge.ts</code></td><td>Reference executor uses its own scheme</td><td>Bridge must be corrected, not merely wired</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note"><b>What a successful merge must decide</b> Which hash is canonical · which scorecard is the public truth · how the two <code>app/</code> shells compose · whether the reference executor remains a fallback · where the shared fixtures live. None of these is a cosmetic refactor.</div>
+</section>
+<section class="section" id="system">
+  <div class="eyebrow">03 / System map</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">The whole pipeline,<br><span class="muted">with the seams visible.</span></h2></div>
+    <span class="chip">real · reference · pending</span>
+  </div>
+  <p class="lead">Read left to right. The first half turns documents into a commitment. The middle is the governed execution path. The last half turns the run into a report a human can inspect. The dotted lines are the unmerged boundary.</p>
+
+  <div class="sys-strip" style="grid-template-columns:repeat(auto-fit,minmax(92px,1fr)); margin-top:20px">
+    <div class="sys-node real"><span class="sd"></span><b>Sources</b><span>4 documents</span></div>
+    <div class="sys-node real"><span class="sd"></span><b>Evidence</b><span>Merkle root</span></div>
+    <div class="sys-node ref"><span class="sd"></span><b>Claims</b><span>pre-baked</span></div>
+    <div class="sys-node real"><span class="sd"></span><b>Rules</b><span>validated</span></div>
+    <div class="sys-node real"><span class="sd"></span><b>Commitment</b><span>hashes</span></div>
+    <div class="sys-node pending"><span class="sd"></span><b>Governor</b><span>A · not wired</span></div>
+    <div class="sys-node pending"><span class="sd"></span><b>Executor</b><span>A · not wired</span></div>
+    <div class="sys-node real"><span class="sd"></span><b>Decoder</b><span>B · real</span></div>
+    <div class="sys-node real"><span class="sd"></span><b>Report</b><span>B · real</span></div>
+    <div class="sys-node ref"><span class="sd"></span><b>Console</b><span>B · reference</span></div>
+  </div>
+  <p class="small faint" style="margin-top:7px">Green = present and checked in · amber = reference model · red = specified but not wired across the boundary · blue = A-side contract surface.</p>
+
+  <div class="grid g2" style="margin-top:20px">
+    <div class="card">
+      <h4>Lane 1 · evidence → intent</h4>
+      <p>The four authored documents are hashed into a Merkle root. The pre-baked extractor proposes claims and rules; the validator rejects any claim without a document quote; the reviewer resolves the two ambiguities. The rule set and assumptions produce <code>intentHash</code>, <code>contentHash</code> and <code>actionsHash</code>.</p>
+      <div class="tagrow"><span class="chip green">real hashing</span><span class="chip sig">baked extraction</span><span class="chip">source-linked</span></div>
+    </div>
+    <div class="card">
+      <h4>Lane 2 · commitment → chain</h4>
+      <p>A's contracts add the append-only registry, signed disclosure, governor vote and executor. The executor recomputes the commitment and refuses anything that does not match the committed rules. Sentinel simulates and flags before execution.</p>
+      <div class="tagrow"><span class="chip green">contracts present</span><span class="chip">11/11 checked-in red-team</span><span class="chip red">not imported by B</span></div>
+    </div>
+    <div class="card">
+      <h4>Lane 3 · execution → report</h4>
+      <p>B's reference executor applies its own rule/commitment model to the same demo. The decoder turns calldata into a recursive action tree, maps custom errors, and produces a deterministic report with the quote, the call, the constraint and the evidence.</p>
+      <div class="tagrow"><span class="chip sig">reference model</span><span class="chip green">decoder + report</span><span class="chip">HTML / JSON</span></div>
+    </div>
+    <div class="card">
+      <h4>Lane 4 · conflicts → decision</h4>
+      <p>B's simulated wallet graph detects direct transfers, common funders and timing. Noisy-OR turns four links into 0.88 RED. The vote brief records the brief hash; the Decision Trail combines claims, COI, voting and the execution hard gate.</p>
+      <div class="tagrow"><span class="chip red">simulated wallets</span><span class="chip green">real math</span><span class="chip sig">advisory scores</span></div>
+    </div>
+  </div>
+
+  <div class="grid g4" style="margin-top:20px">
+    <div class="card red"><h4>Seam 1 · commitment</h4><p>A and B compute different commitments from different preimages. A binds a typehash and version hash; B binds a proposal key, evidence root and disclosure. This is the first thing the integration must reconcile.</p></div>
+    <div class="card red"><h4>Seam 2 · executor</h4><p>A's <code>IntentLockExecutor.execute</code> takes rules and actions; B's reference <code>execute</code> takes a three-argument bundle. A deployed call needs an adapter, not a rename.</p></div>
+    <div class="card red"><h4>Seam 3 · evidence</h4><p>A's evidence store and B's evidence manifest are independent. The roots will not match until one store feeds both.</p></div>
+    <div class="card red"><h4>Seam 4 · truth</h4><p>A's scorecard says 11/11 scenarios pass. B's scorecard says 9 properties are TEST_REQUIRED because B is not wired to A. Both are true in their own tree; the combined truth is the integration work.</p></div>
+  </div>
+</section>
+<section class="section" id="chain">
+  <div class="eyebrow">04 / Chain layer · Person A</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">The refusal engine.</h2></div>
+    <span class="chip blue">main · 55c636a</span>
+  </div>
+  <p class="lead">The chain layer does not decide whether a proposal is wise. It decides whether a transaction is the transaction the vote committed to. The interesting property is refusal: an unapproved selector, a hidden multicall child, a stale version or an implementation whose code hash changed must not execute.</p>
+
+  <div class="contract-grid" style="margin-top:18px">
+    <div class="contract"><h4>ProposalRegistry</h4><div class="role">Append-only, hash-chained proposal versions.</div><div class="check">Author-only writes · <code>prevVersionHash</code> · <code>verifyChain</code> recomputes every hash.</div><div class="path">contracts/ProposalRegistry.sol</div></div>
+    <div class="contract"><h4>DisclosureRegistry</h4><div class="role">Signed wallet disclosure, bond, challenge and ruling.</div><div class="check">EIP-712 nonce · <code>ecrecover == proposer</code> · window bounds · verifier-only ruling.</div><div class="path">contracts/DisclosureRegistry.sol</div></div>
+    <div class="contract"><h4>IntentGovernor</h4><div class="role">Lifecycle, vote, informed-brief hash, queueing.</div><div class="check">Latest-version equality · disclosure hash match · unchallenged · quorum · for &gt; against.</div><div class="path">contracts/IntentGovernor.sol</div></div>
+    <div class="contract"><h4>IntentLockExecutor</h4><div class="role">The gate: state, timelock, commitment, rules, post-conditions.</div><div class="check">Recompute commitment · version supersession · rule count · <code>ActionDecoder.enforce</code> · external call · allowance post-check.</div><div class="path">contracts/IntentLockExecutor.sol</div></div>
+    <div class="contract"><h4>ActionDecoder</h4><div class="role">Exact matching for six action kinds and nested multicall.</div><div class="check">Target, selector, counterparty, amount, code hash · recursion depth &lt; 2 · 12 stable errors.</div><div class="path">contracts/libs/ActionDecoder.sol</div></div>
+    <div class="contract"><h4>CommitmentHasher</h4><div class="role">Pure reference hasher used for parity.</div><div class="check">Byte equality with the TypeScript vector set · <code>COMMIT_TYPEHASH</code>.</div><div class="path">contracts/CommitmentHasher.sol</div></div>
+    <div class="contract"><h4>Test helpers</h4><div class="role">MockUSDC, TreasuryProxy, MaliciousImpl, ReentrantRecipient, VulnerableProxy, FeeModule.</div><div class="check">EIP-1967 slots · delegatecall payload · re-entrancy · 10% fee boundary.</div><div class="path">contracts/test-helpers/</div></div>
+  </div>
+
+  <h3 style="margin-top:26px">Governor lifecycle</h3>
+  <div class="stateflow">
+    <span class="state">DisclosurePending</span><span class="arrow">→</span>
+    <span class="state">VotingOpen</span><span class="arrow">→</span>
+    <span class="state ok">Passed</span><span class="arrow">→</span>
+    <span class="state">Queued</span><span class="arrow">→</span>
+    <span class="state ok">Executed</span>
+  </div>
+  <div class="stateflow" style="margin-top:1px">
+    <span class="state off">Draft · never assigned</span>
+    <span class="state off">Defeated</span>
+    <span class="state off">Halted</span>
+    <span class="state off">Cancelled</span>
+  </div>
+  <p class="small muted" style="margin-top:4px"><code>submitProposal</code> writes <code>DisclosurePending</code> directly; a draft exists only in the registry. <code>syncFromExecutor</code> is a manual pull nothing calls — the governor can remain <code>Queued</code> while the executor is <code>Executed</code> or <code>Halted</code>.</p>
+
+  <h3 style="margin-top:24px">Executor gate</h3>
+  <div class="grid g2" style="margin-top:8px">
+    <div class="gateflow">
+      <div class="step"><b>01 · recompute</b><span><code>actionsHash</code>, <code>intentHash</code>, commitment from chain id, executor and fields.</span></div>
+      <div class="step"><b>02 · state</b><span>Must be <code>Queued</code>; otherwise <code>ProposalNotInState</code>.</span></div>
+      <div class="step"><b>03 · timelock</b><span><code>block.timestamp ≥ eta</code>; otherwise <code>TimelockNotExpired</code>.</span></div>
+      <div class="step"><b>04 · version</b><span>Registry latest must equal the submitted version hash; otherwise <code>VersionSuperseded</code>.</span></div>
+      <div class="step"><b>05 · rules</b><span>Top-level action count must equal rule count; each action is enforced exactly.</span></div>
+      <div class="step"><b>06 · effects first</b><span>State is written before interactions; a re-entrant recipient cannot execute twice.</span></div>
+      <div class="step fail"><b>07 · postconditions</b><span>Allowance ceiling only. Balance-drain and native-value cap are not implemented.</span></div>
+    </div>
+    <div>
+      <div class="note"><b>Honest edges</b><br>· A commitment mismatch surfaces as <code>ProposalNotInState(Queued, Empty)</code>, not <code>CommitmentMismatch</code>.<br>· There is no native-value check; <code>value</code> is bound in <code>actionsHash</code> but no ceiling exists.<br>· <code>_postConditionChecks</code> is an allowance check; the comment about balance decrease is not code.<br>· <code>castVote</code>, <code>Defeated</code>, <code>syncFromExecutor</code>, <code>cancelProposal</code> and <code>returnBond</code> have no test in A's checked-in suite.</div>
+      <div class="tagrow"><span class="chip red">CodeHashMismatch uses <code>keccak256("")</code> as observed code hash</span><span class="chip">only <code>call</code> · no <code>delegatecall</code> path</span></div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:24px">Action kinds</h3>
+  <div class="grid g3" style="margin-top:8px">
+    <div class="card"><h4 style="color:var(--signal)">ERC20_TRANSFER · 0</h4><p>Exact target, selector, recipient and amount ceiling. Calldata length 68.</p></div>
+    <div class="card"><h4 style="color:var(--signal)">ERC20_APPROVE · 1</h4><p>Exact spender, bounded ceiling, explicit unlimited-approval guard.</p></div>
+    <div class="card"><h4 style="color:var(--signal)">PARAM_SET · 2</h4><p>Selector plus first uint256 within <code>maxAmount</code>; semantic matching is out of scope.</p></div>
+    <div class="card"><h4 style="color:var(--signal)">UPGRADE · 3</h4><p>Implementation address and <code>extcodehash</code> check. Code swapped after the vote reverts.</p></div>
+    <div class="card"><h4 style="color:var(--signal)">OWNERSHIP_TRANSFER · 4</h4><p>Exact new owner; hidden ownership inside a multicall fails the child rule.</p></div>
+    <div class="card"><h4 style="color:var(--signal)">MULTICALL · 5</h4><p>Depth &lt; 2, child count matches, every child consumes its own committed rule.</p></div>
+  </div>
+  <div class="note"><b>Error surface</b> A emits 43 selectors across four contracts (12 from <code>ActionDecoder</code>). B's report maps 17 definitions. Only <code>CommitmentMismatch</code> and <code>ExceedsSpendLimit</code> currently share a name and selector; <code>SelectorNotAllowed</code> is not <code>SelectorNotAuthorized</code>, and <code>UnauthorizedRecipient(address,address)</code> is not B's one-argument form. This is an integration task, not a UI detail.</div>
+
+  <h3 style="margin-top:24px">Sentinel · early warning, not the gate</h3>
+  <div class="grid g4" style="margin-top:8px">
+    <div class="card"><h4>Simulate</h4><p>Snapshot state, execute the queued commitment through the real executor, capture, then revert.</p></div>
+    <div class="card"><h4>Diff</h4><p>Balances, allowances, owner/admin, EIP-1967 implementation and code hash, plus routing.</p></div>
+    <div class="card"><h4>Scan</h4><p>Static bytecode scan for <code>DELEGATECALL</code>, <code>CALLCODE</code>, <code>SELFDESTRUCT</code>.</p></div>
+    <div class="card"><h4>Halt</h4><p>Guardian submits the report hash; halt only, never execute or edit.</p></div>
+  </div>
+  <p class="small muted" style="margin-top:6px">Sentinel observes a sandbox, not the block that will run. It is useful exactly because the executor remains the only guarantee.</p>
+
+  <div class="grid g4" style="margin-top:20px">
+    <div class="card green"><h4>Checked-in scorecard</h4><div class="big green">11/11</div><p>S0–S10 red-team scenarios, all PASS. An artifact from A's tree; not rerun here.</p></div>
+    <div class="card"><h4>Parity vectors</h4><div class="big">10</div><p>Typehash, actions hash and commitment vectors in A's fixture set.</p></div>
+    <div class="card"><h4>Deployments</h4><div class="big">11</div><p>Contract ABIs embedded in <code>deployments/local.json</code>; chain 31337.</p></div>
+    <div class="card"><h4>Test inventory</h4><div class="big">15</div><p>14 Hardhat files + 1 intelligence file. 20 red-team <code>it()</code> cases + parity + Sentinel + helpers.</p></div>
+  </div>
+  <div class="tagrow" style="margin-top:12px"><a class="chip sig" href="atlas/01-chain-intelligence.md">full chain + intelligence source doc →</a><span class="chip">no Hardhat run in this workspace</span></div>
+</section>
+<section class="section" id="intelligence">
+  <div class="eyebrow">05 / Intelligence bridge · Person A</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">Turning documents<br><span class="muted">into a defensible rule set.</span></h2></div>
+    <span class="chip blue">main · intelligence/</span>
+  </div>
+  <p class="lead">Person A's intelligence modules are the bridge between source documents and the chain. They are real code, but two of them disagree with the executor they are meant to feed. That is the most important integration finding in the project.</p>
+
+  <div class="grid g2" style="margin-top:18px">
+    <div class="card"><h4>evidence.ts</h4><p>Content-addressed store, sorted-pair Merkle root, proofs, and a <code>verifySource</code> that re-hashes the exact file and bounds the quoted span. An empty tree is an explicit unknown, not a zero hash.</p><div class="tagrow"><span class="chip green">real</span><span class="chip">Merkle</span></div></div>
+    <div class="card"><h4>chain.ts</h4><p>Four sequential stages with thresholds in one <code>CONFIG</code>. Missing input yields <code>UNKNOWN</code>, never <code>PASS</code>. Execution is a hard gate: reverted, flagged or halted → RED; pending with a Sentinel violation → RED; not submitted → UNKNOWN.</p><div class="tagrow"><span class="chip green">real</span><span class="chip">UNKNOWN-never-PASS</span></div></div>
+    <div class="card"><h4>graph.ts</h4><p>Simulated wallets, four link types, noisy-OR, disclosed damping and an evidence-bound challenge payload. Like B's graph, it is a risk signal over fake transfers, not a finding of wrongdoing.</p><div class="tagrow"><span class="chip sig">simulated data</span><span class="chip green">real math</span></div></div>
+    <div class="card"><h4>ai-draft.ts</h4><p>Produces an <code>IntentSpec</code>; ambiguous questions stay in <code>unresolved[]</code> rather than being guessed. It has heuristic and LLM-shaped paths, but no live model is required to explain the demo.</p><div class="tagrow"><span class="chip sig">advisory</span><span class="chip">unresolved</span></div></div>
+    <div class="card red"><h4>intent-bridge.ts · divergence 1</h4><p>It computes <code>intentHash = keccak256(canonical JSON)</code>. The executor computes <code>keccak256(abi.encode(rules))</code>. The bridge refuses to run while <code>unresolved[]</code> is non-empty, but once it runs, the hash it produces is not the executor's hash.</p><div class="tagrow"><span class="chip red">real bug</span><span class="chip">breaks P1</span></div></div>
+    <div class="card red"><h4>intent-bridge.ts · divergence 2</h4><p>It reports <code>childCount = children.length</code> for <code>MULTICALL</code> but encodes an empty inner <code>bytes[]</code>. A bridged multicall can never match an on-chain rule set.</p><div class="tagrow"><span class="chip red">real bug</span><span class="chip">breaks nested enforcement</span></div></div>
+  </div>
+
+  <div class="note" style="margin-top:14px"><b>The bridge is not just plumbing</b> The chain layer and the console agree on the concept of a commitment but not on its preimage, error vocabulary, action encoding or graph constants. Fixing these is the first real integration milestone — before wiring any button to a contract.</div>
+
+  <div class="grid g3" style="margin-top:16px">
+    <div class="card"><h4>Unit tests</h4><div class="big green">44</div><p><code>it()</code> cases in one file, eight describe blocks: Merkle, store, claims, COI, voting, execution, end-to-end and bridge.</p></div>
+    <div class="card"><h4>Console prototype</h4><div class="big">app/</div><p>A chain-side console with <code>DecisionTrail</code>, <code>ViolationExplainer</code> and a backend that runs the Hardhat arena. It exists on <code>main</code>; it is not the judge experience.</p></div>
+    <div class="card"><h4>Chain artifacts</h4><div class="big">11</div><p><code>deployments/local.json</code> with 11 contract ABIs; 43 errors; 10 parity vectors; 11 stored Sentinel report shapes.</p></div>
+  </div>
+  <div class="tagrow" style="margin-top:12px"><a class="chip sig" href="atlas/01-chain-intelligence.md">full source doc →</a><span class="chip">counted from source; not rerun here</span></div>
+</section>
+<section class="section" id="experience">
+  <div class="eyebrow">06 / Experience layer · Person B</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">Making the decision trail<br><span class="muted">something a human can inspect.</span></h2></div>
+    <span class="chip sig">b/judge-mode · ea78e84</span>
+  </div>
+  <p class="lead">The console is not a dashboard of opinions. It is a chain of evidence: each route answers one question, every number has a why, and the report is a reproducible artifact rather than a paragraph.</p>
+
+  <h3 style="margin-top:22px">Nine routes</h3>
+  <div class="routes" style="margin-top:10px">
+    <div class="route"><code>/</code><span>Verdict and four-stage Decision Trail</span></div>
+    <div class="route"><code>/intent</code><span>Claims, ambiguities, live rule set and hashes</span></div>
+    <div class="route"><code>/timeline</code><span>Hash-chained versions and evidence proofs</span></div>
+    <div class="route"><code>/graph</code><span>Disclosed vs discovered wallets; challenge payload</span></div>
+    <div class="route"><code>/vote</code><span>Risk brief, informed ballot, receipt</span></div>
+    <div class="route"><code>/arena</code><span>Eleven attacks, three layers, expected vs actual</span></div>
+    <div class="route"><code>/arena/[id]</code><span>Violation report; HTML/JSON takeaway</span></div>
+    <div class="route"><code>/scorecard</code><span>25 PASS · 0 FAIL · 9 TEST_REQUIRED</span></div>
+    <div class="route"><code>/present</code><span>Seven-slide offline deck; final slide downloads</span></div>
+  </div>
+
+  <h3 style="margin-top:24px">Decision Trail</h3>
+  <div class="stages">
+    <div class="stage"><div class="k">01 · Claims</div><div class="v green">0.81</div><p>GREEN · 6 source-linked claims · 2 ambiguities resolved</p></div>
+    <div class="stage"><div class="k">02 · COI risk</div><div class="v red">0.88</div><p>RED · 4 undisclosed links · noisy-OR above 0.65</p></div>
+    <div class="stage"><div class="k">03 · Voting</div><div class="v sig">0.71</div><p>AMBER · 59% informed · 1 FOR voter overlaps a flagged wallet</p></div>
+    <div class="stage"><div class="k">04 · Execution</div><div class="v red">GATE</div><p>RED · rejected by the executor · <code>SelectorNotAuthorized</code></p></div>
+  </div>
+  <p class="small muted" style="margin-top:7px">Claims and voting are advisory; COI is a risk score where higher is worse; execution is a binary gate with no score. A good average cannot unblock a rejected call.</p>
+
+  <div class="grid g2" style="margin-top:20px">
+    <div class="card accent"><h4>Judge Mode</h4><p>A guided spine over the same routes, not a separate demo. It starts at the verdict, walks seven stops, and finishes into the deck.</p><div class="judge"><span>01 /</span><span>02 /intent</span><span>03 /graph</span><span>04 /vote</span><span>05 /arena</span><span>06 report</span><span>07 /scorecard</span><span>finish → /present</span></div></div>
+    <div class="card"><h4>Presentation + takeaway</h4><p><code>/present</code> bypasses the shell and runs seven slides with arrow/space navigation and fullscreen. The last slide, like every report page, downloads a self-contained HTML report or a JSON bundle.</p><div class="tagrow"><span class="chip green">offline</span><span class="chip">keyboard</span><span class="chip">printable</span></div></div>
+  </div>
+
+  <div class="tagrow" style="margin-top:14px"><span class="chip green">57 tests / 9 files</span><span class="chip">25 PASS</span><span class="chip red">9 TEST_REQUIRED</span><span class="chip sig">25/0/9</span><span class="chip">reference executor</span></div>
+</section>
+
+<section class="section" id="artifact">
+  <div class="eyebrow">07 / The artifact</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">One report.<br><span class="muted">Quote, call, constraint, evidence.</span></h2></div>
+    <span class="chip red">primary demo report</span>
+  </div>
+  <p class="lead">This is what the experience exists to produce. The proposal used implementation language; the queued call is an uncommitted upgrade. The report makes both visible in the same frame and names the violated constraint.</p>
+
+  <div class="artifact">
+    <div class="side">
+      <h4>The proposal said</h4>
+      <div class="quote">&ldquo;We will align the treasury implementation with the program&rsquo;s delivery roadmap during the grant period.&rdquo;</div>
+      <div class="tagrow"><span class="chip">§5 · implementation note</span><span class="chip">human text</span></div>
+    </div>
+    <div class="mid">≠</div>
+    <div class="side red">
+      <h4 style="color:var(--danger)">The queued call does</h4>
+      <div class="decode">upgradeTo()</div>
+      <div class="decode-human">Upgrades TreasuryProxy to implementation 0xf7A1…2337</div>
+      <div class="tagrow"><span class="chip">target · TreasuryProxy</span><span class="chip">implementation · 0xf7A1…2337</span></div>
+      <div class="constraint">SelectorNotAuthorized · 0x1420732b</div>
+    </div>
+  </div>
+
+  <div class="evidence">
+    <div><div class="k">Approved commitment</div><div class="v">0xb78b…16d755</div></div>
+    <div><div class="k">Submitted commitment</div><div class="v">0xd9d2…c458a</div></div>
+    <div><div class="k">Committed vs submitted</div><div class="v">3 actions / 1 call · differ</div></div>
+  </div>
+  <div class="tagrow" style="margin-top:10px"><span class="chip">revert data included</span><span class="chip">simulated tx hash</span><span class="chip">deterministic code, not prose</span><span class="chip green">download HTML / JSON</span></div>
+  <p class="small faint" style="margin-top:8px">The HTML report repeats the quote, decoded call, every gate, the violated constraint, the evidence hashes and the reference-model disclosure; the JSON is the machine bundle.</p>
+</section>
+
+<section class="section" id="attacks">
+  <div class="eyebrow">08 / Attack map</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">Eleven attacks.<br><span class="muted">Three different claims.</span></h2></div>
+    <span class="chip">executor · sentinel · disclosure</span>
+  </div>
+  <p class="lead">Every row carries its layer. “Rejected by the executor,” “simulation detected” and “disclosure challenge filed” are different claims and must never be visually merged.</p>
+
+  <div style="overflow-x:auto; margin-top:12px">
+    <table class="attack">
+      <thead><tr><th>#</th><th>Attack</th><th>Layer</th><th>Expected verdict</th><th>What it proves</th></tr></thead>
+      <tbody>
+        <tr><td class="id">00</td><td>Benign grant</td><td><span class="layer">executor</span></td><td class="pass">PASSED</td><td>Exact committed bundle executes</td></tr>
+        <tr><td class="id">01</td><td>Recipient substitution</td><td><span class="layer">executor</span></td><td class="rej">UnauthorizedRecipient</td><td>Counterparty is in the commitment</td></tr>
+        <tr><td class="id">02</td><td>Amount inflation</td><td><span class="layer">executor</span></td><td class="rej">ExceedsSpendLimit</td><td>Ceilings are per rule</td></tr>
+        <tr><td class="id">03</td><td>Jargon upgrade</td><td><span class="layer">executor</span></td><td class="rej">SelectorNotAuthorized</td><td>No uncommitted function</td></tr>
+        <tr><td class="id">04</td><td>Nested ownership</td><td><span class="layer">executor</span></td><td class="rej">NestedCallNotAuthorized</td><td>Recursive child enforcement</td></tr>
+        <tr><td class="id">05</td><td>Unlimited approve</td><td><span class="layer">executor</span></td><td class="rej">ExceedsAllowance</td><td>Allowance ceiling</td></tr>
+        <tr><td class="id">06</td><td>Delegatecall payload</td><td><span class="layer sentinel">sentinel</span></td><td class="flag">DelegatecallDetected</td><td>Simulation flags before execution</td></tr>
+        <tr><td class="id">07</td><td>Re-entrancy</td><td><span class="layer">executor</span></td><td class="rej">ReentrancyDetected</td><td>Re-entrant recipient blocked</td></tr>
+        <tr><td class="id">08</td><td>Early / replay</td><td><span class="layer">executor</span></td><td class="rej">TimelockNotElapsed</td><td>Time and execution flags</td></tr>
+        <tr><td class="id">09</td><td>Stale version</td><td><span class="layer">executor</span></td><td class="rej">StaleVersion</td><td>Superseded commitment refused</td></tr>
+        <tr><td class="id">10</td><td>Undisclosed COI</td><td><span class="layer disclosure">disclosure</span></td><td class="flag">UndisclosedLink</td><td>Graph evidence flags the proposal</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tagrow" style="margin-top:12px"><span class="chip green">11/11 match expected in B</span><span class="chip">B runs precomputed steps; no live execution</span><a class="chip sig" href="atlas/02-experience-layer.md">experience source doc →</a></div>
+</section>
+<style>
+  .card.blue{border-color:rgba(103,201,240,.25)}
+  @media (max-width:1100px){ .stages{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media (max-width:720px){
+    .stages{grid-template-columns:1fr}
+    .sys-strip{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+    .sys-node:nth-child(2n){border-right:0!important}
+  }
+  @media (max-width:720px){ .backtop{display:none} }
+  @media print{
+    .stages{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+    .card.blue{border-color:#bbb!important}
+  }
+</style>
+
+<section class="section" id="status">
+  <div class="eyebrow">09 / Status board</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">What is proven today.<br><span class="muted">What is only checked in.</span></h2></div>
+    <span class="chip">honest accounting</span>
+  </div>
+  <p class="lead">The most useful page in the atlas. A checked-in artifact is not a live run; a reference model is not a contract; an unmerged integration is not a guarantee.</p>
+
+  <div class="score-grid">
+    <div class="score">
+      <div class="kicker">Person B · b/judge-mode</div>
+      <div class="big" style="color:var(--safe)">25 <span style="font-size:14px;color:var(--faint)">PASS</span></div>
+      <div class="sub">tests 57 / 9 files · scorecard generated</div>
+      <div class="bar"><i class="p" style="width:73.5%"></i><i class="t" style="width:26.5%"></i></div>
+      <div class="tagrow"><span class="chip green">0 FAIL</span><span class="chip sig">9 TEST_REQUIRED</span><span class="chip">34 entries</span></div>
+      <p class="small muted" style="margin-top:8px">The 57-test suite, scorecard, production build and desktop/mobile browser QA were run in this workspace on the B code before the docs-only commit. The reference executor still executes nothing on-chain.</p>
+    </div>
+    <div class="score">
+      <div class="kicker">Person A · main</div>
+      <div class="big" style="color:var(--info)">11/11 <span style="font-size:14px;color:var(--faint)">scenarios</span></div>
+      <div class="sub">checked-in scorecard · 44 intelligence tests</div>
+      <div class="bar"><i class="p" style="width:100%"></i></div>
+      <div class="tagrow"><span class="chip green">all PASS in artifact</span><span class="chip">15 test files</span><span class="chip">not rerun here</span></div>
+      <p class="small muted" style="margin-top:8px">A's contracts, tests, deployments, vectors and Sentinel reports are present. Neither worktree used for this atlas has <code>node_modules/</code> or a full <code>artifacts/</code> build, so A's suite was not rerun.</p>
+    </div>
+  </div>
+
+  <div style="overflow-x:auto; margin-top:16px">
+    <table class="status-table">
+      <tbody>
+        <tr><td>B reference executor + decoder + report + hashes</td><td><strong style="color:var(--safe)">Verified in this workspace</strong> · 57 tests, scorecard, build and browser QA</td></tr>
+        <tr><td>A Solidity contracts + Hardhat suite</td><td><strong style="color:var(--info)">Checked-in artifacts</strong> · 11/11 scenario scorecard, 10 vectors, 43 errors, 11 ABIs; not rerun here</td></tr>
+        <tr><td>A intelligence modules</td><td><strong style="color:var(--info)">44 unit tests counted</strong> · source present; two bridge divergences found</td></tr>
+        <tr><td>A/B end-to-end integration</td><td><strong style="color:var(--danger)">Pending</strong> · unrelated histories; no imports; 9 TEST_REQUIRED in B</td></tr>
+        <tr><td>Sentinel halt / on-chain disclosure / guardian</td><td><strong style="color:var(--signal)">Fixture or code present</strong> · not a running end-to-end guarantee</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note"><b>Never flatten these into “25/25”</b> The B scorecard is an in-process reference run, not line coverage. The A scorecard is a red-team artifact, not the B app's on-chain proof. The integration scorecard cannot exist until the two trees have one commitment and one executor.</div>
+</section>
+
+<section class="section" id="positioning">
+  <div class="eyebrow">10 / Positioning</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">Why this is not<br><span class="muted">just another Governor.</span></h2></div>
+    <span class="chip sig">the precise claim</span>
+  </div>
+  <p class="lead">Binding a vote to calldata is already solved by Compound and OpenZeppelin Governors. The honest gap is comprehension, evidence, conflicts and code identity at execution. Say that before a judge says it for you.</p>
+
+  <div style="overflow-x:auto">
+    <table class="prior">
+      <thead><tr><th>System</th><th>It already has</th><th>It leaves open</th></tr></thead>
+      <tbody>
+        <tr><td>Compound / OZ Governor</td><td>Proposal id = hash of encoded calls</td><td>Description is a separate string; no evidence or disclosure commitment</td></tr>
+        <tr><td>Tally / Tenderly / OZ Defender</td><td>Decoding, simulation, state diffs</td><td>Advisory display; the executor does not consult it</td></tr>
+        <tr><td>Zodiac Roles</td><td>Standing calldata permissions at execution</td><td>A policy, not a per-proposal commitment</td></tr>
+        <tr><td style="color:var(--signal)">IntentLock</td><td>Per-proposal commitment + refusal semantics</td><td>Evidence and disclosure are in the commitment; the report makes the gap legible</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:22px">Say these limits out loud</h3>
+  <div class="limits">
+    <div class="limit"><strong>A vote that honestly authorizes something bad still executes.</strong> We bind intent to action; we do not judge whether the intent is wise.</div>
+    <div class="limit"><strong>Self-authored evidence can be internally consistent.</strong> The Merkle root proves the documents did not change after signing; it does not prove they are true.</div>
+    <div class="limit"><strong>A compromised governor or executor invalidates the guarantee.</strong> Commitment immutability is a security property, not a nicety.</div>
+    <div class="limit"><strong>The informed-vote receipt raises the cost of voting blind.</strong> It does not stop a delegate voting against their mandate with their eyes open.</div>
+  </div>
+  <p class="small muted" style="margin-top:10px">The fuller prior-art review and build direction are in <a class="link" href="person-a-direction.md">person-a-direction.md</a>.</p>
+</section>
+
+<section class="section" id="demo">
+  <div class="eyebrow">11 / Demo path</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">Seven stops.<br><span class="muted">Then the deck.</span></h2></div>
+    <span class="chip">B branch · offline</span>
+  </div>
+  <p class="lead">Judge Mode in the header walks the same path; <code>/present</code> gives the seven-slide close. The app is a local, offline demo; it is not deployed as a site.</p>
+  <div class="demo">
+    <span><b>01</b> / · the verdict</span>
+    <span><b>02</b> /intent · resolve two ambiguities</span>
+    <span><b>03</b> /graph · the undisclosed path</span>
+    <span><b>04</b> /vote · read, acknowledge, cast</span>
+    <span><b>05</b> /arena · run 00 and 03</span>
+    <span><b>06</b> report · download the artifact</span>
+    <span><b>07</b> /scorecard · the nine amber gaps</span>
+    <span><b>↳</b> /present · seven slides</span>
+  </div>
+  <div class="tagrow" style="margin-top:10px"><span class="chip green">Judge Mode · 7 stops</span><span class="chip">Alt + ← / →</span><span class="chip">Esc exits</span><span class="chip">F fullscreen in the deck</span><span class="chip">HTML + JSON takeaway</span></div>
+</section>
+
+<section class="section" id="sources">
+  <div class="eyebrow">12 / Read next + glossary</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">The atlas has sources.<br><span class="muted">Follow them before trusting a claim.</span></h2></div>
+    <span class="chip">source of truth</span>
+  </div>
+
+  <div class="sources">
+    <a class="source" href="atlas/01-chain-intelligence.md"><b>01 · Chain + intelligence</b><span>contracts · tests · Sentinel · intelligence bridge · collision table</span></a>
+    <a class="source" href="atlas/02-experience-layer.md"><b>02 · Experience layer</b><span>routes · Judge Mode · evidence · decoder · graph · scoring · report</span></a>
+    <a class="source" href="PROJECT-MAP.md"><b>GitHub-readable project map</b><span>Mermaid system map · branch topology · status</span></a>
+    <a class="source" href="person-a-direction.md"><b>Positioning + prior art</b><span>what is already solved · where the value is · limits</span></a>
+    <a class="source" href="demo-script.md"><b>Demo script</b><span>rehearsable click path · exact expected values</span></a>
+    <a class="source" href="../README.md"><b>B runbook</b><span>quickstart · formulas · fixtures · limitations</span></a>
+  </div>
+
+  <h3 style="margin-top:24px">Glossary</h3>
+  <div class="glossary">
+    <div><b>Intent</b><span>The machine-readable rule set the reviewer confirms.</span></div>
+    <div><b>Commitment</b><span>The hash the vote binds to: chain, executor, proposal, version, actions, intent, evidence, disclosure.</span></div>
+    <div><b>intentHash</b><span>Hash of compiled action rules; sources and confidence do not enter it.</span></div>
+    <div><b>contentHash</b><span>Hash of proposal content: rules, assumptions, title and version.</span></div>
+    <div><b>Evidence root</b><span>Merkle root over the content-addressed source documents.</span></div>
+    <div><b>Disclosure hash</b><span>Commitment to the proposer's signed wallet disclosure.</span></div>
+    <div><b>Noisy-OR</b><span>R = 1 − Π(1 − sⱼ); independent conflict links combine into one risk score.</span></div>
+    <div><b>Reference executor</b><span>B's TypeScript model of the rules; it executes nothing on-chain.</span></div>
+    <div><b>Hard gate</b><span>Execution is binary; it is never averaged with advisory scores.</span></div>
+    <div><b>TEST_REQUIRED</b><span>A property that cannot be honestly proven in the current workspace; amber, never green.</span></div>
+    <div><b>Sentinel</b><span>Simulation and diff early warning; not the enforcement boundary.</span></div>
+    <div><b>Chain-side console</b><span>A's <code>app/</code> prototype on <code>main</code>, backed by Hardhat and intelligence.</span></div>
+    <div><b>Judge-facing console</b><span>B's Next.js app on <code>b/judge-mode</code>, with Judge Mode, <code>/present</code> and report export.</span></div>
+  </div>
+
+  <div class="note" style="margin-top:20px"><b>Document, not site</b> This atlas is a standalone HTML field manual. It has no external assets, no analytics and no network calls. The product is the Next.js console on <code>b/judge-mode</code>; this file is the map.</div>
+
+  <footer class="footer">
+    <span>AegisDAO IntentLock · project atlas · 2026-10-25</span>
+    <span>main 55c636a · b/judge-mode ea78e84 · not merged</span>
+    <span>document, not site · offline · printable</span>
+  </footer>
+</section>
+</main>
+</div>
+
+<a class="backtop print-hide" href="#top" aria-label="Back to top">↑</a>
+
+<script>
+  (function () {
+    var progress = document.getElementById('progress');
+    var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+    var sections = links.map(function (link) {
+      var id = link.getAttribute('href');
+      return id && id.charAt(0) === '#' ? document.querySelector(id) : null;
+    }).filter(Boolean);
+
+    function onScroll() {
+      var doc = document.documentElement;
+      var max = doc.scrollHeight - window.innerHeight;
+      var ratio = max > 0 ? window.scrollY / max : 0;
+      if (progress) progress.style.width = (ratio * 100) + '%';
+      var active = sections.length ? sections[0].id : null;
+      sections.forEach(function (section) {
+        if (section.getBoundingClientRect().top <= 170) active = section.id;
+      });
+      links.forEach(function (link) {
+        var id = link.getAttribute('href');
+        link.classList.toggle('active', id === '#' + active);
+      });
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
+      anchor.addEventListener('click', function (event) {
+        var selector = anchor.getAttribute('href');
+        if (!selector || selector === '#') return;
+        var target = document.querySelector(selector);
+        if (!target) return;
+        event.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.replaceState(null, '', selector);
+      });
+    });
+  })();
+</script>
+</body>
+</html>
