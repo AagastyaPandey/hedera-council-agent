@@ -42,7 +42,7 @@ Run `npm run ready`. It prints PASS / TODO / FAIL by group and exits 1 only on F
 - [ ] UI: `original-console/` is the CODE_TANTRAFEST console, copied in at the owner's instruction (Oct 25, partly other authors, no Solidity included). Confirm with ETHGlobal or delete the folder and the `/original-console` link
 - [ ] UI: the Atlas and report pages are the original CODE_TANTRAFEST designs (Oct 25, before the event). Confirm with ETHGlobal that this satisfies From Scratch, or revert the UI merge (docs/ui-handoff.md)
 - [ ] Repo public, README complete, .env never committed
-- [ ] `npm test` 43/43, `npm run demo` 4/4 scenes correct
+- [ ] `npm test` all passing, `npm run demo` 4/4 scenes correct
 - [ ] `npm run preflight` has no FAIL lines
 - [ ] Real x402 payment settled, HashScan link in README (or simulated mode stated plainly)
 - [ ] 0G request ids shown in the demo
