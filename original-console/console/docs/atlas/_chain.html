@@ -1,0 +1,79 @@
+<section class="section" id="chain">
+  <div class="eyebrow">04 / Chain layer · Person A</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">The refusal engine.</h2></div>
+    <span class="chip blue">main · 55c636a</span>
+  </div>
+  <p class="lead">The chain layer does not decide whether a proposal is wise. It decides whether a transaction is the transaction the vote committed to. The interesting property is refusal: an unapproved selector, a hidden multicall child, a stale version or an implementation whose code hash changed must not execute.</p>
+
+  <div class="contract-grid" style="margin-top:18px">
+    <div class="contract"><h4>ProposalRegistry</h4><div class="role">Append-only, hash-chained proposal versions.</div><div class="check">Author-only writes · <code>prevVersionHash</code> · <code>verifyChain</code> recomputes every hash.</div><div class="path">contracts/ProposalRegistry.sol</div></div>
+    <div class="contract"><h4>DisclosureRegistry</h4><div class="role">Signed wallet disclosure, bond, challenge and ruling.</div><div class="check">EIP-712 nonce · <code>ecrecover == proposer</code> · window bounds · verifier-only ruling.</div><div class="path">contracts/DisclosureRegistry.sol</div></div>
+    <div class="contract"><h4>IntentGovernor</h4><div class="role">Lifecycle, vote, informed-brief hash, queueing.</div><div class="check">Latest-version equality · disclosure hash match · unchallenged · quorum · for &gt; against.</div><div class="path">contracts/IntentGovernor.sol</div></div>
+    <div class="contract"><h4>IntentLockExecutor</h4><div class="role">The gate: state, timelock, commitment, rules, post-conditions.</div><div class="check">Recompute commitment · version supersession · rule count · <code>ActionDecoder.enforce</code> · external call · allowance post-check.</div><div class="path">contracts/IntentLockExecutor.sol</div></div>
+    <div class="contract"><h4>ActionDecoder</h4><div class="role">Exact matching for six action kinds and nested multicall.</div><div class="check">Target, selector, counterparty, amount, code hash · recursion depth &lt; 2 · 12 stable errors.</div><div class="path">contracts/libs/ActionDecoder.sol</div></div>
+    <div class="contract"><h4>CommitmentHasher</h4><div class="role">Pure reference hasher used for parity.</div><div class="check">Byte equality with the TypeScript vector set · <code>COMMIT_TYPEHASH</code>.</div><div class="path">contracts/CommitmentHasher.sol</div></div>
+    <div class="contract"><h4>Test helpers</h4><div class="role">MockUSDC, TreasuryProxy, MaliciousImpl, ReentrantRecipient, VulnerableProxy, FeeModule.</div><div class="check">EIP-1967 slots · delegatecall payload · re-entrancy · 10% fee boundary.</div><div class="path">contracts/test-helpers/</div></div>
+  </div>
+
+  <h3 style="margin-top:26px">Governor lifecycle</h3>
+  <div class="stateflow">
+    <span class="state">DisclosurePending</span><span class="arrow">→</span>
+    <span class="state">VotingOpen</span><span class="arrow">→</span>
+    <span class="state ok">Passed</span><span class="arrow">→</span>
+    <span class="state">Queued</span><span class="arrow">→</span>
+    <span class="state ok">Executed</span>
+  </div>
+  <div class="stateflow" style="margin-top:1px">
+    <span class="state off">Draft · never assigned</span>
+    <span class="state off">Defeated</span>
+    <span class="state off">Halted</span>
+    <span class="state off">Cancelled</span>
+  </div>
+  <p class="small muted" style="margin-top:4px"><code>submitProposal</code> writes <code>DisclosurePending</code> directly; a draft exists only in the registry. <code>syncFromExecutor</code> is a manual pull nothing calls — the governor can remain <code>Queued</code> while the executor is <code>Executed</code> or <code>Halted</code>.</p>
+
+  <h3 style="margin-top:24px">Executor gate</h3>
+  <div class="grid g2" style="margin-top:8px">
+    <div class="gateflow">
+      <div class="step"><b>01 · recompute</b><span><code>actionsHash</code>, <code>intentHash</code>, commitment from chain id, executor and fields.</span></div>
+      <div class="step"><b>02 · state</b><span>Must be <code>Queued</code>; otherwise <code>ProposalNotInState</code>.</span></div>
+      <div class="step"><b>03 · timelock</b><span><code>block.timestamp ≥ eta</code>; otherwise <code>TimelockNotExpired</code>.</span></div>
+      <div class="step"><b>04 · version</b><span>Registry latest must equal the submitted version hash; otherwise <code>VersionSuperseded</code>.</span></div>
+      <div class="step"><b>05 · rules</b><span>Top-level action count must equal rule count; each action is enforced exactly.</span></div>
+      <div class="step"><b>06 · effects first</b><span>State is written before interactions; a re-entrant recipient cannot execute twice.</span></div>
+      <div class="step fail"><b>07 · postconditions</b><span>Allowance ceiling only. Balance-drain and native-value cap are not implemented.</span></div>
+    </div>
+    <div>
+      <div class="note"><b>Honest edges</b><br>· A commitment mismatch surfaces as <code>ProposalNotInState(Queued, Empty)</code>, not <code>CommitmentMismatch</code>.<br>· There is no native-value check; <code>value</code> is bound in <code>actionsHash</code> but no ceiling exists.<br>· <code>_postConditionChecks</code> is an allowance check; the comment about balance decrease is not code.<br>· <code>castVote</code>, <code>Defeated</code>, <code>syncFromExecutor</code>, <code>cancelProposal</code> and <code>returnBond</code> have no test in A's checked-in suite.</div>
+      <div class="tagrow"><span class="chip red">CodeHashMismatch uses <code>keccak256("")</code> as observed code hash</span><span class="chip">only <code>call</code> · no <code>delegatecall</code> path</span></div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:24px">Action kinds</h3>
+  <div class="grid g3" style="margin-top:8px">
+    <div class="card"><h4 style="color:var(--signal)">ERC20_TRANSFER · 0</h4><p>Exact target, selector, recipient and amount ceiling. Calldata length 68.</p></div>
+    <div class="card"><h4 style="color:var(--signal)">ERC20_APPROVE · 1</h4><p>Exact spender, bounded ceiling, explicit unlimited-approval guard.</p></div>
+    <div class="card"><h4 style="color:var(--signal)">PARAM_SET · 2</h4><p>Selector plus first uint256 within <code>maxAmount</code>; semantic matching is out of scope.</p></div>
+    <div class="card"><h4 style="color:var(--signal)">UPGRADE · 3</h4><p>Implementation address and <code>extcodehash</code> check. Code swapped after the vote reverts.</p></div>
+    <div class="card"><h4 style="color:var(--signal)">OWNERSHIP_TRANSFER · 4</h4><p>Exact new owner; hidden ownership inside a multicall fails the child rule.</p></div>
+    <div class="card"><h4 style="color:var(--signal)">MULTICALL · 5</h4><p>Depth &lt; 2, child count matches, every child consumes its own committed rule.</p></div>
+  </div>
+  <div class="note"><b>Error surface</b> A emits 43 selectors across four contracts (12 from <code>ActionDecoder</code>). B's report maps 17 definitions. Only <code>CommitmentMismatch</code> and <code>ExceedsSpendLimit</code> currently share a name and selector; <code>SelectorNotAllowed</code> is not <code>SelectorNotAuthorized</code>, and <code>UnauthorizedRecipient(address,address)</code> is not B's one-argument form. This is an integration task, not a UI detail.</div>
+
+  <h3 style="margin-top:24px">Sentinel · early warning, not the gate</h3>
+  <div class="grid g4" style="margin-top:8px">
+    <div class="card"><h4>Simulate</h4><p>Snapshot state, execute the queued commitment through the real executor, capture, then revert.</p></div>
+    <div class="card"><h4>Diff</h4><p>Balances, allowances, owner/admin, EIP-1967 implementation and code hash, plus routing.</p></div>
+    <div class="card"><h4>Scan</h4><p>Static bytecode scan for <code>DELEGATECALL</code>, <code>CALLCODE</code>, <code>SELFDESTRUCT</code>.</p></div>
+    <div class="card"><h4>Halt</h4><p>Guardian submits the report hash; halt only, never execute or edit.</p></div>
+  </div>
+  <p class="small muted" style="margin-top:6px">Sentinel observes a sandbox, not the block that will run. It is useful exactly because the executor remains the only guarantee.</p>
+
+  <div class="grid g4" style="margin-top:20px">
+    <div class="card green"><h4>Checked-in scorecard</h4><div class="big green">11/11</div><p>S0–S10 red-team scenarios, all PASS. An artifact from A's tree; not rerun here.</p></div>
+    <div class="card"><h4>Parity vectors</h4><div class="big">10</div><p>Typehash, actions hash and commitment vectors in A's fixture set.</p></div>
+    <div class="card"><h4>Deployments</h4><div class="big">11</div><p>Contract ABIs embedded in <code>deployments/local.json</code>; chain 31337.</p></div>
+    <div class="card"><h4>Test inventory</h4><div class="big">15</div><p>14 Hardhat files + 1 intelligence file. 20 red-team <code>it()</code> cases + parity + Sentinel + helpers.</p></div>
+  </div>
+  <div class="tagrow" style="margin-top:12px"><a class="chip sig" href="atlas/01-chain-intelligence.md">full chain + intelligence source doc →</a><span class="chip">no Hardhat run in this workspace</span></div>
+</section>

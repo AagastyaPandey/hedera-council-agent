@@ -1,0 +1,65 @@
+<section class="section" id="branches">
+  <div class="eyebrow">02 / Branch topology</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">Two timelines.<br><span class="muted">No merge base.</span></h2></div>
+    <span class="chip red">integration pending</span>
+  </div>
+  <p class="lead">The repo is public. <code>main</code> is Person A's chain + intelligence tree. <code>b/judge-mode</code> is Person B's judge experience. They do not share history; the merge is a deliberate integration project, not a rebase.</p>
+
+  <div class="grid g2" style="margin-top:18px">
+    <div class="card blue">
+      <div class="branch-head"><b>main</b><span class="chip blue">55c636a · public</span></div>
+      <h3 style="font-size:19px">Chain + intelligence</h3>
+      <div class="gateflow">
+        <div class="step"><b>fda932c</b><span>Contracts, Hardhat suite, Sentinel, deployments</span></div>
+        <div class="step"><b>df3a6fc</b><span>Direction brief, prior art, parity traps</span></div>
+        <div class="step"><b>112ce18</b><span>Chain-side console, evidence pipeline, scenario reports</span></div>
+        <div class="step"><b>55c636a</b><span>Intelligence modules: evidence, chain, graph, ai-draft, intent-bridge · 44 tests</span></div>
+      </div>
+      <div class="tagrow"><span class="chip green">11/11 scenario scorecard · checked-in</span><span class="chip">10 parity vectors</span><span class="chip">43 errors</span><span class="chip">11 ABIs</span></div>
+      <p class="small faint" style="margin-top:10px">Checked-in artifacts, not rerun in this B workspace. No node_modules or full artifacts/ directory in the worktree.</p>
+    </div>
+    <div class="card accent">
+      <div class="branch-head"><b>b/judge-mode</b><span class="chip sig">ea78e84 · public</span></div>
+      <h3 style="font-size:19px">Judge experience</h3>
+      <div class="gateflow">
+        <div class="step"><b>92515a6</b><span>Reference executor correctness; audit; status brief</span></div>
+        <div class="step"><b>792cd0c</b><span>Judge Mode, <code>/present</code>, HTML/JSON report export · 57 tests</span></div>
+        <div class="step"><b>ea78e84</b><span>Positioning, prior art and Person A direction brief</span></div>
+      </div>
+      <div class="tagrow"><span class="chip green">57 tests / 9 files</span><span class="chip sig">25 PASS</span><span class="chip red">9 TEST_REQUIRED</span><span class="chip">11 scenarios</span></div>
+      <p class="small faint" style="margin-top:10px">The app computes verdicts with the TypeScript reference executor. It imports nothing from A's contracts, intelligence or deployments.</p>
+    </div>
+  </div>
+
+  <div class="note" style="border-color:rgba(255,100,100,.3); background:rgba(255,100,100,.04)"><b style="color:var(--danger)">No common ancestor</b><br>A PR cannot merge these histories as-is without a deliberate composition. The default public branch is <code>main</code>; the judge experience is on <code>b/judge-mode</code>. A local Archipelago visual-site experiment on a newer local <code>main</code> is intentionally out of scope.</div>
+
+  <h3 style="margin-top:28px">Three surfaces</h3>
+  <div class="grid g3" style="margin-top:10px">
+    <div class="card"><h4>Chain-side console</h4><p><code>main</code> / <code>app/</code> — a prototype backed by a Hardhat runner and the intelligence modules. Goal: prove the arena and the execution logic end-to-end.</p><div class="tagrow"><span class="chip blue">A · main</span><span class="chip">Hardhat backend</span></div></div>
+    <div class="card"><h4>Judge-facing console</h4><p><code>b/judge-mode</code> / <code>app/</code> — the decision console with Judge Mode, <code>/present</code>, downloadable reports, and a reference executor. Goal: explain and verify the trail for judges.</p><div class="tagrow"><span class="chip sig">B · b/judge-mode</span><span class="chip">57 tests</span></div></div>
+    <div class="card"><h4>Visual site experiment</h4><p>A separate Archipelago / ecosystem page on a newer local <code>main</code>. It is not part of this atlas and is not the product architecture.</p><div class="tagrow"><span class="chip">out of scope</span><span class="chip red">not documented here</span></div></div>
+  </div>
+
+  <h3 style="margin-top:28px">The merge collisions</h3>
+  <p class="small muted" style="margin-top:6px">These are concrete, not stylistic. Source: <a class="link" href="atlas/01-chain-intelligence.md">chain + intelligence source doc</a>.</p>
+  <div style="overflow-x:auto; margin-top:10px">
+    <table class="collision-table">
+      <thead><tr><th>Boundary</th><th>A · main</th><th>B · b/judge-mode</th><th>Consequence</th></tr></thead>
+      <tbody>
+        <tr><td>Commitment hash</td><td><code>COMMIT_TYPEHASH</code> + version hash; ethers</td><td>custom tuple: chain, executor, proposalKey, version, actions, intent, evidence root, disclosure; viem</td><td>Commitments are not interchangeable</td></tr>
+        <tr><td>Error map</td><td>43 selectors across four contracts</td><td>17 <code>ERROR_DEFINITIONS</code></td><td>Only a few names/selectors overlap; report mapping is not portable</td></tr>
+        <tr><td>Executor ABI</td><td><code>execute(..., (address,uint,bytes)[], Rule[])</code></td><td><code>execute(uint256,uint256,bytes[])</code></td><td>Adapter required before the console can call the contract</td></tr>
+        <tr><td>Addresses + manifest</td><td>Fixed Hardhat deployments <code>{ address, abi }</code></td><td>Deterministic fixture addresses; <code>{ Name: "0x…" }</code></td><td>Labels and commitments differ</td></tr>
+        <tr><td>Scorecards</td><td>11 red-team rows, all PASS</td><td>34 rows: 25 PASS / 9 TEST_REQUIRED</td><td>Merging either file flips the honesty ledger</td></tr>
+        <tr><td><code>packages/shared/hash.ts</code></td><td>ethers, typehash scheme, kind codes 0–5</td><td>viem, custom scheme, kind codes 1–6</td><td>One path, two incompatible schemes</td></tr>
+        <tr><td>Multicall</td><td><code>multicall(bytes[])</code> · <code>0xac9650d8</code></td><td>custom <code>multicall((address,bytes)[])</code> · <code>0xcaa5c23f</code></td><td>Encoded bundles are not interchangeable</td></tr>
+        <tr><td>Graph / voting constants</td><td>disclosed ×0.15, undisclosed ×1.2; harmonic voting</td><td>disclosed ×0.35, undisclosed ×1.0; B formulas</td><td>The same graph yields different scores</td></tr>
+        <tr><td><code>app/</code></td><td>Chain-side console + Hardhat backend</td><td>Judge console + reference executor</td><td>Both claim the same path; compose or choose a shell</td></tr>
+        <tr><td>Intelligence bridge</td><td><code>intentHash</code> = canonical JSON; empty multicall bytes inside <code>intent-bridge.ts</code></td><td>Reference executor uses its own scheme</td><td>Bridge must be corrected, not merely wired</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note"><b>What a successful merge must decide</b> Which hash is canonical · which scorecard is the public truth · how the two <code>app/</code> shells compose · whether the reference executor remains a fallback · where the shared fixtures live. None of these is a cosmetic refactor.</div>
+</section>

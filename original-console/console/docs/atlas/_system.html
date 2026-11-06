@@ -1,0 +1,52 @@
+<section class="section" id="system">
+  <div class="eyebrow">03 / System map</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">The whole pipeline,<br><span class="muted">with the seams visible.</span></h2></div>
+    <span class="chip">real · reference · pending</span>
+  </div>
+  <p class="lead">Read left to right. The first half turns documents into a commitment. The middle is the governed execution path. The last half turns the run into a report a human can inspect. The dotted lines are the unmerged boundary.</p>
+
+  <div class="sys-strip" style="grid-template-columns:repeat(auto-fit,minmax(92px,1fr)); margin-top:20px">
+    <div class="sys-node real"><span class="sd"></span><b>Sources</b><span>4 documents</span></div>
+    <div class="sys-node real"><span class="sd"></span><b>Evidence</b><span>Merkle root</span></div>
+    <div class="sys-node ref"><span class="sd"></span><b>Claims</b><span>pre-baked</span></div>
+    <div class="sys-node real"><span class="sd"></span><b>Rules</b><span>validated</span></div>
+    <div class="sys-node real"><span class="sd"></span><b>Commitment</b><span>hashes</span></div>
+    <div class="sys-node pending"><span class="sd"></span><b>Governor</b><span>A · not wired</span></div>
+    <div class="sys-node pending"><span class="sd"></span><b>Executor</b><span>A · not wired</span></div>
+    <div class="sys-node real"><span class="sd"></span><b>Decoder</b><span>B · real</span></div>
+    <div class="sys-node real"><span class="sd"></span><b>Report</b><span>B · real</span></div>
+    <div class="sys-node ref"><span class="sd"></span><b>Console</b><span>B · reference</span></div>
+  </div>
+  <p class="small faint" style="margin-top:7px">Green = present and checked in · amber = reference model · red = specified but not wired across the boundary · blue = A-side contract surface.</p>
+
+  <div class="grid g2" style="margin-top:20px">
+    <div class="card">
+      <h4>Lane 1 · evidence → intent</h4>
+      <p>The four authored documents are hashed into a Merkle root. The pre-baked extractor proposes claims and rules; the validator rejects any claim without a document quote; the reviewer resolves the two ambiguities. The rule set and assumptions produce <code>intentHash</code>, <code>contentHash</code> and <code>actionsHash</code>.</p>
+      <div class="tagrow"><span class="chip green">real hashing</span><span class="chip sig">baked extraction</span><span class="chip">source-linked</span></div>
+    </div>
+    <div class="card">
+      <h4>Lane 2 · commitment → chain</h4>
+      <p>A's contracts add the append-only registry, signed disclosure, governor vote and executor. The executor recomputes the commitment and refuses anything that does not match the committed rules. Sentinel simulates and flags before execution.</p>
+      <div class="tagrow"><span class="chip green">contracts present</span><span class="chip">11/11 checked-in red-team</span><span class="chip red">not imported by B</span></div>
+    </div>
+    <div class="card">
+      <h4>Lane 3 · execution → report</h4>
+      <p>B's reference executor applies its own rule/commitment model to the same demo. The decoder turns calldata into a recursive action tree, maps custom errors, and produces a deterministic report with the quote, the call, the constraint and the evidence.</p>
+      <div class="tagrow"><span class="chip sig">reference model</span><span class="chip green">decoder + report</span><span class="chip">HTML / JSON</span></div>
+    </div>
+    <div class="card">
+      <h4>Lane 4 · conflicts → decision</h4>
+      <p>B's simulated wallet graph detects direct transfers, common funders and timing. Noisy-OR turns four links into 0.88 RED. The vote brief records the brief hash; the Decision Trail combines claims, COI, voting and the execution hard gate.</p>
+      <div class="tagrow"><span class="chip red">simulated wallets</span><span class="chip green">real math</span><span class="chip sig">advisory scores</span></div>
+    </div>
+  </div>
+
+  <div class="grid g4" style="margin-top:20px">
+    <div class="card red"><h4>Seam 1 · commitment</h4><p>A and B compute different commitments from different preimages. A binds a typehash and version hash; B binds a proposal key, evidence root and disclosure. This is the first thing the integration must reconcile.</p></div>
+    <div class="card red"><h4>Seam 2 · executor</h4><p>A's <code>IntentLockExecutor.execute</code> takes rules and actions; B's reference <code>execute</code> takes a three-argument bundle. A deployed call needs an adapter, not a rename.</p></div>
+    <div class="card red"><h4>Seam 3 · evidence</h4><p>A's evidence store and B's evidence manifest are independent. The roots will not match until one store feeds both.</p></div>
+    <div class="card red"><h4>Seam 4 · truth</h4><p>A's scorecard says 11/11 scenarios pass. B's scorecard says 9 properties are TEST_REQUIRED because B is not wired to A. Both are true in their own tree; the combined truth is the integration work.</p></div>
+  </div>
+</section>

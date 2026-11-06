@@ -1,0 +1,1127 @@
+[
+  {
+    "scenarioId": 0,
+    "scenarioName": "Benign Transfer",
+    "property": "Benign transfer succeeds",
+    "outcome": "Success",
+    "recordedAt": "2026-10-25T17:24:52.782Z",
+    "violationReport": {
+      "proposalId": "1",
+      "scenarioId": "0",
+      "layer": "sentinel",
+      "status": "PASSED",
+      "proposalSaid": "Pay 5,000 USDC to the development wallet.",
+      "approved": [
+        {
+          "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+          "targetLabel": "MockUSDC",
+          "function": "transfer(address,uint256)",
+          "args": {
+            "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+            "selector": "0xa9059cbb",
+            "counterparty": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+            "maxAmount": "5000000000",
+            "codeHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "childCount": "0"
+          },
+          "humanText": "Transfer up to 5000000000 from MockUSDC to DevWallet",
+          "nested": []
+        }
+      ],
+      "submitted": [
+        {
+          "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+          "targetLabel": "MockUSDC",
+          "function": "transfer(address,uint256)",
+          "args": {
+            "to": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+            "value": "5000000000"
+          },
+          "argumentLabels": {
+            "to": "DevWallet"
+          },
+          "humanText": "Calls transfer(0x15d34AAf…6A65, 5000000000) on MockUSDC",
+          "nested": []
+        }
+      ],
+      "violatedConstraint": {
+        "code": "None",
+        "message": "No violation detected"
+      },
+      "evidence": {
+        "commitment": "0xfd8526686056b31757f19fdf1309de7e9b2d581724f9de23b70423f1e509c827",
+        "calldataHash": "0x57a9dee8933dfb17a718368fb7e4a37b62f75eb562d85b97a5f2b4bbe8f16a1c",
+        "calldata": "0xa9059cbb00000000000000000000000015d34aaf54267db7d7c367839aaf71a00a2c6a65000000000000000000000000000000000000000000000000000000012a05f200",
+        "revertData": "0x",
+        "txHash": "0x9ce69f4cadf5cf0dbdf63952e9e180a94b0a95c632d52295155f683afdb9d0c4",
+        "traceRef": null
+      }
+    },
+    "rawEvidence": {
+      "commitment": "0xfd8526686056b31757f19fdf1309de7e9b2d581724f9de23b70423f1e509c827",
+      "calldata": "0xa9059cbb00000000000000000000000015d34aaf54267db7d7c367839aaf71a00a2c6a65000000000000000000000000000000000000000000000000000000012a05f200",
+      "revertData": "0x",
+      "txHash": "0x9ce69f4cadf5cf0dbdf63952e9e180a94b0a95c632d52295155f683afdb9d0c4",
+      "trace": {
+        "source": "structLogs",
+        "calls": [
+          {
+            "type": "CALL",
+            "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+            "to": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "codeTarget": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "depth": 1
+          },
+          {
+            "type": "STATICCALL",
+            "from": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "to": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+            "codeTarget": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+            "depth": 2
+          },
+          {
+            "type": "CALL",
+            "from": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "to": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+            "codeTarget": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+            "depth": 2
+          }
+        ],
+        "delegateCalls": [],
+        "tokenTransfers": [
+          {
+            "token": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+            "from": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "to": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+            "amount": "5000000000"
+          }
+        ],
+        "tokenApprovals": [],
+        "storageWrites": [
+          {
+            "contract": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "slot": "0x9b779b17422d0df92223018b32b4d1fa46e071723d6817e2486d003becc55f00",
+            "value": "0x0000000000000000000000000000000000000000000000000000000000000002",
+            "depth": 1
+          },
+          {
+            "contract": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "slot": "0xd43e4c3863771ff52b55b171cfa511b1c285bd4f13d5b33015a9e49d306a8393",
+            "value": "0x00000000000000000000005fc8d32690cc91d4c39d9d3abcbd16989f87570702",
+            "depth": 1
+          },
+          {
+            "contract": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+            "slot": "0x48e1206c4cfff21e743a8dbbeb719008ac82c32d419e6103469e20f0182793c5",
+            "value": "0x000000000000000000000000000000000000000000000000000000161e70f600",
+            "depth": 2
+          },
+          {
+            "contract": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+            "slot": "0x2a95ee547cef07a2fff0a68144824a0d9ded35ed87da118a53e1cda4aca8b944",
+            "value": "0x000000000000000000000000000000000000000000000000000000012a05f200",
+            "depth": 2
+          },
+          {
+            "contract": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "slot": "0x9b779b17422d0df92223018b32b4d1fa46e071723d6817e2486d003becc55f00",
+            "value": "0x0000000000000000000000000000000000000000000000000000000000000001",
+            "depth": 1
+          }
+        ],
+        "failed": false,
+        "returnValue": ""
+      }
+    }
+  },
+  {
+    "scenarioId": 1,
+    "scenarioName": "Post-Vote Recipient Substitution",
+    "property": "Post-vote payload substitution rejected",
+    "outcome": "Executor Revert",
+    "recordedAt": "2026-10-25T17:24:52.978Z",
+    "violationReport": {
+      "proposalId": "2",
+      "scenarioId": "1",
+      "layer": "executor",
+      "status": "REJECTED",
+      "proposalSaid": "Pay 5,000 USDC to the development wallet (recipient committed).",
+      "approved": [
+        {
+          "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+          "targetLabel": "MockUSDC",
+          "function": "transfer(address,uint256)",
+          "args": {
+            "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+            "selector": "0xa9059cbb",
+            "counterparty": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+            "maxAmount": "5000000000",
+            "codeHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "childCount": "0"
+          },
+          "humanText": "Transfer up to 5000000000 from MockUSDC to DevWallet",
+          "nested": []
+        }
+      ],
+      "submitted": [
+        {
+          "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+          "targetLabel": "MockUSDC",
+          "function": "transfer(address,uint256)",
+          "args": {
+            "to": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+            "value": "5000000000"
+          },
+          "argumentLabels": {
+            "to": "Attacker"
+          },
+          "humanText": "Calls transfer(0x9965507D…A4dc, 5000000000) on MockUSDC",
+          "nested": []
+        }
+      ],
+      "violatedConstraint": {
+        "code": "UnauthorizedRecipient",
+        "message": "Unauthorized Recipient Address: The transaction recipient does not match the counterparty committed in the proposal intent."
+      },
+      "evidence": {
+        "commitment": "0x44b0b499f4e019a37578e7e6559b366f5e6641580e0c27a219107ece307e25e2",
+        "calldataHash": "0xa749133ecc5fac902cef5f363e0f4971c2bf7741a1505458877b16d21c533836",
+        "calldata": "0xa9059cbb0000000000000000000000009965507d1a55bcc2695c58ba16fb37d819b0a4dc000000000000000000000000000000000000000000000000000000012a05f200",
+        "revertData": "0xebe8452a00000000000000000000000015d34aaf54267db7d7c367839aaf71a00a2c6a650000000000000000000000009965507d1a55bcc2695c58ba16fb37d819b0a4dc",
+        "txHash": "0x8858a811368e963df0bb5533084179551863de146f0ce663dcd1107f5e7bcd82",
+        "traceRef": null
+      }
+    },
+    "rawEvidence": {
+      "commitment": "0x44b0b499f4e019a37578e7e6559b366f5e6641580e0c27a219107ece307e25e2",
+      "calldata": "0xa9059cbb0000000000000000000000009965507d1a55bcc2695c58ba16fb37d819b0a4dc000000000000000000000000000000000000000000000000000000012a05f200",
+      "revertData": "0xebe8452a00000000000000000000000015d34aaf54267db7d7c367839aaf71a00a2c6a650000000000000000000000009965507d1a55bcc2695c58ba16fb37d819b0a4dc",
+      "txHash": "0x8858a811368e963df0bb5533084179551863de146f0ce663dcd1107f5e7bcd82",
+      "trace": {
+        "source": "structLogs",
+        "calls": [
+          {
+            "type": "CALL",
+            "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+            "to": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "codeTarget": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "depth": 1
+          },
+          {
+            "type": "STATICCALL",
+            "from": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "to": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+            "codeTarget": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+            "depth": 2
+          }
+        ],
+        "delegateCalls": [],
+        "tokenTransfers": [],
+        "tokenApprovals": [],
+        "storageWrites": [
+          {
+            "contract": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "slot": "0x9b779b17422d0df92223018b32b4d1fa46e071723d6817e2486d003becc55f00",
+            "value": "0x0000000000000000000000000000000000000000000000000000000000000002",
+            "depth": 1
+          },
+          {
+            "contract": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "slot": "0xd363b4884747569aeb7d1e1cbb89bfdb46e9a46c07ff7554f24d3297d97879a7",
+            "value": "0x00000000000000000000005fc8d32690cc91d4c39d9d3abcbd16989f87570702",
+            "depth": 1
+          }
+        ],
+        "failed": true,
+        "returnValue": "0xebe8452a00000000000000000000000015d34aaf54267db7d7c367839aaf71a00a2c6a650000000000000000000000009965507d1a55bcc2695c58ba16fb37d819b0a4dc"
+      }
+    }
+  },
+  {
+    "scenarioId": 2,
+    "scenarioName": "Amount Inflation",
+    "property": "Amount inflation rejected",
+    "outcome": "Executor Revert",
+    "recordedAt": "2026-10-25T17:24:53.142Z",
+    "violationReport": {
+      "proposalId": "3",
+      "scenarioId": "2",
+      "layer": "executor",
+      "status": "REJECTED",
+      "proposalSaid": "Pay up to 5,000 USDC to the development wallet.",
+      "approved": [
+        {
+          "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+          "targetLabel": "MockUSDC",
+          "function": "transfer(address,uint256)",
+          "args": {
+            "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+            "selector": "0xa9059cbb",
+            "counterparty": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+            "maxAmount": "5000000000",
+            "codeHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "childCount": "0"
+          },
+          "humanText": "Transfer up to 5000000000 from MockUSDC to DevWallet",
+          "nested": []
+        }
+      ],
+      "submitted": [
+        {
+          "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+          "targetLabel": "MockUSDC",
+          "function": "transfer(address,uint256)",
+          "args": {
+            "to": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+            "value": "50000000000"
+          },
+          "argumentLabels": {
+            "to": "DevWallet"
+          },
+          "humanText": "Calls transfer(0x15d34AAf…6A65, 50000000000) on MockUSDC",
+          "nested": []
+        }
+      ],
+      "violatedConstraint": {
+        "code": "ExceedsSpendLimit",
+        "message": "Spend Limit Exceeded: The execution amount exceeds the maximum ceiling authorized by the committed intent rule."
+      },
+      "evidence": {
+        "commitment": "0x00595fdd0f9eabd4632feffc91656723641bf19e7710fa3e806412bda21ba8b7",
+        "calldataHash": "0x70cded778083180c8701fe3ca2374e1c8910b4499c73b3f3997aaba119044762",
+        "calldata": "0xa9059cbb00000000000000000000000015d34aaf54267db7d7c367839aaf71a00a2c6a650000000000000000000000000000000000000000000000000000000ba43b7400",
+        "revertData": "0xe74fc12b000000000000000000000000000000000000000000000000000000012a05f2000000000000000000000000000000000000000000000000000000000ba43b7400",
+        "txHash": "0xd2b6e28d32e2fdafc6b456302e72d7a5235d6bbca49eb3c65f0b1755461b33ae",
+        "traceRef": null
+      }
+    },
+    "rawEvidence": {
+      "commitment": "0x00595fdd0f9eabd4632feffc91656723641bf19e7710fa3e806412bda21ba8b7",
+      "calldata": "0xa9059cbb00000000000000000000000015d34aaf54267db7d7c367839aaf71a00a2c6a650000000000000000000000000000000000000000000000000000000ba43b7400",
+      "revertData": "0xe74fc12b000000000000000000000000000000000000000000000000000000012a05f2000000000000000000000000000000000000000000000000000000000ba43b7400",
+      "txHash": "0xd2b6e28d32e2fdafc6b456302e72d7a5235d6bbca49eb3c65f0b1755461b33ae",
+      "trace": {
+        "source": "structLogs",
+        "calls": [
+          {
+            "type": "CALL",
+            "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+            "to": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "codeTarget": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "depth": 1
+          },
+          {
+            "type": "STATICCALL",
+            "from": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "to": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+            "codeTarget": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+            "depth": 2
+          }
+        ],
+        "delegateCalls": [],
+        "tokenTransfers": [],
+        "tokenApprovals": [],
+        "storageWrites": [
+          {
+            "contract": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "slot": "0x9b779b17422d0df92223018b32b4d1fa46e071723d6817e2486d003becc55f00",
+            "value": "0x0000000000000000000000000000000000000000000000000000000000000002",
+            "depth": 1
+          },
+          {
+            "contract": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "slot": "0x8f47bdf71dcee7026bb07d6540ca2ecf42f97f570b542aa4386003968c9281e3",
+            "value": "0x00000000000000000000005fc8d32690cc91d4c39d9d3abcbd16989f87570702",
+            "depth": 1
+          }
+        ],
+        "failed": true,
+        "returnValue": "0xe74fc12b000000000000000000000000000000000000000000000000000000012a05f2000000000000000000000000000000000000000000000000000000000ba43b7400"
+      }
+    }
+  },
+  {
+    "scenarioId": 3,
+    "scenarioName": "Jargon Upgrade",
+    "property": "Unauthorized upgrade rejected",
+    "outcome": "Sentinel Halt",
+    "recordedAt": "2026-10-25T17:24:53.285Z",
+    "violationReport": {
+      "proposalId": "4",
+      "scenarioId": "3",
+      "layer": "sentinel",
+      "status": "FLAGGED",
+      "proposalSaid": "Routine parameter tuning of the fee module.",
+      "approved": [
+        {
+          "target": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+          "targetLabel": "FeeModule",
+          "function": "UNKNOWN FUNCTION 0x694b8e39",
+          "args": {
+            "target": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+            "selector": "0x694b8e39",
+            "counterparty": "0x0000000000000000000000000000000000000000",
+            "maxAmount": "100",
+            "codeHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "childCount": "0"
+          },
+          "humanText": "Call UNKNOWN FUNCTION 0x694b8e39 on FeeModule (max value 100)",
+          "nested": []
+        }
+      ],
+      "submitted": [
+        {
+          "target": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+          "targetLabel": "TreasuryProxy",
+          "function": "upgradeTo(address)",
+          "args": {
+            "newImplementation": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6"
+          },
+          "argumentLabels": {
+            "newImplementation": "MaliciousImpl"
+          },
+          "humanText": "Calls upgradeTo(0x2279B7A0…eBe6) on TreasuryProxy",
+          "nested": []
+        }
+      ],
+      "violatedConstraint": {
+        "code": "DangerousBytecode",
+        "message": "Dangerous opcodes in implementation: The proposed implementation's bytecode contains DELEGATECALL and SELFDESTRUCT, which could let it take over or destroy the proxy."
+      },
+      "evidence": {
+        "commitment": "0xbcf5c3c620814820a0851deb6a8bc962087a44226fe6795ca77517dff9318e18",
+        "calldataHash": "0x3871ee459aefcea38280801cdbd1394175dcf3d78c0349efb0a7b3575fdff19d",
+        "calldata": "0x3659cfe60000000000000000000000002279b7a0a67db372996a5fab50d91eaa73d2ebe6",
+        "revertData": "0x17d60e4700000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000",
+        "txHash": "0xa89b32a832633cb6568e360c22bfbe97eae28a7aa63e9cfbb6399d43a053420f",
+        "traceRef": null
+      }
+    },
+    "rawEvidence": {
+      "commitment": "0xbcf5c3c620814820a0851deb6a8bc962087a44226fe6795ca77517dff9318e18",
+      "calldata": "0x3659cfe60000000000000000000000002279b7a0a67db372996a5fab50d91eaa73d2ebe6",
+      "revertData": "0x17d60e4700000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000",
+      "txHash": "0xa89b32a832633cb6568e360c22bfbe97eae28a7aa63e9cfbb6399d43a053420f",
+      "trace": {
+        "source": "structLogs",
+        "calls": [
+          {
+            "type": "CALL",
+            "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+            "to": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "codeTarget": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "depth": 1
+          }
+        ],
+        "delegateCalls": [],
+        "tokenTransfers": [],
+        "tokenApprovals": [],
+        "storageWrites": [
+          {
+            "contract": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "slot": "0x9b779b17422d0df92223018b32b4d1fa46e071723d6817e2486d003becc55f00",
+            "value": "0x0000000000000000000000000000000000000000000000000000000000000002",
+            "depth": 1
+          }
+        ],
+        "failed": true,
+        "returnValue": "0x17d60e4700000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000"
+      }
+    }
+  },
+  {
+    "scenarioId": 4,
+    "scenarioName": "Nested Multicall",
+    "property": "Hidden ownership transfer in multicall rejected",
+    "outcome": "Sentinel Halt",
+    "recordedAt": "2026-10-25T17:24:53.458Z",
+    "violationReport": {
+      "proposalId": "5",
+      "scenarioId": "4",
+      "layer": "sentinel",
+      "status": "FLAGGED",
+      "proposalSaid": "Tweak fee module parameter via batch multicall.",
+      "approved": [
+        {
+          "target": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+          "targetLabel": "FeeModule",
+          "function": "multicall(bytes[])",
+          "args": {
+            "target": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+            "selector": "0xac9650d8",
+            "counterparty": "0x0000000000000000000000000000000000000000",
+            "maxAmount": "0",
+            "codeHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "childCount": "1"
+          },
+          "humanText": "Multicall with 1 inner call(s) on FeeModule",
+          "nested": []
+        },
+        {
+          "target": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+          "targetLabel": "FeeModule",
+          "function": "setFee(uint256)",
+          "args": {
+            "target": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+            "selector": "0x69fe0e2d",
+            "counterparty": "0x0000000000000000000000000000000000000000",
+            "maxAmount": "100",
+            "codeHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "childCount": "0"
+          },
+          "humanText": "Call setFee(uint256) on FeeModule (max value 100)",
+          "nested": []
+        }
+      ],
+      "submitted": [
+        {
+          "target": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+          "targetLabel": "FeeModule",
+          "function": "multicall(bytes[])",
+          "args": {
+            "data": "[0x69fe0e2d0000000000000000000000000000000000000000000000000000000000000028, 0xf2fde38b0000000000000000000000009965507d1a55bcc2695c58ba16fb37d819b0a4dc]"
+          },
+          "argumentLabels": {},
+          "humanText": "Calls multicall([0x69fe0e2d…(36 bytes), 0xf2fde38b…(36 bytes)]) on FeeModule",
+          "nested": [
+            {
+              "target": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+              "targetLabel": "FeeModule",
+              "function": "setFee(uint256)",
+              "args": {
+                "newFee": "40"
+              },
+              "argumentLabels": {},
+              "humanText": "Calls setFee(40) on FeeModule",
+              "nested": []
+            },
+            {
+              "target": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+              "targetLabel": "FeeModule",
+              "function": "transferOwnership(address)",
+              "args": {
+                "newOwner": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc"
+              },
+              "argumentLabels": {
+                "newOwner": "Attacker"
+              },
+              "humanText": "Calls transferOwnership(0x9965507D…A4dc) on FeeModule",
+              "nested": []
+            }
+          ]
+        }
+      ],
+      "violatedConstraint": {
+        "code": "CommitmentMismatch",
+        "message": "Commitment mismatch: The submitted actions and rules do not reproduce the queued execution commitment."
+      },
+      "evidence": {
+        "commitment": "0xde009a13bc71645e47d0149a1769c208dd5895aa8d8839199ea1981a95b050c2",
+        "calldataHash": "0xf0c8c9b91224a64dd286a5c225904638194aff07c460934822227fbddf3c1d07",
+        "calldata": "0xac9650d800000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000002469fe0e2d0000000000000000000000000000000000000000000000000000000000000028000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000024f2fde38b0000000000000000000000009965507d1a55bcc2695c58ba16fb37d819b0a4dc00000000000000000000000000000000000000000000000000000000",
+        "revertData": "0x17d60e4700000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000",
+        "txHash": "0x6a9d8afefadf5c71dc67aa24a3450a2cd7f20839731135d304831be9c26ae3cf",
+        "traceRef": null
+      }
+    },
+    "rawEvidence": {
+      "commitment": "0xde009a13bc71645e47d0149a1769c208dd5895aa8d8839199ea1981a95b050c2",
+      "calldata": "0xac9650d800000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000002469fe0e2d0000000000000000000000000000000000000000000000000000000000000028000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000024f2fde38b0000000000000000000000009965507d1a55bcc2695c58ba16fb37d819b0a4dc00000000000000000000000000000000000000000000000000000000",
+      "revertData": "0x17d60e4700000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000",
+      "txHash": "0x6a9d8afefadf5c71dc67aa24a3450a2cd7f20839731135d304831be9c26ae3cf",
+      "trace": {
+        "source": "structLogs",
+        "calls": [
+          {
+            "type": "CALL",
+            "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+            "to": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "codeTarget": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "depth": 1
+          }
+        ],
+        "delegateCalls": [],
+        "tokenTransfers": [],
+        "tokenApprovals": [],
+        "storageWrites": [
+          {
+            "contract": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "slot": "0x9b779b17422d0df92223018b32b4d1fa46e071723d6817e2486d003becc55f00",
+            "value": "0x0000000000000000000000000000000000000000000000000000000000000002",
+            "depth": 1
+          }
+        ],
+        "failed": true,
+        "returnValue": "0x17d60e4700000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000"
+      }
+    }
+  },
+  {
+    "scenarioId": 5,
+    "scenarioName": "Unlimited Approval",
+    "property": "Unlimited approval rejected",
+    "outcome": "Executor Revert",
+    "recordedAt": "2026-10-25T17:24:53.651Z",
+    "violationReport": {
+      "proposalId": "6",
+      "scenarioId": "5",
+      "layer": "executor",
+      "status": "REJECTED",
+      "proposalSaid": "Approve a bounded payment of up to 5,000 USDC.",
+      "approved": [
+        {
+          "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+          "targetLabel": "MockUSDC",
+          "function": "approve(address,uint256)",
+          "args": {
+            "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+            "selector": "0x095ea7b3",
+            "counterparty": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+            "maxAmount": "5000000000",
+            "codeHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "childCount": "0"
+          },
+          "humanText": "Approve up to 5000000000 from MockUSDC for Attacker",
+          "nested": []
+        }
+      ],
+      "submitted": [
+        {
+          "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+          "targetLabel": "MockUSDC",
+          "function": "approve(address,uint256)",
+          "args": {
+            "spender": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+            "value": "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+          },
+          "argumentLabels": {
+            "spender": "Attacker"
+          },
+          "humanText": "Calls approve(0x9965507D…A4dc, 115792089237316195423570985008687907853269984665640564039457584007913129639935) on MockUSDC",
+          "nested": []
+        }
+      ],
+      "violatedConstraint": {
+        "code": "UnlimitedApprovalNotCommitted",
+        "message": "Unlimited Approval Rejected: Calldata requested type(uint256).max approval which was not explicitly approved in the intent."
+      },
+      "evidence": {
+        "commitment": "0xf178240d636da41bb9a7bb4422e08b3186644ac2ef08604f61d78976112cc31e",
+        "calldataHash": "0xd81b85316e2ef3179708240be097e0f4f5d0b6bd50c074feb6cdb10b2a9bc23d",
+        "calldata": "0x095ea7b30000000000000000000000009965507d1a55bcc2695c58ba16fb37d819b0a4dcffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "revertData": "0xad22da110000000000000000000000009965507d1a55bcc2695c58ba16fb37d819b0a4dc",
+        "txHash": "0x867d605943c17f3dd86f5928bde2bd5ea9c0e103b32c0090b5e12d8d7050d7a9",
+        "traceRef": null
+      }
+    },
+    "rawEvidence": {
+      "commitment": "0xf178240d636da41bb9a7bb4422e08b3186644ac2ef08604f61d78976112cc31e",
+      "calldata": "0x095ea7b30000000000000000000000009965507d1a55bcc2695c58ba16fb37d819b0a4dcffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "revertData": "0xad22da110000000000000000000000009965507d1a55bcc2695c58ba16fb37d819b0a4dc",
+      "txHash": "0x867d605943c17f3dd86f5928bde2bd5ea9c0e103b32c0090b5e12d8d7050d7a9",
+      "trace": {
+        "source": "structLogs",
+        "calls": [
+          {
+            "type": "CALL",
+            "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+            "to": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "codeTarget": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "depth": 1
+          },
+          {
+            "type": "STATICCALL",
+            "from": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "to": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+            "codeTarget": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+            "depth": 2
+          }
+        ],
+        "delegateCalls": [],
+        "tokenTransfers": [],
+        "tokenApprovals": [],
+        "storageWrites": [
+          {
+            "contract": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "slot": "0x9b779b17422d0df92223018b32b4d1fa46e071723d6817e2486d003becc55f00",
+            "value": "0x0000000000000000000000000000000000000000000000000000000000000002",
+            "depth": 1
+          },
+          {
+            "contract": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "slot": "0x80774f4165030fdfeda0266ab156c3d76a6b7ed07b3c010f68a08034d16e4242",
+            "value": "0x00000000000000000000005fc8d32690cc91d4c39d9d3abcbd16989f87570702",
+            "depth": 1
+          }
+        ],
+        "failed": true,
+        "returnValue": "0xad22da110000000000000000000000009965507d1a55bcc2695c58ba16fb37d819b0a4dc"
+      }
+    }
+  },
+  {
+    "scenarioId": 6,
+    "scenarioName": "Delegatecall Payload",
+    "property": "Delegatecall payload not executable",
+    "outcome": "Sentinel Halt",
+    "recordedAt": "2026-10-25T17:24:53.859Z",
+    "violationReport": {
+      "proposalId": "7",
+      "scenarioId": "6",
+      "layer": "sentinel",
+      "status": "FLAGGED",
+      "proposalSaid": "Legitimate parameter update.",
+      "approved": [
+        {
+          "target": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+          "targetLabel": "FeeModule",
+          "function": "UNKNOWN FUNCTION 0x694b8e39",
+          "args": {
+            "target": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+            "selector": "0x694b8e39",
+            "counterparty": "0x0000000000000000000000000000000000000000",
+            "maxAmount": "100",
+            "codeHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "childCount": "0"
+          },
+          "humanText": "Call UNKNOWN FUNCTION 0x694b8e39 on FeeModule (max value 100)",
+          "nested": []
+        }
+      ],
+      "submitted": [
+        {
+          "target": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+          "targetLabel": "MaliciousImpl",
+          "function": "executeArbitrary(address,bytes)",
+          "args": {
+            "target": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+            "data": "0xf2fde38b0000000000000000000000009965507d1a55bcc2695c58ba16fb37d819b0a4dc"
+          },
+          "argumentLabels": {
+            "target": "FeeModule"
+          },
+          "humanText": "Calls executeArbitrary(0xa513E6E4…C853, 0xf2fde38b…(36 bytes)) on MaliciousImpl",
+          "nested": []
+        }
+      ],
+      "violatedConstraint": {
+        "code": "DangerousBytecode",
+        "message": "Dangerous opcodes in implementation: The proposed implementation's bytecode contains DELEGATECALL and SELFDESTRUCT, which could let it take over or destroy the proxy."
+      },
+      "evidence": {
+        "commitment": "0xe1256c4f316229c04a2261cf07e7b3c2b6d3103362eca5648482f69b1d7ce4d8",
+        "calldataHash": "0xc44d330fb67998ad4e6654d78cde61bd06fdad71cf578f5256207f4980ee0ec5",
+        "calldata": "0x00ec8a79000000000000000000000000a513e6e4b8f2a923d98304ec87f64353c4d5c85300000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000024f2fde38b0000000000000000000000009965507d1a55bcc2695c58ba16fb37d819b0a4dc00000000000000000000000000000000000000000000000000000000",
+        "revertData": "0x52cea817000000000000000000000000a513e6e4b8f2a923d98304ec87f64353c4d5c8530000000000000000000000002279b7a0a67db372996a5fab50d91eaa73d2ebe6",
+        "txHash": "0x564d5303f85e860940d4e62ffab262ca26ed34e818b57a4f6307895cdba19361",
+        "traceRef": null
+      }
+    },
+    "rawEvidence": {
+      "commitment": "0xe1256c4f316229c04a2261cf07e7b3c2b6d3103362eca5648482f69b1d7ce4d8",
+      "calldata": "0x00ec8a79000000000000000000000000a513e6e4b8f2a923d98304ec87f64353c4d5c85300000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000024f2fde38b0000000000000000000000009965507d1a55bcc2695c58ba16fb37d819b0a4dc00000000000000000000000000000000000000000000000000000000",
+      "revertData": "0x52cea817000000000000000000000000a513e6e4b8f2a923d98304ec87f64353c4d5c8530000000000000000000000002279b7a0a67db372996a5fab50d91eaa73d2ebe6",
+      "txHash": "0x564d5303f85e860940d4e62ffab262ca26ed34e818b57a4f6307895cdba19361",
+      "trace": {
+        "source": "structLogs",
+        "calls": [
+          {
+            "type": "CALL",
+            "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+            "to": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "codeTarget": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "depth": 1
+          },
+          {
+            "type": "STATICCALL",
+            "from": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "to": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+            "codeTarget": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+            "depth": 2
+          }
+        ],
+        "delegateCalls": [],
+        "tokenTransfers": [],
+        "tokenApprovals": [],
+        "storageWrites": [
+          {
+            "contract": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "slot": "0x9b779b17422d0df92223018b32b4d1fa46e071723d6817e2486d003becc55f00",
+            "value": "0x0000000000000000000000000000000000000000000000000000000000000002",
+            "depth": 1
+          },
+          {
+            "contract": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "slot": "0x110863c4da538f669c8ca5faccf354b4157e6414118fef0132f65e4b4196de1c",
+            "value": "0x00000000000000000000005fc8d32690cc91d4c39d9d3abcbd16989f87570702",
+            "depth": 1
+          }
+        ],
+        "failed": true,
+        "returnValue": "0x52cea817000000000000000000000000a513e6e4b8f2a923d98304ec87f64353c4d5c8530000000000000000000000002279b7a0a67db372996a5fab50d91eaa73d2ebe6"
+      }
+    }
+  },
+  {
+    "scenarioId": 7,
+    "scenarioName": "Re-entrancy",
+    "property": "Re-entrancy rejected",
+    "outcome": "Executor Revert",
+    "recordedAt": "2026-10-25T17:24:54.087Z",
+    "violationReport": {
+      "proposalId": "8",
+      "scenarioId": "7",
+      "layer": "executor",
+      "status": "REJECTED",
+      "proposalSaid": "Proposal targeting the recipient contract.",
+      "approved": [
+        {
+          "target": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+          "targetLabel": "ReentrantRecipient",
+          "function": "attackOnReceive()",
+          "args": {
+            "target": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+            "selector": "0x24b03fd2",
+            "counterparty": "0x0000000000000000000000000000000000000000",
+            "maxAmount": "0",
+            "codeHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "childCount": "0"
+          },
+          "humanText": "Call attackOnReceive() on ReentrantRecipient (max value 0)",
+          "nested": []
+        }
+      ],
+      "submitted": [
+        {
+          "target": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+          "targetLabel": "ReentrantRecipient",
+          "function": "attackOnReceive()",
+          "args": {},
+          "argumentLabels": {},
+          "humanText": "Calls attackOnReceive() on ReentrantRecipient",
+          "nested": []
+        }
+      ],
+      "violatedConstraint": {
+        "code": "ActionExecutionFailed",
+        "message": "Action Call Reverted: An external call to the target contract reverted during execution."
+      },
+      "evidence": {
+        "commitment": "0x8d273e142aaad4ff3e346196c41e9320369eca04a9b3621cbbd9d7c9d3b26344",
+        "calldataHash": "0x77c48f8df3b3d7801cda751827e267482f4398cba5accadb647f7ec8f3341c49",
+        "calldata": "0x24b03fd2",
+        "revertData": "0xff3abd3b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000610178da211fef7d417bc0e6fed39f05609ad788000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000043ee5aeb500000000000000000000000000000000000000000000000000000000",
+        "txHash": "0xe7e238e30bde7182f4b027796ca84e3482b908974cdb973e809b4ff2198ae70e",
+        "traceRef": null
+      }
+    },
+    "rawEvidence": {
+      "commitment": "0x8d273e142aaad4ff3e346196c41e9320369eca04a9b3621cbbd9d7c9d3b26344",
+      "calldata": "0x24b03fd2",
+      "revertData": "0xff3abd3b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000610178da211fef7d417bc0e6fed39f05609ad788000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000043ee5aeb500000000000000000000000000000000000000000000000000000000",
+      "txHash": "0xe7e238e30bde7182f4b027796ca84e3482b908974cdb973e809b4ff2198ae70e",
+      "trace": {
+        "source": "structLogs",
+        "calls": [
+          {
+            "type": "CALL",
+            "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+            "to": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "codeTarget": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "depth": 1
+          },
+          {
+            "type": "STATICCALL",
+            "from": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "to": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+            "codeTarget": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+            "depth": 2
+          },
+          {
+            "type": "CALL",
+            "from": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "to": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+            "codeTarget": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+            "depth": 2
+          },
+          {
+            "type": "CALL",
+            "from": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+            "to": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "codeTarget": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "depth": 3
+          }
+        ],
+        "delegateCalls": [],
+        "tokenTransfers": [],
+        "tokenApprovals": [],
+        "storageWrites": [
+          {
+            "contract": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "slot": "0x9b779b17422d0df92223018b32b4d1fa46e071723d6817e2486d003becc55f00",
+            "value": "0x0000000000000000000000000000000000000000000000000000000000000002",
+            "depth": 1
+          },
+          {
+            "contract": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "slot": "0xaf644df42780ab36f00d2394b90041d57fe0dfe9247b613e6d2bd5cd9533c6fd",
+            "value": "0x00000000000000000000005fc8d32690cc91d4c39d9d3abcbd16989f87570702",
+            "depth": 1
+          },
+          {
+            "contract": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+            "slot": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "value": "0x000000000000000000000001dc64a140aa3e981100a9beca4e685f962f0cf6c9",
+            "depth": 2
+          },
+          {
+            "contract": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+            "slot": "0x0000000000000000000000000000000000000000000000000000000000000001",
+            "value": "0x3ee5aeb500000000000000000000000000000000000000000000000000000008",
+            "depth": 2
+          }
+        ],
+        "failed": true,
+        "returnValue": "0xff3abd3b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000610178da211fef7d417bc0e6fed39f05609ad788000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000043ee5aeb500000000000000000000000000000000000000000000000000000000"
+      }
+    }
+  },
+  {
+    "scenarioId": 8,
+    "scenarioName": "Timelock & Replay Protection",
+    "property": "Early execution, double execution, and cross-chain replay rejected",
+    "outcome": "Executor Revert",
+    "recordedAt": "2026-10-25T17:24:54.246Z",
+    "violationReport": {
+      "proposalId": "9",
+      "scenarioId": "8",
+      "layer": "executor",
+      "status": "REJECTED",
+      "proposalSaid": "Pay 5,000 USDC to the development wallet (before timelock expiry).",
+      "approved": [
+        {
+          "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+          "targetLabel": "MockUSDC",
+          "function": "transfer(address,uint256)",
+          "args": {
+            "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+            "selector": "0xa9059cbb",
+            "counterparty": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+            "maxAmount": "5000000000",
+            "codeHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "childCount": "0"
+          },
+          "humanText": "Transfer up to 5000000000 from MockUSDC to DevWallet",
+          "nested": []
+        }
+      ],
+      "submitted": [
+        {
+          "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+          "targetLabel": "MockUSDC",
+          "function": "transfer(address,uint256)",
+          "args": {
+            "to": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+            "value": "5000000000"
+          },
+          "argumentLabels": {
+            "to": "DevWallet"
+          },
+          "humanText": "Calls transfer(0x15d34AAf…6A65, 5000000000) on MockUSDC",
+          "nested": []
+        }
+      ],
+      "violatedConstraint": {
+        "code": "TimelockNotExpired",
+        "message": "Timelock Delay Not Expired: The timelock delay has not yet elapsed. Execution is rejected until block.timestamp >= eta."
+      },
+      "evidence": {
+        "commitment": "0x11bcda8787ce4114e59ee543fc87877cd5fe7c1fe398689d87ea89f250f9f890",
+        "calldataHash": "0x57a9dee8933dfb17a718368fb7e4a37b62f75eb562d85b97a5f2b4bbe8f16a1c",
+        "calldata": "0xa9059cbb00000000000000000000000015d34aaf54267db7d7c367839aaf71a00a2c6a65000000000000000000000000000000000000000000000000000000012a05f200",
+        "revertData": "0x24d6e9ba000000000000000000000000000000000000000000000000000000006b025325000000000000000000000000000000000000000000000000000000006b024516",
+        "txHash": "0x2061a4f765e1fb9431de882fd3363118e954a20801f12711a01bbf2c13cc7746",
+        "traceRef": null
+      }
+    },
+    "rawEvidence": {
+      "commitment": "0x11bcda8787ce4114e59ee543fc87877cd5fe7c1fe398689d87ea89f250f9f890",
+      "calldata": "0xa9059cbb00000000000000000000000015d34aaf54267db7d7c367839aaf71a00a2c6a65000000000000000000000000000000000000000000000000000000012a05f200",
+      "revertData": "0x24d6e9ba000000000000000000000000000000000000000000000000000000006b025325000000000000000000000000000000000000000000000000000000006b024516",
+      "txHash": "0x2061a4f765e1fb9431de882fd3363118e954a20801f12711a01bbf2c13cc7746",
+      "trace": {
+        "source": "structLogs",
+        "calls": [
+          {
+            "type": "CALL",
+            "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+            "to": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "codeTarget": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "depth": 1
+          }
+        ],
+        "delegateCalls": [],
+        "tokenTransfers": [],
+        "tokenApprovals": [],
+        "storageWrites": [
+          {
+            "contract": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "slot": "0x9b779b17422d0df92223018b32b4d1fa46e071723d6817e2486d003becc55f00",
+            "value": "0x0000000000000000000000000000000000000000000000000000000000000002",
+            "depth": 1
+          }
+        ],
+        "failed": true,
+        "returnValue": "0x24d6e9ba000000000000000000000000000000000000000000000000000000006b025325000000000000000000000000000000000000000000000000000000006b024516"
+      }
+    }
+  },
+  {
+    "scenarioId": 9,
+    "scenarioName": "Stale Version Supersession",
+    "property": "Stale version rejected",
+    "outcome": "Executor Revert",
+    "recordedAt": "2026-10-25T17:24:54.393Z",
+    "violationReport": {
+      "proposalId": "10",
+      "scenarioId": "9",
+      "layer": "executor",
+      "status": "REJECTED",
+      "proposalSaid": "Proposal v1: Dev Grant.",
+      "approved": [
+        {
+          "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+          "targetLabel": "MockUSDC",
+          "function": "transfer(address,uint256)",
+          "args": {
+            "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+            "selector": "0xa9059cbb",
+            "counterparty": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+            "maxAmount": "5000000000",
+            "codeHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "childCount": "0"
+          },
+          "humanText": "Transfer up to 5000000000 from MockUSDC to DevWallet",
+          "nested": []
+        }
+      ],
+      "submitted": [
+        {
+          "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+          "targetLabel": "MockUSDC",
+          "function": "transfer(address,uint256)",
+          "args": {
+            "to": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+            "value": "5000000000"
+          },
+          "argumentLabels": {
+            "to": "DevWallet"
+          },
+          "humanText": "Calls transfer(0x15d34AAf…6A65, 5000000000) on MockUSDC",
+          "nested": []
+        }
+      ],
+      "violatedConstraint": {
+        "code": "VersionSuperseded",
+        "message": "Proposal Version Superseded: The proposal version voted on has been superseded by a newer version in the ProposalRegistry."
+      },
+      "evidence": {
+        "commitment": "0x76779d2aceb424983f37fd3c6b44fbc9bdc64ffd613b4b62ee77c1b136385284",
+        "calldataHash": "0x57a9dee8933dfb17a718368fb7e4a37b62f75eb562d85b97a5f2b4bbe8f16a1c",
+        "calldata": "0xa9059cbb00000000000000000000000015d34aaf54267db7d7c367839aaf71a00a2c6a65000000000000000000000000000000000000000000000000000000012a05f200",
+        "revertData": "0x86d3da90000000000000000000000000000000000000000000000000000000000000000a177a67215ebe5601bc118f27ea90edf5461347e97b0b2b0d1949e090c92a347ef62f0b0fc1a5181f64552c340d010d961785890fefb972c6bceafddb61c0c636",
+        "txHash": "0xc4678cc3eaf1464dca58ac046b7cad5609aad374216ea69e07557e4cbd09946d",
+        "traceRef": null
+      }
+    },
+    "rawEvidence": {
+      "commitment": "0x76779d2aceb424983f37fd3c6b44fbc9bdc64ffd613b4b62ee77c1b136385284",
+      "calldata": "0xa9059cbb00000000000000000000000015d34aaf54267db7d7c367839aaf71a00a2c6a65000000000000000000000000000000000000000000000000000000012a05f200",
+      "revertData": "0x86d3da90000000000000000000000000000000000000000000000000000000000000000a177a67215ebe5601bc118f27ea90edf5461347e97b0b2b0d1949e090c92a347ef62f0b0fc1a5181f64552c340d010d961785890fefb972c6bceafddb61c0c636",
+      "txHash": "0xc4678cc3eaf1464dca58ac046b7cad5609aad374216ea69e07557e4cbd09946d",
+      "trace": {
+        "source": "structLogs",
+        "calls": [
+          {
+            "type": "CALL",
+            "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+            "to": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "codeTarget": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "depth": 1
+          },
+          {
+            "type": "STATICCALL",
+            "from": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "to": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+            "codeTarget": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+            "depth": 2
+          }
+        ],
+        "delegateCalls": [],
+        "tokenTransfers": [],
+        "tokenApprovals": [],
+        "storageWrites": [
+          {
+            "contract": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "slot": "0x9b779b17422d0df92223018b32b4d1fa46e071723d6817e2486d003becc55f00",
+            "value": "0x0000000000000000000000000000000000000000000000000000000000000002",
+            "depth": 1
+          }
+        ],
+        "failed": true,
+        "returnValue": "0x86d3da90000000000000000000000000000000000000000000000000000000000000000a177a67215ebe5601bc118f27ea90edf5461347e97b0b2b0d1949e090c92a347ef62f0b0fc1a5181f64552c340d010d961785890fefb972c6bceafddb61c0c636"
+      }
+    }
+  },
+  {
+    "scenarioId": 10,
+    "scenarioName": "Hidden Conflict of Interest",
+    "property": "Hidden conflict-of-interest link flagged",
+    "outcome": "Sentinel Halt",
+    "recordedAt": "2026-10-25T17:24:54.415Z",
+    "violationReport": {
+      "proposalId": "11",
+      "scenarioId": "10",
+      "layer": "sentinel",
+      "status": "FLAGGED",
+      "proposalSaid": "Proposer submitted a complete conflict-of-interest disclosure.",
+      "approved": [
+        {
+          "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+          "targetLabel": "MockUSDC",
+          "function": "transfer(address,uint256)",
+          "args": {
+            "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+            "selector": "0xa9059cbb",
+            "counterparty": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+            "maxAmount": "5000000000",
+            "codeHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "childCount": "0"
+          },
+          "humanText": "Transfer up to 5000000000 from MockUSDC to DevWallet",
+          "nested": []
+        }
+      ],
+      "submitted": [],
+      "violatedConstraint": {
+        "code": "ExecutionReverted",
+        "message": "Sandbox execution reverted: The simulated execution reverted without a matching executor gate finding."
+      },
+      "evidence": {
+        "commitment": "",
+        "calldataHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "calldata": "0x",
+        "revertData": "0xc6393ab9000000000000000000000000000000000000000000000000000000000000000b",
+        "txHash": "0x0f82489ae81d8b9e2f4ae86dd756b4b3b44cf90cd4fc8f4b4aa5f61d5381d804",
+        "traceRef": null
+      }
+    },
+    "rawEvidence": {
+      "commitment": "",
+      "calldata": "0x",
+      "revertData": "0xc6393ab9000000000000000000000000000000000000000000000000000000000000000b",
+      "txHash": "0x0f82489ae81d8b9e2f4ae86dd756b4b3b44cf90cd4fc8f4b4aa5f61d5381d804",
+      "trace": null
+    }
+  }
+]

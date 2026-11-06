@@ -1,0 +1,108 @@
+{
+  "generatedBy": "scripts/gen-errors.ts",
+  "note": "Custom error selectors are stable. Person B maps these selectors to human text; Person A must not rename them without announcing it.",
+  "errors": [
+    {
+      "name": "CommitmentMismatch",
+      "signature": "CommitmentMismatch(bytes32,bytes32)",
+      "selector": "0xc9e0e757",
+      "text": "The submitted transaction does not match the approved commitment."
+    },
+    {
+      "name": "UnauthorizedRecipient",
+      "signature": "UnauthorizedRecipient(address)",
+      "selector": "0x4cc4c430",
+      "text": "The transfer recipient is not in the committed rules."
+    },
+    {
+      "name": "UnauthorizedSpender",
+      "signature": "UnauthorizedSpender(address)",
+      "selector": "0x7f6f388b",
+      "text": "The allowance spender is not in the committed rules."
+    },
+    {
+      "name": "ExceedsSpendLimit",
+      "signature": "ExceedsSpendLimit(uint256,uint256)",
+      "selector": "0xe74fc12b",
+      "text": "The amount exceeds the committed spend limit for this transfer."
+    },
+    {
+      "name": "ExceedsAllowance",
+      "signature": "ExceedsAllowance(uint256,uint256)",
+      "selector": "0x4d76f663",
+      "text": "The requested allowance exceeds the committed ceiling."
+    },
+    {
+      "name": "SelectorNotAuthorized",
+      "signature": "SelectorNotAuthorized(address,bytes4)",
+      "selector": "0x1420732b",
+      "text": "This function was never authorized by the commitment."
+    },
+    {
+      "name": "CodeHashMismatch",
+      "signature": "CodeHashMismatch(address,bytes32,bytes32)",
+      "selector": "0xd9d699e0",
+      "text": "The implementation bytecode does not match the approved code hash."
+    },
+    {
+      "name": "NestedCallNotAuthorized",
+      "signature": "NestedCallNotAuthorized(uint256,bytes)",
+      "selector": "0x1be76755",
+      "text": "A multicall child is not present in the commitment."
+    },
+    {
+      "name": "StaleVersion",
+      "signature": "StaleVersion(uint256,uint256)",
+      "selector": "0x79c7c8b5",
+      "text": "A superseded proposal version was submitted for execution."
+    },
+    {
+      "name": "AlreadyExecuted",
+      "signature": "AlreadyExecuted(uint256)",
+      "selector": "0x6a64e961",
+      "text": "This proposal version has already executed."
+    },
+    {
+      "name": "TimelockNotElapsed",
+      "signature": "TimelockNotElapsed(uint256,uint256)",
+      "selector": "0xaadd2910",
+      "text": "The timelock has not elapsed yet."
+    },
+    {
+      "name": "WrongChain",
+      "signature": "WrongChain(uint256,uint256)",
+      "selector": "0x24497bc3",
+      "text": "The commitment was issued for a different chain."
+    },
+    {
+      "name": "ReentrancyDetected",
+      "signature": "ReentrancyDetected()",
+      "selector": "0xc5f2be51",
+      "text": "A re-entrant call was detected during execution."
+    },
+    {
+      "name": "PostConditionViolated",
+      "signature": "PostConditionViolated(bytes32)",
+      "selector": "0x9079750e",
+      "text": "A post-condition reverted the transaction after the call."
+    },
+    {
+      "name": "GuardianHalted",
+      "signature": "GuardianHalted(bytes32)",
+      "selector": "0x24a7689c",
+      "text": "The guardian halted this proposal during the timelock."
+    },
+    {
+      "name": "UnknownSelector",
+      "signature": "UnknownSelector(bytes4)",
+      "selector": "0xc2a825f5",
+      "text": "The calldata selector is not recognized by the decoder."
+    },
+    {
+      "name": "ValueNotAllowed",
+      "signature": "ValueNotAllowed(uint256)",
+      "selector": "0xdf0089fd",
+      "text": "The transaction carries native value, which this proposal does not authorize."
+    }
+  ]
+}

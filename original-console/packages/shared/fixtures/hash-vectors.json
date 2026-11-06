@@ -1,0 +1,231 @@
+[
+  {
+    "id": "V0",
+    "description": "Benign 5,000 USDC transfer to approved dev wallet",
+    "chainId": "31337",
+    "executor": "0x1111111111111111111111111111111111111111",
+    "proposalId": "1",
+    "version": "1",
+    "versionHash": "0x83372c70037fccd5671528ae4924cdde1da414d1d9627f73a3e1d68fa11ce900",
+    "intentHash": "0xff4dccd1b6da607304c0df11857f44548a3c0952d7d0ce31a15130e3325f20f1",
+    "disclosureHash": "0xc2a943cc15ca381e0e6e7a4a31458f03cf2823e12390455fcd23af733474a027",
+    "actions": [
+      {
+        "target": "0x3333333333333333333333333333333333333333",
+        "value": "0",
+        "data": "0xa9059cbb0000000000000000000000002222222222222222222222222222222222222222000000000000000000000000000000000000000000000000000000012a05f200"
+      }
+    ],
+    "expected": {
+      "commitTypehash": "0x6ad476ea8bba99a747cc29fc6483a22b9b1d144c5f726189d8f00dd7a23d80b1",
+      "actionsHash": "0x53e573abbcbf53ecbfb6aa3edb5601d63c1cba7f529aa438f499bd8fdda96a6b",
+      "commitment": "0xca48737ef318c0137870be137f703cd2c5bd2bd59756416325cbeb388f915de5"
+    }
+  },
+  {
+    "id": "V1",
+    "description": "Post-vote recipient substitution (attacker address)",
+    "chainId": "31337",
+    "executor": "0x1111111111111111111111111111111111111111",
+    "proposalId": "1",
+    "version": "1",
+    "versionHash": "0x83372c70037fccd5671528ae4924cdde1da414d1d9627f73a3e1d68fa11ce900",
+    "intentHash": "0xff4dccd1b6da607304c0df11857f44548a3c0952d7d0ce31a15130e3325f20f1",
+    "disclosureHash": "0xc2a943cc15ca381e0e6e7a4a31458f03cf2823e12390455fcd23af733474a027",
+    "actions": [
+      {
+        "target": "0x3333333333333333333333333333333333333333",
+        "value": "0",
+        "data": "0xa9059cbb0000000000000000000000005555555555555555555555555555555555555555000000000000000000000000000000000000000000000000000000012a05f200"
+      }
+    ],
+    "expected": {
+      "commitTypehash": "0x6ad476ea8bba99a747cc29fc6483a22b9b1d144c5f726189d8f00dd7a23d80b1",
+      "actionsHash": "0x3914cae54583162e4320f1e6a8e8e51ea95a5a34d3e431c18b36f8377d5b59a5",
+      "commitment": "0x81df9f5b781af3f036d426c2d707f6097166c814a2bb53828dc408389ffd8c48"
+    }
+  },
+  {
+    "id": "V2",
+    "description": "Amount inflation (50,000 instead of 5,000 USDC)",
+    "chainId": "31337",
+    "executor": "0x1111111111111111111111111111111111111111",
+    "proposalId": "1",
+    "version": "1",
+    "versionHash": "0x83372c70037fccd5671528ae4924cdde1da414d1d9627f73a3e1d68fa11ce900",
+    "intentHash": "0xff4dccd1b6da607304c0df11857f44548a3c0952d7d0ce31a15130e3325f20f1",
+    "disclosureHash": "0xc2a943cc15ca381e0e6e7a4a31458f03cf2823e12390455fcd23af733474a027",
+    "actions": [
+      {
+        "target": "0x3333333333333333333333333333333333333333",
+        "value": "0",
+        "data": "0xa9059cbb00000000000000000000000022222222222222222222222222222222222222220000000000000000000000000000000000000000000000000000000ba43b7400"
+      }
+    ],
+    "expected": {
+      "commitTypehash": "0x6ad476ea8bba99a747cc29fc6483a22b9b1d144c5f726189d8f00dd7a23d80b1",
+      "actionsHash": "0x74980ea17471fac92cd8ceef2ecd3567423a8a6c3df086240ae0e04514010390",
+      "commitment": "0xf15db6996e4a97e20e653a871924a495d8495667b0d5b762092a5ffe3ffa6658"
+    }
+  },
+  {
+    "id": "V3",
+    "description": "Multiple actions: transfer + fee module parameter set",
+    "chainId": "31337",
+    "executor": "0x1111111111111111111111111111111111111111",
+    "proposalId": "2",
+    "version": "1",
+    "versionHash": "0xd3608869b842548cc4def3cbc8f77e25ebc467d10d6545154fdd7c7f8d35be8e",
+    "intentHash": "0x7ca037682e8233535f523f8d8dae49b47c6f794978403a14bf87aa7de0318686",
+    "disclosureHash": "0xcce21bcb38d6a2dec5ea428560bd673f1921831cdc68de6c21e436100402e5c9",
+    "actions": [
+      {
+        "target": "0x3333333333333333333333333333333333333333",
+        "value": "0",
+        "data": "0xa9059cbb0000000000000000000000002222222222222222222222222222222222222222000000000000000000000000000000000000000000000000000000003b9aca00"
+      },
+      {
+        "target": "0x6666666666666666666666666666666666666666",
+        "value": "0",
+        "data": "0x123456780000000000000000000000000000000000000000000000000000000000000032"
+      }
+    ],
+    "expected": {
+      "commitTypehash": "0x6ad476ea8bba99a747cc29fc6483a22b9b1d144c5f726189d8f00dd7a23d80b1",
+      "actionsHash": "0xecccd4b8841ebc012d87e0b357b5eddd439e4f4e6bd37bd3a9d60436b4907878",
+      "commitment": "0xf2d342592ec83707264eda89f0e18712af5c1e4fb418bd49b612dfc59daf01c1"
+    }
+  },
+  {
+    "id": "V4",
+    "description": "Different chain ID changes commitment",
+    "chainId": "1",
+    "executor": "0x1111111111111111111111111111111111111111",
+    "proposalId": "1",
+    "version": "1",
+    "versionHash": "0x83372c70037fccd5671528ae4924cdde1da414d1d9627f73a3e1d68fa11ce900",
+    "intentHash": "0xff4dccd1b6da607304c0df11857f44548a3c0952d7d0ce31a15130e3325f20f1",
+    "disclosureHash": "0xc2a943cc15ca381e0e6e7a4a31458f03cf2823e12390455fcd23af733474a027",
+    "actions": [
+      {
+        "target": "0x3333333333333333333333333333333333333333",
+        "value": "0",
+        "data": "0xa9059cbb0000000000000000000000002222222222222222222222222222222222222222000000000000000000000000000000000000000000000000000000012a05f200"
+      }
+    ],
+    "expected": {
+      "commitTypehash": "0x6ad476ea8bba99a747cc29fc6483a22b9b1d144c5f726189d8f00dd7a23d80b1",
+      "actionsHash": "0x53e573abbcbf53ecbfb6aa3edb5601d63c1cba7f529aa438f499bd8fdda96a6b",
+      "commitment": "0xac487c5c151b5ca181932460cdf5cacab5cfa53f5bc1d11b26d6e5ac2f75c278"
+    }
+  },
+  {
+    "id": "V5",
+    "description": "Different executor address changes commitment",
+    "chainId": "31337",
+    "executor": "0x5555555555555555555555555555555555555555",
+    "proposalId": "1",
+    "version": "1",
+    "versionHash": "0x83372c70037fccd5671528ae4924cdde1da414d1d9627f73a3e1d68fa11ce900",
+    "intentHash": "0xff4dccd1b6da607304c0df11857f44548a3c0952d7d0ce31a15130e3325f20f1",
+    "disclosureHash": "0xc2a943cc15ca381e0e6e7a4a31458f03cf2823e12390455fcd23af733474a027",
+    "actions": [
+      {
+        "target": "0x3333333333333333333333333333333333333333",
+        "value": "0",
+        "data": "0xa9059cbb0000000000000000000000002222222222222222222222222222222222222222000000000000000000000000000000000000000000000000000000012a05f200"
+      }
+    ],
+    "expected": {
+      "commitTypehash": "0x6ad476ea8bba99a747cc29fc6483a22b9b1d144c5f726189d8f00dd7a23d80b1",
+      "actionsHash": "0x53e573abbcbf53ecbfb6aa3edb5601d63c1cba7f529aa438f499bd8fdda96a6b",
+      "commitment": "0xf157e6bcc2e54246568ac2016a04adc84ec6bb1bd8907d9dc2fc97c1683b1d55"
+    }
+  },
+  {
+    "id": "V6",
+    "description": "Different version changes commitment",
+    "chainId": "31337",
+    "executor": "0x1111111111111111111111111111111111111111",
+    "proposalId": "1",
+    "version": "2",
+    "versionHash": "0x83372c70037fccd5671528ae4924cdde1da414d1d9627f73a3e1d68fa11ce900",
+    "intentHash": "0xff4dccd1b6da607304c0df11857f44548a3c0952d7d0ce31a15130e3325f20f1",
+    "disclosureHash": "0xc2a943cc15ca381e0e6e7a4a31458f03cf2823e12390455fcd23af733474a027",
+    "actions": [
+      {
+        "target": "0x3333333333333333333333333333333333333333",
+        "value": "0",
+        "data": "0xa9059cbb0000000000000000000000002222222222222222222222222222222222222222000000000000000000000000000000000000000000000000000000012a05f200"
+      }
+    ],
+    "expected": {
+      "commitTypehash": "0x6ad476ea8bba99a747cc29fc6483a22b9b1d144c5f726189d8f00dd7a23d80b1",
+      "actionsHash": "0x53e573abbcbf53ecbfb6aa3edb5601d63c1cba7f529aa438f499bd8fdda96a6b",
+      "commitment": "0x5c8e8e820ed310d9402de4ed0ee9ef0e139457f950083034026ca531da57d84b"
+    }
+  },
+  {
+    "id": "V7",
+    "description": "Different intentHash changes commitment",
+    "chainId": "31337",
+    "executor": "0x1111111111111111111111111111111111111111",
+    "proposalId": "1",
+    "version": "1",
+    "versionHash": "0x83372c70037fccd5671528ae4924cdde1da414d1d9627f73a3e1d68fa11ce900",
+    "intentHash": "0x2b70ab32955f206a4f78687cadcc1ecbe58b0736d2537e63944441da5e0b0fed",
+    "disclosureHash": "0xc2a943cc15ca381e0e6e7a4a31458f03cf2823e12390455fcd23af733474a027",
+    "actions": [
+      {
+        "target": "0x3333333333333333333333333333333333333333",
+        "value": "0",
+        "data": "0xa9059cbb0000000000000000000000002222222222222222222222222222222222222222000000000000000000000000000000000000000000000000000000012a05f200"
+      }
+    ],
+    "expected": {
+      "commitTypehash": "0x6ad476ea8bba99a747cc29fc6483a22b9b1d144c5f726189d8f00dd7a23d80b1",
+      "actionsHash": "0x53e573abbcbf53ecbfb6aa3edb5601d63c1cba7f529aa438f499bd8fdda96a6b",
+      "commitment": "0x926677e60a3a51a3d4f93a717fbae30467906a6cadf3b8a8a5b4a7afb410e0c7"
+    }
+  },
+  {
+    "id": "V8",
+    "description": "Empty actions array",
+    "chainId": "31337",
+    "executor": "0x1111111111111111111111111111111111111111",
+    "proposalId": "3",
+    "version": "1",
+    "versionHash": "0x43488efb16ab16545d086b2cd72328f33e87dc677a5e595f38aab2f4fd4b5d05",
+    "intentHash": "0xb9e4d2cd15117360f17a2fe392d1ef2fc1c631215c9ae8d4e36263eda985ec6b",
+    "disclosureHash": "0x6beebb50dfb3aee2e8b1c452283bdc90cb927efa98059e3721cfcffa2ef86329",
+    "actions": [],
+    "expected": {
+      "commitTypehash": "0x6ad476ea8bba99a747cc29fc6483a22b9b1d144c5f726189d8f00dd7a23d80b1",
+      "actionsHash": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+      "commitment": "0xccbd3da7c1ba2bc62d1ad1b6aeb51feb4ccbb17354c32d36bb9948c08cd24347"
+    }
+  },
+  {
+    "id": "V9",
+    "description": "Action with non-zero ETH value",
+    "chainId": "31337",
+    "executor": "0x1111111111111111111111111111111111111111",
+    "proposalId": "4",
+    "version": "1",
+    "versionHash": "0x3062077ab2ec06a99bb048614638d8fdf2ae6103e26c837db417b6bcbbebec04",
+    "intentHash": "0xd1fb0f338f3a0fbd8bf665fd485d534dc8a3c5c3acaf061426fceb666549656a",
+    "disclosureHash": "0x9debbddf0c11d9489cf35841fdf05b2cca0ff02aacf356eb3ee5b9902a21fd18",
+    "actions": [
+      {
+        "target": "0x2222222222222222222222222222222222222222",
+        "value": "1000000000000000000",
+        "data": "0x"
+      }
+    ],
+    "expected": {
+      "commitTypehash": "0x6ad476ea8bba99a747cc29fc6483a22b9b1d144c5f726189d8f00dd7a23d80b1",
+      "actionsHash": "0x82ce594dab2072c4234270537fd24ecd758c7c9b3724e3ded50a6952993f3b1b",
+      "commitment": "0xde386081f9ab8110be31ed75808cabeca686667d9f2d1ce1b23d278f8d6279d1"
+    }
+  }
+]

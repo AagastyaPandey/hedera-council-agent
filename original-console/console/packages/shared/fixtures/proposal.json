@@ -1,0 +1,71 @@
+{
+  "id": "AIP-042",
+  "title": "Ecosystem Growth Grant — GrowthLabs × Developer Guild",
+  "proposer": {
+    "name": "Nova Labs",
+    "address": "0x0EA7C9f0ab6E61c22BfFB2252C317772d8c1856D"
+  },
+  "recipients": [
+    { "name": "GrowthLabs", "address": "0x2DFCD12F1b34DA6a6E87840b1c3eFCF391b9bC15", "amountUsdc": "200000" },
+    { "name": "Developer Guild", "address": "0x45013B78dbF0c800f418D40C2995A1880aaBeB64", "amountUsdc": "50000" },
+    { "name": "TreasuryOps (allowance)", "address": "0x667C5b75390946b010F14FC124a92cBEf4146889", "amountUsdc": "5000" }
+  ],
+  "requestedUsdc": "250000",
+  "state": "QUEUED",
+  "stateDetail": "Timelock elapsed · execution attempt rejected",
+  "postedAt": "2026-10-12T09:00:00Z",
+  "votingOpenedAt": "2026-10-18T09:00:00Z",
+  "votingClosedAt": "2026-10-23T01:59:00Z",
+  "queuedAt": "2026-10-23T02:00:00Z",
+  "timelockEta": 1792893600,
+  "executionAttemptedAt": "2026-10-25T07:58:00Z",
+  "versions": [
+    {
+      "version": 1,
+      "createdAt": "2026-09-29T11:20:00Z",
+      "author": "Nova Labs",
+      "note": "Initial request",
+      "changeSummary": "One transfer to GrowthLabs.",
+      "actionCount": 1,
+      "assumptions": []
+    },
+    {
+      "version": 2,
+      "createdAt": "2026-10-08T16:05:00Z",
+      "author": "Nova Labs",
+      "note": "Added Developer Guild and bounded allowance",
+      "changeSummary": "GrowthLabs amount raised to 200,000 USDC; Developer Guild transfer and 5,000 USDC allowance added.",
+      "actionCount": 3,
+      "assumptions": ["grant_cadence", "allowance_ceiling_usdc"]
+    },
+    {
+      "version": 3,
+      "createdAt": "2026-10-13T14:40:00Z",
+      "author": "Nova Labs",
+      "note": "Clarified implementation scope",
+      "changeSummary": "Technical assessment added; no change to the three authorized actions.",
+      "actionCount": 3,
+      "assumptions": ["upgrade_authorized", "grant_cadence", "allowance_ceiling_usdc"]
+    }
+  ],
+  "disclosure": {
+    "proposer": "0x0EA7C9f0ab6E61c22BfFB2252C317772d8c1856D",
+    "wallets": [
+      "0xA626DE6334e38a8C7e91f9Ee43c6819BdAC68279",
+      "0x7dCFb79633b2bb3679944044912d585fff33a9D6"
+    ],
+    "statement": "Nova Labs discloses the following wallets controlled by the proposer for the duration of AIP-042. No other proposer-controlled wallet has a material relationship with a recipient.",
+    "signedAt": "2026-10-12T10:00:00Z",
+    "signature": "0x8f6c1d0b6d8a4d9f0c2e7a3b5d1f8c6e4a2b0d9f7c5e3a1b8d6f4c2e0a9b7d5c3f1e8a6b4d2c0f9e7a5b3d1c8f6e4a2b0d9c7f5e3a1b8d6f4"
+  },
+  "challenge": {
+    "status": "FILED",
+    "filedAt": "2026-10-24T09:14:00Z",
+    "filer": "Aegis Watch",
+    "filerAddress": "0xc2A56D043972248BB355eeaA1693Dfa13e864CFd",
+    "claim": "The proposer's disclosed wallet funded an undisclosed operations wallet, which funded the GrowthLabs deployer 19 days before the proposal. The disclosure does not list the operations wallet.",
+    "evidenceEdgeIds": ["e1", "e2", "e3", "e4"],
+    "window": "POST-QUEUE REVIEW",
+    "reviewNote": "The challenge is shown as filed evidence. Guardian action is outside the Person B scope."
+  }
+}

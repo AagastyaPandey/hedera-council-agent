@@ -1,0 +1,99 @@
+[
+  {
+    "id": "c1",
+    "text": "200,000 USDC is transferred to the GrowthLabs multisig as a one-time grant.",
+    "kind": "action",
+    "source": {
+      "docKey": "forum-post",
+      "page": 1,
+      "section": "§2 What this proposal funds",
+      "quote": "200,000 USDC (one-time)"
+    },
+    "confidence": 0.95,
+    "support": 1,
+    "actionIndex": 0
+  },
+  {
+    "id": "c2",
+    "text": "50,000 USDC is transferred to the Developer Guild for contributor tooling.",
+    "kind": "action",
+    "source": {
+      "docKey": "forum-post",
+      "page": 1,
+      "section": "§2 What this proposal funds",
+      "quote": "50,000 USDC (one-time)"
+    },
+    "confidence": 0.93,
+    "support": 1,
+    "actionIndex": 1
+  },
+  {
+    "id": "c3",
+    "text": "TreasuryOps receives a 5,000 USDC allowance ceiling for review costs.",
+    "kind": "action",
+    "source": {
+      "docKey": "financial-model",
+      "page": 1,
+      "section": "allowance_ceiling_usdc",
+      "quote": "allowance_ceiling_usdc,5000,USDC,TreasuryOps review costs"
+    },
+    "confidence": 0.9,
+    "support": 1,
+    "actionIndex": 2
+  },
+  {
+    "id": "c4",
+    "text": "The requested 250,000 USDC leaves approximately 7.8 months of runway.",
+    "kind": "impact",
+    "source": {
+      "docKey": "financial-model",
+      "page": 1,
+      "section": "runway_after_months",
+      "quote": "runway_after_months,7.8,months"
+    },
+    "confidence": 0.88,
+    "support": 1
+  },
+  {
+    "id": "c5",
+    "text": "The grant is one-time, not a recurring commitment.",
+    "kind": "assumption",
+    "source": {
+      "docKey": "forum-post",
+      "page": 1,
+      "section": "§2 What this proposal funds",
+      "quote": "The grant is a one-time payment. It is not a recurring commitment"
+    },
+    "confidence": 0.84,
+    "support": 0.75,
+    "linkedUnresolvedId": "cadence"
+  },
+  {
+    "id": "c6",
+    "text": "The forum post's implementation language may authorize an on-chain upgrade.",
+    "kind": "action",
+    "source": {
+      "docKey": "forum-post",
+      "page": 1,
+      "section": "§5 Implementation note",
+      "quote": "align the treasury implementation with the program's delivery roadmap"
+    },
+    "confidence": 0.42,
+    "support": 0.6,
+    "actionIndex": 3,
+    "linkedUnresolvedId": "upgrade-scope"
+  },
+  {
+    "id": "c7",
+    "text": "The proposal authorizes three on-chain actions only.",
+    "kind": "assumption",
+    "source": {
+      "docKey": "technical-assessment",
+      "page": 1,
+      "section": "Scope of the proposal",
+      "quote": "This proposal authorizes three actions"
+    },
+    "confidence": 0.89,
+    "support": 1
+  }
+]

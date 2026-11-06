@@ -1,0 +1,26 @@
+<section class="section" id="intelligence">
+  <div class="eyebrow">05 / Intelligence bridge · Person A</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">Turning documents<br><span class="muted">into a defensible rule set.</span></h2></div>
+    <span class="chip blue">main · intelligence/</span>
+  </div>
+  <p class="lead">Person A's intelligence modules are the bridge between source documents and the chain. They are real code, but two of them disagree with the executor they are meant to feed. That is the most important integration finding in the project.</p>
+
+  <div class="grid g2" style="margin-top:18px">
+    <div class="card"><h4>evidence.ts</h4><p>Content-addressed store, sorted-pair Merkle root, proofs, and a <code>verifySource</code> that re-hashes the exact file and bounds the quoted span. An empty tree is an explicit unknown, not a zero hash.</p><div class="tagrow"><span class="chip green">real</span><span class="chip">Merkle</span></div></div>
+    <div class="card"><h4>chain.ts</h4><p>Four sequential stages with thresholds in one <code>CONFIG</code>. Missing input yields <code>UNKNOWN</code>, never <code>PASS</code>. Execution is a hard gate: reverted, flagged or halted → RED; pending with a Sentinel violation → RED; not submitted → UNKNOWN.</p><div class="tagrow"><span class="chip green">real</span><span class="chip">UNKNOWN-never-PASS</span></div></div>
+    <div class="card"><h4>graph.ts</h4><p>Simulated wallets, four link types, noisy-OR, disclosed damping and an evidence-bound challenge payload. Like B's graph, it is a risk signal over fake transfers, not a finding of wrongdoing.</p><div class="tagrow"><span class="chip sig">simulated data</span><span class="chip green">real math</span></div></div>
+    <div class="card"><h4>ai-draft.ts</h4><p>Produces an <code>IntentSpec</code>; ambiguous questions stay in <code>unresolved[]</code> rather than being guessed. It has heuristic and LLM-shaped paths, but no live model is required to explain the demo.</p><div class="tagrow"><span class="chip sig">advisory</span><span class="chip">unresolved</span></div></div>
+    <div class="card red"><h4>intent-bridge.ts · divergence 1</h4><p>It computes <code>intentHash = keccak256(canonical JSON)</code>. The executor computes <code>keccak256(abi.encode(rules))</code>. The bridge refuses to run while <code>unresolved[]</code> is non-empty, but once it runs, the hash it produces is not the executor's hash.</p><div class="tagrow"><span class="chip red">real bug</span><span class="chip">breaks P1</span></div></div>
+    <div class="card red"><h4>intent-bridge.ts · divergence 2</h4><p>It reports <code>childCount = children.length</code> for <code>MULTICALL</code> but encodes an empty inner <code>bytes[]</code>. A bridged multicall can never match an on-chain rule set.</p><div class="tagrow"><span class="chip red">real bug</span><span class="chip">breaks nested enforcement</span></div></div>
+  </div>
+
+  <div class="note" style="margin-top:14px"><b>The bridge is not just plumbing</b> The chain layer and the console agree on the concept of a commitment but not on its preimage, error vocabulary, action encoding or graph constants. Fixing these is the first real integration milestone — before wiring any button to a contract.</div>
+
+  <div class="grid g3" style="margin-top:16px">
+    <div class="card"><h4>Unit tests</h4><div class="big green">44</div><p><code>it()</code> cases in one file, eight describe blocks: Merkle, store, claims, COI, voting, execution, end-to-end and bridge.</p></div>
+    <div class="card"><h4>Console prototype</h4><div class="big">app/</div><p>A chain-side console with <code>DecisionTrail</code>, <code>ViolationExplainer</code> and a backend that runs the Hardhat arena. It exists on <code>main</code>; it is not the judge experience.</p></div>
+    <div class="card"><h4>Chain artifacts</h4><div class="big">11</div><p><code>deployments/local.json</code> with 11 contract ABIs; 43 errors; 10 parity vectors; 11 stored Sentinel report shapes.</p></div>
+  </div>
+  <div class="tagrow" style="margin-top:12px"><a class="chip sig" href="atlas/01-chain-intelligence.md">full source doc →</a><span class="chip">counted from source; not rerun here</span></div>
+</section>

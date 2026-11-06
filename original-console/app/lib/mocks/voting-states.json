@@ -1,0 +1,103 @@
+[
+  {
+    "govId": "1",
+    "proposalId": "8",
+    "state": "VotingOpen",
+    "stateCode": 2,
+    "versionHash": "0xb17bb4499c110eebb24571965db45dec6d1afb93f8c02ed1c95a3536181bd72e",
+    "version": 2,
+    "commitment": "0xe799cdf3c7c435fe3e8b461d4130da02486e889c360dca077085ef38666eee1f",
+    "actionsHash": "0x3d859b7126a14e859ca7418cd381e7420afda1594b5c4bb8e0faa26161f8e218",
+    "intentHash": "0xc94e9ea348bbe0bfb7af065df8b56e8bed60ec656be5b8d049101ae5fb19eb84",
+    "disclosureHash": "0x65886809147001d93c10ddfbf8f1607ce72d151278a933ad836c115ab17dcea3",
+    "voteStart": "2026-09-11T15:00:00.000Z",
+    "voteEnd": "2026-09-14T15:00:00.000Z",
+    "snapshotBlock": 48291,
+    "forVotes": "1200000000000000000000",
+    "againstVotes": "300000000000000000000",
+    "abstainVotes": "100000000000000000000",
+    "informedForVotes": "700000000000000000000",
+    "totalBriefAcks": 2,
+    "quorum": "1000000000000000000000",
+    "proposer": "0x000000000000000000000000000000000000a001",
+    "quorumReached": true,
+    "informedRatio": 0.5833,
+    "votes": [
+      {
+        "voter": "0x000000000000000000000000000000000000c101",
+        "support": 1,
+        "weight": "600000000000000000000",
+        "briefHash": "0x066b148be2978b5bfa08821f525912bc66db4501f5b0b4a5ff16cede0c17d866",
+        "hasVoted": true
+      },
+      {
+        "voter": "0x000000000000000000000000000000000000c102",
+        "support": 1,
+        "weight": "600000000000000000000",
+        "briefHash": "0x2ecef34abce2e1ce081dce8391c898805daba1489d18eb0a0e60541ec83759d0",
+        "hasVoted": true
+      },
+      {
+        "voter": "0x000000000000000000000000000000000000c103",
+        "support": 0,
+        "weight": "300000000000000000000",
+        "briefHash": "0xc06a2db4bb038b1aeb1d55c45152bd82d0e2a6ad0c8d78366d748153c254e22e",
+        "hasVoted": true
+      },
+      {
+        "voter": "0x000000000000000000000000000000000000a002",
+        "support": 2,
+        "weight": "100000000000000000000",
+        "briefHash": null,
+        "hasVoted": true
+      }
+    ]
+  },
+  {
+    "govId": "2",
+    "proposalId": "41",
+    "state": "Passed",
+    "stateCode": 4,
+    "versionHash": "0x70e5ea0c1268e01802969eae099644505d09d4f2a228db680691668b3bde376a",
+    "version": 1,
+    "commitment": "0x19cbd3ef0d24e96878c78f3349c9d7164502aaca747f1565d42449d6db5b9b16",
+    "actionsHash": "0xf911bb43d80867d73720d862065e0eb31bf204dcb8a65c12081af58b3b07c660",
+    "intentHash": "0x595acb5686582224c880d5e8833a7d46fede7713faa73b67c2c3b7deac3ace3b",
+    "disclosureHash": "0xddf04bb3c87c55ae974d06f49c96cd3f4b7ffd60f547fcff69dfaca708b5255a",
+    "voteStart": "2026-09-09T12:00:00.000Z",
+    "voteEnd": "2026-09-12T12:00:00.000Z",
+    "snapshotBlock": 48100,
+    "forVotes": "1800000000000000000000",
+    "againstVotes": "150000000000000000000",
+    "abstainVotes": "0",
+    "informedForVotes": "1500000000000000000000",
+    "totalBriefAcks": 2,
+    "quorum": "1000000000000000000000",
+    "proposer": "0x000000000000000000000000000000000000a001",
+    "quorumReached": true,
+    "informedRatio": 0.8333,
+    "votes": [
+      {
+        "voter": "0x000000000000000000000000000000000000c101",
+        "support": 1,
+        "weight": "900000000000000000000",
+        "briefHash": "0x1d1b0589f989e62e9dc98402ad6c2732cd17ae9f3457bac7b09fc590ef649ec2",
+        "hasVoted": true
+      },
+      {
+        "voter": "0x000000000000000000000000000000000000c102",
+        "support": 1,
+        "weight": "900000000000000000000",
+        "briefHash": "0x536a7a5d371dfca1328807fb0094dabde804202257cebca0790373adfd171807",
+        "hasVoted": true
+      },
+      {
+        "voter": "0x000000000000000000000000000000000000c103",
+        "support": 0,
+        "weight": "150000000000000000000",
+        "briefHash": null,
+        "hasVoted": true
+      }
+    ]
+  }
+]

@@ -1,0 +1,99 @@
+<section class="section" id="experience">
+  <div class="eyebrow">06 / Experience layer · Person B</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">Making the decision trail<br><span class="muted">something a human can inspect.</span></h2></div>
+    <span class="chip sig">b/judge-mode · ea78e84</span>
+  </div>
+  <p class="lead">The console is not a dashboard of opinions. It is a chain of evidence: each route answers one question, every number has a why, and the report is a reproducible artifact rather than a paragraph.</p>
+
+  <h3 style="margin-top:22px">Nine routes</h3>
+  <div class="routes" style="margin-top:10px">
+    <div class="route"><code>/</code><span>Verdict and four-stage Decision Trail</span></div>
+    <div class="route"><code>/intent</code><span>Claims, ambiguities, live rule set and hashes</span></div>
+    <div class="route"><code>/timeline</code><span>Hash-chained versions and evidence proofs</span></div>
+    <div class="route"><code>/graph</code><span>Disclosed vs discovered wallets; challenge payload</span></div>
+    <div class="route"><code>/vote</code><span>Risk brief, informed ballot, receipt</span></div>
+    <div class="route"><code>/arena</code><span>Eleven attacks, three layers, expected vs actual</span></div>
+    <div class="route"><code>/arena/[id]</code><span>Violation report; HTML/JSON takeaway</span></div>
+    <div class="route"><code>/scorecard</code><span>25 PASS · 0 FAIL · 9 TEST_REQUIRED</span></div>
+    <div class="route"><code>/present</code><span>Seven-slide offline deck; final slide downloads</span></div>
+  </div>
+
+  <h3 style="margin-top:24px">Decision Trail</h3>
+  <div class="stages">
+    <div class="stage"><div class="k">01 · Claims</div><div class="v green">0.81</div><p>GREEN · 6 source-linked claims · 2 ambiguities resolved</p></div>
+    <div class="stage"><div class="k">02 · COI risk</div><div class="v red">0.88</div><p>RED · 4 undisclosed links · noisy-OR above 0.65</p></div>
+    <div class="stage"><div class="k">03 · Voting</div><div class="v sig">0.71</div><p>AMBER · 59% informed · 1 FOR voter overlaps a flagged wallet</p></div>
+    <div class="stage"><div class="k">04 · Execution</div><div class="v red">GATE</div><p>RED · rejected by the executor · <code>SelectorNotAuthorized</code></p></div>
+  </div>
+  <p class="small muted" style="margin-top:7px">Claims and voting are advisory; COI is a risk score where higher is worse; execution is a binary gate with no score. A good average cannot unblock a rejected call.</p>
+
+  <div class="grid g2" style="margin-top:20px">
+    <div class="card accent"><h4>Judge Mode</h4><p>A guided spine over the same routes, not a separate demo. It starts at the verdict, walks seven stops, and finishes into the deck.</p><div class="judge"><span>01 /</span><span>02 /intent</span><span>03 /graph</span><span>04 /vote</span><span>05 /arena</span><span>06 report</span><span>07 /scorecard</span><span>finish → /present</span></div></div>
+    <div class="card"><h4>Presentation + takeaway</h4><p><code>/present</code> bypasses the shell and runs seven slides with arrow/space navigation and fullscreen. The last slide, like every report page, downloads a self-contained HTML report or a JSON bundle.</p><div class="tagrow"><span class="chip green">offline</span><span class="chip">keyboard</span><span class="chip">printable</span></div></div>
+  </div>
+
+  <div class="tagrow" style="margin-top:14px"><span class="chip green">57 tests / 9 files</span><span class="chip">25 PASS</span><span class="chip red">9 TEST_REQUIRED</span><span class="chip sig">25/0/9</span><span class="chip">reference executor</span></div>
+</section>
+
+<section class="section" id="artifact">
+  <div class="eyebrow">07 / The artifact</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">One report.<br><span class="muted">Quote, call, constraint, evidence.</span></h2></div>
+    <span class="chip red">primary demo report</span>
+  </div>
+  <p class="lead">This is what the experience exists to produce. The proposal used implementation language; the queued call is an uncommitted upgrade. The report makes both visible in the same frame and names the violated constraint.</p>
+
+  <div class="artifact">
+    <div class="side">
+      <h4>The proposal said</h4>
+      <div class="quote">&ldquo;We will align the treasury implementation with the program&rsquo;s delivery roadmap during the grant period.&rdquo;</div>
+      <div class="tagrow"><span class="chip">§5 · implementation note</span><span class="chip">human text</span></div>
+    </div>
+    <div class="mid">≠</div>
+    <div class="side red">
+      <h4 style="color:var(--danger)">The queued call does</h4>
+      <div class="decode">upgradeTo()</div>
+      <div class="decode-human">Upgrades TreasuryProxy to implementation 0xf7A1…2337</div>
+      <div class="tagrow"><span class="chip">target · TreasuryProxy</span><span class="chip">implementation · 0xf7A1…2337</span></div>
+      <div class="constraint">SelectorNotAuthorized · 0x1420732b</div>
+    </div>
+  </div>
+
+  <div class="evidence">
+    <div><div class="k">Approved commitment</div><div class="v">0xb78b…16d755</div></div>
+    <div><div class="k">Submitted commitment</div><div class="v">0xd9d2…c458a</div></div>
+    <div><div class="k">Committed vs submitted</div><div class="v">3 actions / 1 call · differ</div></div>
+  </div>
+  <div class="tagrow" style="margin-top:10px"><span class="chip">revert data included</span><span class="chip">simulated tx hash</span><span class="chip">deterministic code, not prose</span><span class="chip green">download HTML / JSON</span></div>
+  <p class="small faint" style="margin-top:8px">The HTML report repeats the quote, decoded call, every gate, the violated constraint, the evidence hashes and the reference-model disclosure; the JSON is the machine bundle.</p>
+</section>
+
+<section class="section" id="attacks">
+  <div class="eyebrow">08 / Attack map</div>
+  <div class="section-head">
+    <div><h2 style="margin-top:12px">Eleven attacks.<br><span class="muted">Three different claims.</span></h2></div>
+    <span class="chip">executor · sentinel · disclosure</span>
+  </div>
+  <p class="lead">Every row carries its layer. “Rejected by the executor,” “simulation detected” and “disclosure challenge filed” are different claims and must never be visually merged.</p>
+
+  <div style="overflow-x:auto; margin-top:12px">
+    <table class="attack">
+      <thead><tr><th>#</th><th>Attack</th><th>Layer</th><th>Expected verdict</th><th>What it proves</th></tr></thead>
+      <tbody>
+        <tr><td class="id">00</td><td>Benign grant</td><td><span class="layer">executor</span></td><td class="pass">PASSED</td><td>Exact committed bundle executes</td></tr>
+        <tr><td class="id">01</td><td>Recipient substitution</td><td><span class="layer">executor</span></td><td class="rej">UnauthorizedRecipient</td><td>Counterparty is in the commitment</td></tr>
+        <tr><td class="id">02</td><td>Amount inflation</td><td><span class="layer">executor</span></td><td class="rej">ExceedsSpendLimit</td><td>Ceilings are per rule</td></tr>
+        <tr><td class="id">03</td><td>Jargon upgrade</td><td><span class="layer">executor</span></td><td class="rej">SelectorNotAuthorized</td><td>No uncommitted function</td></tr>
+        <tr><td class="id">04</td><td>Nested ownership</td><td><span class="layer">executor</span></td><td class="rej">NestedCallNotAuthorized</td><td>Recursive child enforcement</td></tr>
+        <tr><td class="id">05</td><td>Unlimited approve</td><td><span class="layer">executor</span></td><td class="rej">ExceedsAllowance</td><td>Allowance ceiling</td></tr>
+        <tr><td class="id">06</td><td>Delegatecall payload</td><td><span class="layer sentinel">sentinel</span></td><td class="flag">DelegatecallDetected</td><td>Simulation flags before execution</td></tr>
+        <tr><td class="id">07</td><td>Re-entrancy</td><td><span class="layer">executor</span></td><td class="rej">ReentrancyDetected</td><td>Re-entrant recipient blocked</td></tr>
+        <tr><td class="id">08</td><td>Early / replay</td><td><span class="layer">executor</span></td><td class="rej">TimelockNotElapsed</td><td>Time and execution flags</td></tr>
+        <tr><td class="id">09</td><td>Stale version</td><td><span class="layer">executor</span></td><td class="rej">StaleVersion</td><td>Superseded commitment refused</td></tr>
+        <tr><td class="id">10</td><td>Undisclosed COI</td><td><span class="layer disclosure">disclosure</span></td><td class="flag">UndisclosedLink</td><td>Graph evidence flags the proposal</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tagrow" style="margin-top:12px"><span class="chip green">11/11 match expected in B</span><span class="chip">B runs precomputed steps; no live execution</span><a class="chip sig" href="atlas/02-experience-layer.md">experience source doc →</a></div>
+</section>

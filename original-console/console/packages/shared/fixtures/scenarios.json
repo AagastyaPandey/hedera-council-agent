@@ -1,0 +1,402 @@
+[
+  {
+    "id": "00-benign-grant",
+    "index": 0,
+    "title": "Benign grant disbursement",
+    "subtitle": "The approved bundle executes exactly as committed.",
+    "layer": "executor",
+    "mode": "approved",
+    "calls": [],
+    "context": {
+      "chainId": 31337,
+      "expectedChainId": 31337,
+      "submittedVersion": 3,
+      "latestVersion": 3,
+      "executed": false,
+      "now": 1792915200,
+      "eta": 1792893600,
+      "blockNumber": 18422901,
+      "recipientBehavior": null,
+      "sentinel": null,
+      "disclosure": null
+    },
+    "expected": {
+      "status": "PASSED",
+      "code": "OK",
+      "label": "Executed as committed"
+    },
+    "proposalSaid": "Two one-time grants and a bounded allowance, paid from the treasury.",
+    "attackDescription": "No attack. The queued bundle is the approved bundle.",
+    "modelNote": null
+  },
+  {
+    "id": "01-recipient-substitution",
+    "index": 1,
+    "title": "Post-vote recipient substitution",
+    "subtitle": "The 200,000 USDC transfer is redirected after the vote.",
+    "layer": "executor",
+    "mode": "attack",
+    "calls": [
+      {
+        "kind": "ERC20_TRANSFER",
+        "target": "0xcEd3aa37e925F42ef2400b51029A142637923445",
+        "counterparty": "0x2266DA7D2eE9c7Bf4403e269546Cad1eC0E65df2",
+        "amount": "200000000000",
+        "note": "Recipient changed to an unrecognized wallet."
+      }
+    ],
+    "context": {
+      "chainId": 31337,
+      "expectedChainId": 31337,
+      "submittedVersion": 3,
+      "latestVersion": 3,
+      "executed": false,
+      "now": 1792915200,
+      "eta": 1792893600,
+      "blockNumber": 18422901,
+      "recipientBehavior": null,
+      "sentinel": null,
+      "disclosure": null
+    },
+    "expected": {
+      "status": "REJECTED",
+      "code": "UnauthorizedRecipient",
+      "label": "Recipient not in commitment"
+    },
+    "proposalSaid": "200,000 USDC to the GrowthLabs multisig as a one-time ecosystem grant.",
+    "attackDescription": "Swap the recipient for an attacker wallet while keeping the amount and selector identical.",
+    "modelNote": null
+  },
+  {
+    "id": "02-amount-inflation",
+    "index": 2,
+    "title": "Amount inflation",
+    "subtitle": "The same recipient, 4.5× the approved amount.",
+    "layer": "executor",
+    "mode": "attack",
+    "calls": [
+      {
+        "kind": "ERC20_TRANSFER",
+        "target": "0xcEd3aa37e925F42ef2400b51029A142637923445",
+        "counterparty": "0x2DFCD12F1b34DA6a6E87840b1c3eFCF391b9bC15",
+        "amount": "900000000000",
+        "note": "900,000 USDC instead of 200,000."
+      }
+    ],
+    "context": {
+      "chainId": 31337,
+      "expectedChainId": 31337,
+      "submittedVersion": 3,
+      "latestVersion": 3,
+      "executed": false,
+      "now": 1792915200,
+      "eta": 1792893600,
+      "blockNumber": 18422901,
+      "recipientBehavior": null,
+      "sentinel": null,
+      "disclosure": null
+    },
+    "expected": {
+      "status": "REJECTED",
+      "code": "ExceedsSpendLimit",
+      "label": "Above committed spend limit"
+    },
+    "proposalSaid": "The grant is a one-time payment of 200,000 USDC.",
+    "attackDescription": "Keep the recipient and calldata shape, but inflate the amount beyond the committed ceiling.",
+    "modelNote": null
+  },
+  {
+    "id": "03-jargon-upgrade",
+    "index": 3,
+    "title": "Jargon upgrade",
+    "subtitle": "\"Implementation alignment\" becomes an uncommitted upgradeTo call.",
+    "layer": "executor",
+    "mode": "attack",
+    "calls": [
+      {
+        "kind": "UPGRADE",
+        "target": "0xC4F32e9eb19Bd57cC6b2ca285b24eE8b7809F031",
+        "counterparty": "0xf7A1C361A37D7402DDe824d62326d06947942337",
+        "amount": "0",
+        "note": "Upgrades TreasuryProxy to an unrecognized implementation."
+      }
+    ],
+    "context": {
+      "chainId": 31337,
+      "expectedChainId": 31337,
+      "submittedVersion": 3,
+      "latestVersion": 3,
+      "executed": false,
+      "now": 1792915200,
+      "eta": 1792893600,
+      "blockNumber": 18422901,
+      "recipientBehavior": null,
+      "sentinel": null,
+      "disclosure": null
+    },
+    "expected": {
+      "status": "REJECTED",
+      "code": "SelectorNotAuthorized",
+      "label": "Function never committed"
+    },
+    "proposalSaid": "We will align the treasury implementation with the program's delivery roadmap during the grant period.",
+    "attackDescription": "Turn the vague implementation language into an upgradeTo(maliciousImpl) transaction.",
+    "modelNote": null
+  },
+  {
+    "id": "04-nested-ownership",
+    "index": 4,
+    "title": "Hidden ownership transfer in a multicall",
+    "subtitle": "A valid payment wraps an ownership transfer the proposal never mentioned.",
+    "layer": "executor",
+    "mode": "attack",
+    "calls": [
+      {
+        "kind": "MULTICALL",
+        "target": "0xa0FcFBC6c4183988dFb757Cae256A31105436536",
+        "counterparty": "0x0000000000000000000000000000000000000000",
+        "amount": "0",
+        "children": [
+          {
+            "kind": "ERC20_TRANSFER",
+            "target": "0xcEd3aa37e925F42ef2400b51029A142637923445",
+            "counterparty": "0x2DFCD12F1b34DA6a6E87840b1c3eFCF391b9bC15",
+            "amount": "200000000000"
+          },
+          {
+            "kind": "OWNERSHIP_TRANSFER",
+            "target": "0xC4F32e9eb19Bd57cC6b2ca285b24eE8b7809F031",
+            "counterparty": "0x2266DA7D2eE9c7Bf4403e269546Cad1eC0E65df2",
+            "amount": "0"
+          }
+        ],
+        "note": "Child 1 is legitimate; child 2 transfers ownership of the treasury proxy."
+      }
+    ],
+    "context": {
+      "chainId": 31337,
+      "expectedChainId": 31337,
+      "submittedVersion": 3,
+      "latestVersion": 3,
+      "executed": false,
+      "now": 1792915200,
+      "eta": 1792893600,
+      "blockNumber": 18422901,
+      "recipientBehavior": null,
+      "sentinel": null,
+      "disclosure": null
+    },
+    "expected": {
+      "status": "REJECTED",
+      "code": "NestedCallNotAuthorized",
+      "label": "Hidden child call"
+    },
+    "proposalSaid": "Two one-time grants and a bounded allowance. No ownership change is proposed.",
+    "attackDescription": "Batch the approved transfer with transferOwnership(attacker) inside a multicall.",
+    "modelNote": null
+  },
+  {
+    "id": "05-unbounded-approve",
+    "index": 5,
+    "title": "Unlimited approve disguised as payment setup",
+    "subtitle": "The allowance ceiling is replaced with uint256.max.",
+    "layer": "executor",
+    "mode": "attack",
+    "calls": [
+      {
+        "kind": "ERC20_APPROVE",
+        "target": "0xcEd3aa37e925F42ef2400b51029A142637923445",
+        "counterparty": "0x667C5b75390946b010F14FC124a92cBEf4146889",
+        "amount": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+        "note": "Unlimited allowance to the same spender."
+      }
+    ],
+    "context": {
+      "chainId": 31337,
+      "expectedChainId": 31337,
+      "submittedVersion": 3,
+      "latestVersion": 3,
+      "executed": false,
+      "now": 1792915200,
+      "eta": 1792893600,
+      "blockNumber": 18422901,
+      "recipientBehavior": null,
+      "sentinel": null,
+      "disclosure": null
+    },
+    "expected": {
+      "status": "REJECTED",
+      "code": "ExceedsAllowance",
+      "label": "Above allowance ceiling"
+    },
+    "proposalSaid": "A bounded 5,000 USDC allowance for review costs, with no other spending authority.",
+    "attackDescription": "Keep the approved spender, but replace the 5,000 USDC ceiling with an unlimited allowance.",
+    "modelNote": null
+  },
+  {
+    "id": "06-delegatecall-payload",
+    "index": 6,
+    "title": "Delegatecall payload",
+    "subtitle": "An upgradeToAndCall payload hides a DELEGATECALL in the new implementation.",
+    "layer": "sentinel",
+    "mode": "attack",
+    "calls": [
+      {
+        "kind": "UPGRADE",
+        "target": "0xC4F32e9eb19Bd57cC6b2ca285b24eE8b7809F031",
+        "counterparty": "0xf7A1C361A37D7402DDe824d62326d06947942337",
+        "amount": "0",
+        "variant": "upgradeToAndCall",
+        "extraData": "0xdeada11e0000000000000000000000000000000000000000000000000000000000000001",
+        "note": "Upgrade + initialization payload that calls back into attacker-controlled code."
+      }
+    ],
+    "context": {
+      "chainId": 31337,
+      "expectedChainId": 31337,
+      "submittedVersion": 3,
+      "latestVersion": 3,
+      "executed": false,
+      "now": 1792915200,
+      "eta": 1792893600,
+      "blockNumber": 18422901,
+      "recipientBehavior": null,
+      "sentinel": {
+        "flag": "DELEGATECALL",
+        "traceFile": "sentinel-trace-06.json"
+      },
+      "disclosure": null
+    },
+    "expected": {
+      "status": "FLAGGED",
+      "code": "DelegatecallDetected",
+      "label": "Simulation detected"
+    },
+    "proposalSaid": "We will align the treasury implementation with the program's delivery roadmap during the grant period.",
+    "attackDescription": "Upgrade the proxy and immediately execute an initialization payload that performs a delegatecall.",
+    "modelNote": "The trace is a fixture from the Sentinel output shape. Fork simulation is Person A's deliverable."
+  },
+  {
+    "id": "07-reentrancy",
+    "index": 7,
+    "title": "Re-entrancy via recipient contract",
+    "subtitle": "The approved recipient calls back into the executor during the transfer.",
+    "layer": "executor",
+    "mode": "approved",
+    "calls": [],
+    "context": {
+      "chainId": 31337,
+      "expectedChainId": 31337,
+      "submittedVersion": 3,
+      "latestVersion": 3,
+      "executed": false,
+      "now": 1792915200,
+      "eta": 1792893600,
+      "blockNumber": 18422901,
+      "recipientBehavior": "REENTRANT",
+      "sentinel": null,
+      "disclosure": null
+    },
+    "expected": {
+      "status": "REJECTED",
+      "code": "ReentrancyDetected",
+      "label": "Re-entrant call blocked"
+    },
+    "proposalSaid": "Funds are released to the GrowthLabs multisig after the vote.",
+    "attackDescription": "The recipient contract attempts to re-enter the executor during the token transfer.",
+    "modelNote": "Reentrancy is modeled from a recipient-contract probe. The on-chain nonReentrant guard is Solidity-side and remains TEST_REQUIRED."
+  },
+  {
+    "id": "08-early-execution",
+    "index": 8,
+    "title": "Early execution and replay",
+    "subtitle": "The same bundle is submitted before the timelock elapses.",
+    "layer": "executor",
+    "mode": "approved",
+    "calls": [],
+    "context": {
+      "chainId": 31337,
+      "expectedChainId": 31337,
+      "submittedVersion": 3,
+      "latestVersion": 3,
+      "executed": false,
+      "now": 1792886400,
+      "eta": 1792893600,
+      "blockNumber": 18422301,
+      "recipientBehavior": null,
+      "sentinel": null,
+      "disclosure": null
+    },
+    "expected": {
+      "status": "REJECTED",
+      "code": "TimelockNotElapsed",
+      "label": "Timelock not elapsed"
+    },
+    "proposalSaid": "This proposal uses the standard 48-hour timelock.",
+    "attackDescription": "Submit the approved bundle two hours before the timelock expires. Double execution and cross-chain replay use the same gate.",
+    "modelNote": "The reference model checks chain id, executed flag, and timelock before decoding the call. Double execution is covered by unit tests."
+  },
+  {
+    "id": "09-stale-version",
+    "index": 9,
+    "title": "Stale version after supersession",
+    "subtitle": "A superseded v2 bundle is submitted after v3 was committed.",
+    "layer": "executor",
+    "mode": "approved",
+    "calls": [],
+    "context": {
+      "chainId": 31337,
+      "expectedChainId": 31337,
+      "submittedVersion": 2,
+      "latestVersion": 3,
+      "executed": false,
+      "now": 1792915200,
+      "eta": 1792893600,
+      "blockNumber": 18422901,
+      "recipientBehavior": null,
+      "sentinel": null,
+      "disclosure": null
+    },
+    "expected": {
+      "status": "REJECTED",
+      "code": "StaleVersion",
+      "label": "Superseded version"
+    },
+    "proposalSaid": "Version 3 clarified the implementation scope and remains the committed version.",
+    "attackDescription": "Execute a bundle signed for version 2 after version 3 superseded it.",
+    "modelNote": null
+  },
+  {
+    "id": "10-undisclosed-link",
+    "index": 10,
+    "title": "Undisclosed conflict of interest",
+    "subtitle": "A funding path connects the proposer to the recipient's deployer.",
+    "layer": "disclosure",
+    "mode": "challenge",
+    "calls": [],
+    "context": {
+      "chainId": 31337,
+      "expectedChainId": 31337,
+      "submittedVersion": 3,
+      "latestVersion": 3,
+      "executed": false,
+      "now": 1792915200,
+      "eta": 1792893600,
+      "blockNumber": 18422901,
+      "recipientBehavior": null,
+      "sentinel": null,
+      "disclosure": {
+        "challenge": true,
+        "linkIds": ["l1", "l2", "l3", "l4"]
+      }
+    },
+    "expected": {
+      "status": "FLAGGED",
+      "code": "UndisclosedLink",
+      "label": "Disclosure challenge filed"
+    },
+    "proposalSaid": "No other proposer-controlled wallet has a material relationship with a recipient.",
+    "attackDescription": "The disclosure omits Nova Ops, a wallet funded by the proposer that funded the GrowthLabs deployer.",
+    "modelNote": "The challenge payload is generated by B. DisclosureRegistry verification and the challenge window are Person A's contracts."
+  }
+]

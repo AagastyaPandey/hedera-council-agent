@@ -1,0 +1,93 @@
+{
+  "simulated": true,
+  "formula": "R = 1 - Π(1 - s_j), s_j adjusted by disclosure status",
+  "proposalId": "sim-42",
+  "snapshotAt": "2026-09-12T00:00:00.000Z",
+  "subject": {
+    "proposer": "0x000000000000000000000000000000000000a001",
+    "proposerLabel": "Proposer Council Safe",
+    "counterparty": "0x000000000000000000000000000000000000b001",
+    "counterpartyLabel": "Development Wallet (undisclosed)"
+  },
+  "disclosure": {
+    "walletListHash": "0x69ff2b4fa5dc9a9211e9e0eb625ad1ff2bbc7a88a679d27ada793fff7f05851b",
+    "disclosedWallets": [
+      "0x000000000000000000000000000000000000a001",
+      "0x000000000000000000000000000000000000a002",
+      "0x000000000000000000000000000000000000d001"
+    ]
+  },
+  "links": [
+    {
+      "id": "deployer-0x000000000000000000000000000000000000c002",
+      "type": "SHARED_DEPLOYER",
+      "from": "0x000000000000000000000000000000000000c002",
+      "to": "0x000000000000000000000000000000000000b001",
+      "disclosed": false,
+      "rawStrength": 0.7,
+      "strength": 0.84,
+      "evidenceTxHashes": [
+        "0x0dff175ec9b88ce77cb5420bf68622462df7460adc216fc7403bc8aca4bec836",
+        "0x9e9ea278d418ab955a401ca8f8c964309300cce93a9ad2cb06fa3f31f4b532d6"
+      ],
+      "description": "Shared deployer/signer: Shared Deployer provisioned both the proposer and the payment recipient."
+    },
+    {
+      "id": "funder-0x000000000000000000000000000000000000c001",
+      "type": "COMMON_FUNDER",
+      "from": "0x000000000000000000000000000000000000c001",
+      "to": "0x000000000000000000000000000000000000b001",
+      "disclosed": false,
+      "rawStrength": 0.65,
+      "strength": 0.78,
+      "evidenceTxHashes": [
+        "0xab8838881371dd65afde68db3b531373036bc2be3f8d7612dad6c98b82a79d6c",
+        "0x0edcfeef3d58467a1a2c74e789f5560fcc0d026c3924d96ebc384160d50537aa"
+      ],
+      "description": "Common funder: Shared Funder funded both the proposer and the payment recipient."
+    },
+    {
+      "id": "time-proposer-to-intermediary-intermediary-to-recipient",
+      "type": "TIME_CORRELATED",
+      "from": "0x000000000000000000000000000000000000a001",
+      "to": "0x000000000000000000000000000000000000b001",
+      "disclosed": false,
+      "rawStrength": 0.45,
+      "strength": 0.54,
+      "evidenceTxHashes": [
+        "0x67257865d7ebc9bf2ff6b6c218fa6a3cde704d67872c0d728f0717f15db157f7",
+        "0xd1b9b7c21eb7f13314e4ff5b84305048d4ede81c63b90067ca0f8b31f86632ae"
+      ],
+      "description": "Time-correlated hop: 0x00000000… sent 25000.0 USDC to Intermediary Wallet 6 min before a similar 24500.0 USDC transfer reached the payment recipient."
+    },
+    {
+      "id": "direct-treasury-disclosed-grant",
+      "type": "DIRECT_TRANSFER",
+      "from": "0x000000000000000000000000000000000000a002",
+      "to": "0x000000000000000000000000000000000000b001",
+      "disclosed": true,
+      "rawStrength": 0.9,
+      "strength": 0.135,
+      "evidenceTxHashes": [
+        "0x0df9864b12bd5b66c16bd1c4b10a5e5ac36fde48ed8b7569f5055ddcca0e3eb8"
+      ],
+      "description": "Direct transfer from DAO Treasury to the payment recipient."
+    }
+  ],
+  "overallRisk": 0.986,
+  "disclosedRisk": 0.135,
+  "undisclosedRisk": 0.9838,
+  "riskBand": "CRITICAL",
+  "caveats": [
+    "All wallet, transaction, and amount data is SIMULATED.",
+    "A link is a potential conflict, not proof of intent or wrongdoing.",
+    "Disclosed links are discounted; undisclosed links carry the undisclosed multiplier.",
+    "The challenge payload is advisory evidence for the DisclosureRegistry; the verifier decides."
+  ],
+  "challengePayload": {
+    "proposalId": "sim-42",
+    "linkEvidenceHash": "0x67fbb1b97de3346c500658a0a1370ae6aedbe3b8b37d8622346930928c986d89",
+    "reason": "Potential undisclosed conflict of interest: 3 undisclosed link(s) between the proposer and the payment recipient (SHARED_DEPLOYER, COMMON_FUNDER, TIME_CORRELATED). Supporting transactions attached; all data is simulated.",
+    "canonicalEvidence": "proposal=sim-42|COMMON_FUNDER:0x0edcfeef3d58467a1a2c74e789f5560fcc0d026c3924d96ebc384160d50537aa+0xab8838881371dd65afde68db3b531373036bc2be3f8d7612dad6c98b82a79d6c|SHARED_DEPLOYER:0x0dff175ec9b88ce77cb5420bf68622462df7460adc216fc7403bc8aca4bec836+0x9e9ea278d418ab955a401ca8f8c964309300cce93a9ad2cb06fa3f31f4b532d6|TIME_CORRELATED:0x67257865d7ebc9bf2ff6b6c218fa6a3cde704d67872c0d728f0717f15db157f7+0xd1b9b7c21eb7f13314e4ff5b84305048d4ede81c63b90067ca0f8b31f86632ae"
+  }
+}

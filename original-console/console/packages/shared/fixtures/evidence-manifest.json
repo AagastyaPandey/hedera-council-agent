@@ -1,0 +1,65 @@
+{
+  "root": "0x7e4bcf6fb4c0994e05650275ecbe03da44789ba17d34c6df998a13973658c16c",
+  "generator": "scripts/build-evidence.ts",
+  "generatedAt": "2026-10-25T08:23:34.448Z",
+  "docs": [
+    {
+      "key": "forum-post",
+      "title": "AIP-042 forum post",
+      "filename": "forum-post.md",
+      "mime": "text/markdown",
+      "pageCount": 1,
+      "text": "# AIP-042 — Ecosystem Growth Grant: GrowthLabs × Developer Guild\n\n**Author:** Nova Labs (proposer)\n**Posted:** 12 October 2026\n**Snapshot:** aegis.forum/t/aip-042\n**Requested:** 250,000 USDC from the AegisDAO treasury\n\n## 1. Why now\n\nAegisDAO's ecosystem is growing faster than its grant operations. Two established teams have asked for multi-month funding, and the current one-off proposal process takes three weeks per grant. This proposal funds a single six-month growth program and the tooling that supports it.\n\n## 2. What this proposal funds\n\n- **GrowthLabs — 200,000 USDC (one-time).** GrowthLabs will run a six-month ecosystem growth program: developer onboarding, regional meetups, and a grant-matching pool. Funds are released to the GrowthLabs multisig after the vote and are not milestone-gated at the protocol level.\n- **Developer Guild — 50,000 USDC (one-time).** The Developer Guild will maintain contributor tooling, documentation, and the public SDK.\n- **TreasuryOps allowance — 5,000 USDC ceiling.** A bounded allowance for review costs, with no other spending authority.\n\nThe grant is a one-time payment. It is not a recurring commitment, and no future payment is implied.\n\n## 3. Treasury impact\n\nAt today's balance of 1,200,000 USDC and a monthly operating burn of 122,000 USDC, the requested 250,000 USDC leaves approximately 7.8 months of runway. The full model is attached as `financial-model.csv`.\n\n## 4. Delivery\n\nGrowthLabs will publish quarterly milestone reports. The external letter from GrowthLabs describes the program scope and the disbursement plan. The Developer Guild reports through its existing monthly contributor call.\n\n## 5. Implementation note\n\nTo support programmatic disbursement at scale, we will align the treasury implementation with the program's delivery roadmap during the grant period. This is an operational alignment, not a change to the treasury's custody model.\n\n## 6. Disclosure\n\nThe proposer's disclosed wallets are listed in the attached disclosure. Voting opens after the disclosure window closes. Any undisclosed link between the proposer and a recipient is a material governance risk.\n\n## 7. Voting\n\nThis proposal uses the standard 48-hour timelock. It is queued for execution only if the commitment passes and no verified disclosure challenge is open.\n",
+      "bytes": 2322,
+      "docHash": "0xab1aa52289307dcfce5291a24eb040e3d0c304c1a7ae6f510514390ef8a01fe1"
+    },
+    {
+      "key": "growthlabs-letter",
+      "title": "GrowthLabs grant letter",
+      "filename": "growthlabs-letter.md",
+      "mime": "text/markdown",
+      "pageCount": 2,
+      "text": "# GrowthLabs — grant program letter\n\n**To:** AegisDAO governance\n**From:** GrowthLabs\n**Date:** 8 October 2026\n\n## Scope\n\nGrowthLabs proposes a six-month ecosystem program covering developer onboarding, four regional meetups, and a matching pool for small grants. The program is operated by the GrowthLabs multisig and reported quarterly.\n\n## Disbursement\n\nGrowthLabs requests a single disbursement of 200,000 USDC to the GrowthLabs multisig. This is a single disbursement, not a recurring grant. No further payment is requested in this proposal.\n\n## Reporting\n\nQuarterly reports will cover attendance, matched grants, and remaining program funds. Reports are published on the GrowthLabs forum account.\n\n## Infrastructure\n\nGrowthLabs will use the DAO's existing treasury infrastructure. \"Programmatic disbursement\" refers to off-chain reporting automation; it does not request any change to on-chain contracts.\n",
+      "bytes": 913,
+      "docHash": "0x16f5a1d9763d51596c1423065bf53011ca55d11ef15cb53f94775ef617ac28d5"
+    },
+    {
+      "key": "financial-model",
+      "title": "Financial assumptions",
+      "filename": "financial-model.csv",
+      "mime": "text/csv",
+      "pageCount": 1,
+      "text": "item,value,unit,note\ntreasury_balance_usdc,1200000,USDC,balance at 2026-10-01\nmonthly_operating_burn_usdc,122000,USDC,trailing three-month average\nrunway_before_months,9.8,months,treasury_balance / monthly_burn\ngrant_to_growthlabs_usdc,200000,USDC,one-time\ngrant_to_developer_guild_usdc,50000,USDC,one-time\nallowance_ceiling_usdc,5000,USDC,TreasuryOps review costs\nrunway_after_months,7.8,months,(balance - grants) / monthly_burn\n",
+      "bytes": 430,
+      "docHash": "0x42806aac42f056bdd036066704fc75b8fdf7d24c45cd5128a71e751afa4e2e01"
+    },
+    {
+      "key": "technical-assessment",
+      "title": "Technical assessment",
+      "filename": "technical-assessment.md",
+      "mime": "text/markdown",
+      "pageCount": 2,
+      "text": "# Technical assessment — AIP-042\n\n**Author:** Nova Labs engineering\n**Date:** 13 October 2026\n\n## Scope of the proposal\n\nThis proposal authorizes three actions: a 200,000 USDC transfer to the GrowthLabs multisig, a 50,000 USDC transfer to the Developer Guild, and a 5,000 USDC allowance ceiling for TreasuryOps. No other call is authorized.\n\n## Treasury implementation\n\nThe TreasuryProxy remains in place. No implementation upgrade is authorized by this proposal. Any upgrade requires a separate AIP, a new intent, and a new commitment. The phrase \"implementation alignment\" in the forum post refers to off-chain delivery tooling, not an on-chain upgrade.\n\n## Post-conditions\n\nThe executor must verify that the treasury owner is unchanged, that the TreasuryOps allowance never exceeds 5,000 USDC, and that the treasury balance decreases by no more than 250,000 USDC. Any transaction that fails these conditions must revert in full.\n\n## Open question\n\nThe proposal text does not specify whether the 200,000 USDC payment is a single transfer or a recurring quarterly schedule. This must be resolved before the intent can be committed.\n",
+      "bytes": 1135,
+      "docHash": "0x11834ceafd93de250edeeab90c1ee975990fc4aaab618353f0d6bb6d11694706"
+    }
+  ],
+  "proofs": {
+    "forum-post": [
+      "0x16f5a1d9763d51596c1423065bf53011ca55d11ef15cb53f94775ef617ac28d5",
+      "0xdc4bf3d48ec3ee513513254f78bc192c5d9a5621200c2915803174020eb6ca35"
+    ],
+    "growthlabs-letter": [
+      "0xab1aa52289307dcfce5291a24eb040e3d0c304c1a7ae6f510514390ef8a01fe1",
+      "0xdc4bf3d48ec3ee513513254f78bc192c5d9a5621200c2915803174020eb6ca35"
+    ],
+    "financial-model": [
+      "0x11834ceafd93de250edeeab90c1ee975990fc4aaab618353f0d6bb6d11694706",
+      "0xa493a638ceda0c25858ec566cbf4a83db210d21160b2bba5dd1dd64a06da834f"
+    ],
+    "technical-assessment": [
+      "0x42806aac42f056bdd036066704fc75b8fdf7d24c45cd5128a71e751afa4e2e01",
+      "0xa493a638ceda0c25858ec566cbf4a83db210d21160b2bba5dd1dd64a06da834f"
+    ]
+  }
+}

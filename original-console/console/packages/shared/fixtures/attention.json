@@ -1,0 +1,38 @@
+[
+  {
+    "id": "AIP-042",
+    "title": "Ecosystem Growth Grant",
+    "requestedUsdc": "250000",
+    "postedAt": "2026-10-12",
+    "claims": 0.81,
+    "coi": 0.88,
+    "voting": 0.71,
+    "execution": "RED",
+    "state": "EXECUTION BLOCKED",
+    "youAreHere": true
+  },
+  {
+    "id": "AIP-041",
+    "title": "Grants Committee Renewal",
+    "requestedUsdc": "80000",
+    "postedAt": "2026-10-04",
+    "claims": 0.72,
+    "coi": 0.47,
+    "voting": 0.61,
+    "execution": "AMBER",
+    "state": "IN REVIEW",
+    "youAreHere": false
+  },
+  {
+    "id": "AIP-039",
+    "title": "Fee Switch v2",
+    "requestedUsdc": "0",
+    "postedAt": "2026-09-18",
+    "claims": 0.94,
+    "coi": 0.18,
+    "voting": 0.86,
+    "execution": "GREEN",
+    "state": "LOW RISK",
+    "youAreHere": false
+  }
+]

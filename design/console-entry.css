@@ -1,0 +1,4 @@
+/* Entry for the console stylesheet. aegis-console.css is the original console stylesheet, unmodified
+   (CODE_TANTRAFEST console/app/globals.css). Tailwind generates its utilities from the console markup. */
+@import "./aegis-console.css";
+@source "../public/console.html";

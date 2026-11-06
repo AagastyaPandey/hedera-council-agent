@@ -1,0 +1,387 @@
+{
+  "1": {
+    "proposalId": "1",
+    "network": "local",
+    "chainId": 31337,
+    "blockNumber": 271,
+    "simulatedAt": "2026-10-25T21:11:50.859Z",
+    "status": "OK",
+    "actions": [
+      {
+        "target": "0x7A9Ec1d04904907De0ED7b6839CcdD59c3716AC9",
+        "targetLabel": "MockUSDC",
+        "function": "transfer(address,uint256)",
+        "args": {
+          "to": "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+          "value": "5000000000"
+        },
+        "argumentLabels": {
+          "to": "Dev wallet"
+        },
+        "humanText": "Calls transfer(0x14dC7996…9955, 5000000000) on MockUSDC",
+        "nested": []
+      }
+    ],
+    "effects": [
+      {
+        "kind": "TOKEN_BALANCE",
+        "subject": "0x14dc79964da2c08b23698b3d3cc7ca32193d9955",
+        "label": "Dev wallet · MockUSDC",
+        "before": "5000000000",
+        "after": "10000000000",
+        "delta": "+5000000000",
+        "severity": "EXPECTED",
+        "matchedRuleIndex": 0,
+        "explanation": "The simulated transfer moves 5000000000 base units, within committed rule 0 (Transfer up to 5000000000 from MockUSDC to Dev wallet)."
+      },
+      {
+        "kind": "TOKEN_BALANCE",
+        "subject": "0xa4899d35897033b927acfcf422bc745916139776",
+        "label": "IntentLockExecutor · MockUSDC",
+        "before": "495000000000",
+        "after": "490000000000",
+        "delta": "-5000000000",
+        "severity": "EXPECTED",
+        "matchedRuleIndex": 0,
+        "explanation": "The simulated transfer moves 5000000000 base units, within committed rule 0 (Transfer up to 5000000000 from MockUSDC to Dev wallet)."
+      }
+    ],
+    "statedVsSimulated": {
+      "statedSummary": "Transfer up to 5000000000 from MockUSDC to Dev wallet",
+      "mismatchCount": 0,
+      "mismatches": []
+    },
+    "traceFindings": [],
+    "unobserved": [
+      "after: could not read owner() on 0x49fd2BE640DB2910c2fAb69bB8531Ab6E76127ff: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "after: could not read owner() on 0x7A9Ec1d04904907De0ED7b6839CcdD59c3716AC9: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "after: could not read owner() on 0xA4899D35897033b927acFCf422bc745916139776: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "after: could not read owner() on 0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "before: could not read owner() on 0x49fd2BE640DB2910c2fAb69bB8531Ab6E76127ff: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "before: could not read owner() on 0x7A9Ec1d04904907De0ED7b6839CcdD59c3716AC9: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "before: could not read owner() on 0xA4899D35897033b927acFCf422bc745916139776: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "before: could not read owner() on 0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d: Error: Transaction reverted: function selector was not recognized and there's no fallback function"
+    ],
+    "previewHash": "0x59f26616fc3f14989fc494e2b2dcefc3f51875918f74dda39464ddd43fa4f6ab"
+  },
+  "2": {
+    "proposalId": "2",
+    "network": "local",
+    "chainId": 31337,
+    "blockNumber": 271,
+    "simulatedAt": "2026-10-25T21:11:51.942Z",
+    "status": "OK",
+    "actions": [
+      {
+        "target": "0x5c74c94173F05dA1720953407cbb920F3DF9f887",
+        "targetLabel": "FeeModule",
+        "function": "setFee(uint256)",
+        "args": {
+          "newFee": "35"
+        },
+        "argumentLabels": {},
+        "humanText": "Calls setFee(35) on FeeModule",
+        "nested": []
+      }
+    ],
+    "effects": [],
+    "statedVsSimulated": {
+      "statedSummary": "Call setFee(uint256) on FeeModule (max value 100)",
+      "mismatchCount": 0,
+      "mismatches": []
+    },
+    "traceFindings": [],
+    "unobserved": [
+      "after: could not read owner() on 0x49fd2BE640DB2910c2fAb69bB8531Ab6E76127ff: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "after: could not read owner() on 0x7A9Ec1d04904907De0ED7b6839CcdD59c3716AC9: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "after: could not read owner() on 0xA4899D35897033b927acFCf422bc745916139776: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "after: could not read owner() on 0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "before: could not read owner() on 0x49fd2BE640DB2910c2fAb69bB8531Ab6E76127ff: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "before: could not read owner() on 0x7A9Ec1d04904907De0ED7b6839CcdD59c3716AC9: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "before: could not read owner() on 0xA4899D35897033b927acFCf422bc745916139776: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "before: could not read owner() on 0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d: Error: Transaction reverted: function selector was not recognized and there's no fallback function"
+    ],
+    "previewHash": "0x2141adf5bfe5d1fa7562345b72557e3d4673e94f8aa857bb4cbd0969ec37e671"
+  },
+  "3": {
+    "proposalId": "3",
+    "network": "local",
+    "chainId": 31337,
+    "blockNumber": 271,
+    "simulatedAt": "2026-10-25T21:11:52.800Z",
+    "status": "OK",
+    "actions": [
+      {
+        "target": "0x7A9Ec1d04904907De0ED7b6839CcdD59c3716AC9",
+        "targetLabel": "MockUSDC",
+        "function": "transfer(address,uint256)",
+        "args": {
+          "to": "0x000000000000000000000000000000000000B001",
+          "value": "7500000000"
+        },
+        "argumentLabels": {
+          "to": "Ecosystem recipient"
+        },
+        "humanText": "Calls transfer(0x00000000…B001, 7500000000) on MockUSDC",
+        "nested": []
+      }
+    ],
+    "effects": [
+      {
+        "kind": "TOKEN_BALANCE",
+        "subject": "0x000000000000000000000000000000000000b001",
+        "label": "Ecosystem recipient · MockUSDC",
+        "before": "0",
+        "after": "7500000000",
+        "delta": "+7500000000",
+        "severity": "EXPECTED",
+        "matchedRuleIndex": 0,
+        "explanation": "The simulated transfer moves 7500000000 base units, within committed rule 0 (Transfer up to 7500000000 from MockUSDC to Ecosystem recipient)."
+      },
+      {
+        "kind": "TOKEN_BALANCE",
+        "subject": "0xa4899d35897033b927acfcf422bc745916139776",
+        "label": "IntentLockExecutor · MockUSDC",
+        "before": "495000000000",
+        "after": "487500000000",
+        "delta": "-7500000000",
+        "severity": "EXPECTED",
+        "matchedRuleIndex": 0,
+        "explanation": "The simulated transfer moves 7500000000 base units, within committed rule 0 (Transfer up to 7500000000 from MockUSDC to Ecosystem recipient)."
+      }
+    ],
+    "statedVsSimulated": {
+      "statedSummary": "Transfer up to 7500000000 from MockUSDC to Ecosystem recipient",
+      "mismatchCount": 0,
+      "mismatches": []
+    },
+    "traceFindings": [],
+    "unobserved": [
+      "after: could not read owner() on 0x49fd2BE640DB2910c2fAb69bB8531Ab6E76127ff: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "after: could not read owner() on 0x7A9Ec1d04904907De0ED7b6839CcdD59c3716AC9: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "after: could not read owner() on 0xA4899D35897033b927acFCf422bc745916139776: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "after: could not read owner() on 0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "before: could not read owner() on 0x49fd2BE640DB2910c2fAb69bB8531Ab6E76127ff: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "before: could not read owner() on 0x7A9Ec1d04904907De0ED7b6839CcdD59c3716AC9: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "before: could not read owner() on 0xA4899D35897033b927acFCf422bc745916139776: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "before: could not read owner() on 0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d: Error: Transaction reverted: function selector was not recognized and there's no fallback function"
+    ],
+    "previewHash": "0x17749a78b871f0d3c0049fe2ff8dededdf1100d404015191248185a1432f3cb3"
+  },
+  "4": {
+    "proposalId": "4",
+    "network": "local",
+    "chainId": 31337,
+    "blockNumber": 271,
+    "simulatedAt": "2026-10-25T21:11:53.604Z",
+    "status": "OK",
+    "actions": [
+      {
+        "target": "0x7A9Ec1d04904907De0ED7b6839CcdD59c3716AC9",
+        "targetLabel": "MockUSDC",
+        "function": "transfer(address,uint256)",
+        "args": {
+          "to": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+          "value": "10000000000"
+        },
+        "argumentLabels": {
+          "to": "Vendor"
+        },
+        "humanText": "Calls transfer(0xa0Ee7A14…9720, 10000000000) on MockUSDC",
+        "nested": []
+      }
+    ],
+    "effects": [
+      {
+        "kind": "TOKEN_BALANCE",
+        "subject": "0xa0ee7a142d267c1f36714e4a8f75612f20a79720",
+        "label": "Vendor · MockUSDC",
+        "before": "0",
+        "after": "10000000000",
+        "delta": "+10000000000",
+        "severity": "EXPECTED",
+        "matchedRuleIndex": 0,
+        "explanation": "The simulated transfer moves 10000000000 base units, within committed rule 0 (Transfer up to 10000000000 from MockUSDC to Vendor)."
+      },
+      {
+        "kind": "TOKEN_BALANCE",
+        "subject": "0xa4899d35897033b927acfcf422bc745916139776",
+        "label": "IntentLockExecutor · MockUSDC",
+        "before": "495000000000",
+        "after": "485000000000",
+        "delta": "-10000000000",
+        "severity": "EXPECTED",
+        "matchedRuleIndex": 0,
+        "explanation": "The simulated transfer moves 10000000000 base units, within committed rule 0 (Transfer up to 10000000000 from MockUSDC to Vendor)."
+      }
+    ],
+    "statedVsSimulated": {
+      "statedSummary": "Transfer up to 10000000000 from MockUSDC to Vendor",
+      "mismatchCount": 0,
+      "mismatches": []
+    },
+    "traceFindings": [],
+    "unobserved": [
+      "after: could not read owner() on 0x49fd2BE640DB2910c2fAb69bB8531Ab6E76127ff: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "after: could not read owner() on 0x7A9Ec1d04904907De0ED7b6839CcdD59c3716AC9: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "after: could not read owner() on 0xA4899D35897033b927acFCf422bc745916139776: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "after: could not read owner() on 0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "before: could not read owner() on 0x49fd2BE640DB2910c2fAb69bB8531Ab6E76127ff: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "before: could not read owner() on 0x7A9Ec1d04904907De0ED7b6839CcdD59c3716AC9: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "before: could not read owner() on 0xA4899D35897033b927acFCf422bc745916139776: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "before: could not read owner() on 0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d: Error: Transaction reverted: function selector was not recognized and there's no fallback function"
+    ],
+    "previewHash": "0x572c404f7a2fad1f7e718136ca140016e459afc1e05da99bb765441e4179076e"
+  },
+  "5": {
+    "proposalId": "5",
+    "network": "local",
+    "chainId": 31337,
+    "blockNumber": 271,
+    "simulatedAt": "2026-10-25T21:11:54.297Z",
+    "status": "UNAVAILABLE",
+    "actions": [],
+    "effects": [],
+    "statedVsSimulated": {
+      "statedSummary": "",
+      "mismatchCount": 0,
+      "mismatches": []
+    },
+    "traceFindings": [],
+    "unobserved": [],
+    "previewHash": "0x2ff94c3d29bb160f2d46a2c989e09719e4c5006ea883308ee6ffd1ee55bbbb9e",
+    "reason": "Proposal 5 has no committed governance proposal on this chain."
+  },
+  "6": {
+    "proposalId": "6",
+    "network": "local",
+    "chainId": 31337,
+    "blockNumber": 271,
+    "simulatedAt": "2026-10-25T21:11:54.474Z",
+    "status": "OK",
+    "actions": [
+      {
+        "target": "0x720472c8ce72c2A2D711333e064ABD3E6BbEAdd3",
+        "targetLabel": "TreasuryProxy",
+        "function": "multicall(bytes[])",
+        "args": {
+          "data": "[0x3659cfe6000000000000000000000000e8d2a1e88c91dcd5433208d4152cc4f399a7e91d, 0xf2fde38b000000000000000000000000bcd4042de499d14e55001ccbb24a551f3b954096]"
+        },
+        "argumentLabels": {},
+        "humanText": "Calls multicall([0x3659cfe6…(36 bytes), 0xf2fde38b…(36 bytes)]) on TreasuryProxy",
+        "nested": [
+          {
+            "target": "0x720472c8ce72c2A2D711333e064ABD3E6BbEAdd3",
+            "targetLabel": "TreasuryProxy",
+            "function": "upgradeTo(address)",
+            "args": {
+              "newImplementation": "0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d"
+            },
+            "argumentLabels": {
+              "newImplementation": "MaliciousImpl (not in the stated intent)"
+            },
+            "humanText": "Calls upgradeTo(0xe8D2A1E8…e91d) on TreasuryProxy",
+            "nested": []
+          },
+          {
+            "target": "0x720472c8ce72c2A2D711333e064ABD3E6BbEAdd3",
+            "targetLabel": "TreasuryProxy",
+            "function": "transferOwnership(address)",
+            "args": {
+              "newOwner": "0xBcd4042DE499D14e55001CcbB24a551F3b954096"
+            },
+            "argumentLabels": {
+              "newOwner": "Attacker wallet"
+            },
+            "humanText": "Calls transferOwnership(0xBcd4042D…4096) on TreasuryProxy",
+            "nested": []
+          }
+        ]
+      }
+    ],
+    "effects": [
+      {
+        "kind": "ADMIN",
+        "subject": "0x720472c8ce72c2a2d711333e064abd3e6bbeadd3",
+        "label": "Owner/admin of TreasuryProxy",
+        "before": "0xA4899D35897033b927acFCf422bc745916139776",
+        "after": "0xBcd4042DE499D14e55001CcbB24a551F3b954096",
+        "delta": null,
+        "severity": "CRITICAL",
+        "matchedRuleIndex": null,
+        "explanation": "No committed rule transfers ownership or admin of TreasuryProxy."
+      },
+      {
+        "kind": "IMPLEMENTATION",
+        "subject": "0x720472c8ce72c2a2d711333e064abd3e6bbeadd3",
+        "label": "Implementation of TreasuryProxy",
+        "before": "0x5c74c94173F05dA1720953407cbb920F3DF9f887",
+        "after": "0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d",
+        "delta": null,
+        "severity": "CRITICAL",
+        "matchedRuleIndex": null,
+        "explanation": "No committed rule permits upgrading TreasuryProxy; the implementation slot changes anyway."
+      },
+      {
+        "kind": "CALL_TRACE",
+        "subject": "0x720472c8ce72c2A2D711333e064ABD3E6BbEAdd3",
+        "label": "Execution trace finding",
+        "before": "—",
+        "after": "DELEGATECALL: 0x720472c8ce72c2A2D711333e064ABD3E6BbEAdd3 executes in the context of 0x720472c8ce72c2A2D711333e064ABD3E6BbEAdd3",
+        "delta": null,
+        "severity": "CRITICAL",
+        "matchedRuleIndex": null,
+        "explanation": "DELEGATECALL: 0x720472c8ce72c2A2D711333e064ABD3E6BbEAdd3 executes in the context of 0x720472c8ce72c2A2D711333e064ABD3E6BbEAdd3"
+      },
+      {
+        "kind": "CALL_TRACE",
+        "subject": "0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d",
+        "label": "Execution trace finding",
+        "before": "—",
+        "after": "static scan of 0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d: Dangerous opcode detected: DELEGATECALL (0xf4) in implementation bytecode",
+        "delta": null,
+        "severity": "CRITICAL",
+        "matchedRuleIndex": null,
+        "explanation": "static scan of 0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d: Dangerous opcode detected: DELEGATECALL (0xf4) in implementation bytecode"
+      },
+      {
+        "kind": "CALL_TRACE",
+        "subject": "0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d",
+        "label": "Execution trace finding",
+        "before": "—",
+        "after": "static scan of 0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d: Dangerous opcode detected: SELFDESTRUCT (0xff) in implementation bytecode",
+        "delta": null,
+        "severity": "CRITICAL",
+        "matchedRuleIndex": null,
+        "explanation": "static scan of 0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d: Dangerous opcode detected: SELFDESTRUCT (0xff) in implementation bytecode"
+      }
+    ],
+    "statedVsSimulated": {
+      "statedSummary": "Call setFee(uint256) on FeeModule (max value 100)",
+      "mismatchCount": 5,
+      "mismatches": [
+        "Not in the stated intent: Owner/admin of TreasuryProxy changes from 0xA4899D35897033b927acFCf422bc745916139776 to 0xBcd4042DE499D14e55001CcbB24a551F3b954096",
+        "Not in the stated intent: Implementation of TreasuryProxy changes from 0x5c74c94173F05dA1720953407cbb920F3DF9f887 to 0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d",
+        "Not in the stated intent: DELEGATECALL: 0x720472c8ce72c2A2D711333e064ABD3E6BbEAdd3 executes in the context of 0x720472c8ce72c2A2D711333e064ABD3E6BbEAdd3",
+        "Not in the stated intent: static scan of 0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d: Dangerous opcode detected: DELEGATECALL (0xf4) in implementation bytecode",
+        "Not in the stated intent: static scan of 0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d: Dangerous opcode detected: SELFDESTRUCT (0xff) in implementation bytecode"
+      ]
+    },
+    "traceFindings": [
+      "DELEGATECALL: 0x720472c8ce72c2A2D711333e064ABD3E6BbEAdd3 executes in the context of 0x720472c8ce72c2A2D711333e064ABD3E6BbEAdd3",
+      "static scan of 0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d: Dangerous opcode detected: DELEGATECALL (0xf4) in implementation bytecode",
+      "static scan of 0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d: Dangerous opcode detected: SELFDESTRUCT (0xff) in implementation bytecode"
+    ],
+    "unobserved": [
+      "after: could not read owner() on 0x49fd2BE640DB2910c2fAb69bB8531Ab6E76127ff: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "after: could not read owner() on 0x7A9Ec1d04904907De0ED7b6839CcdD59c3716AC9: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "after: could not read owner() on 0xA4899D35897033b927acFCf422bc745916139776: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "after: could not read owner() on 0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "before: could not read owner() on 0x49fd2BE640DB2910c2fAb69bB8531Ab6E76127ff: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "before: could not read owner() on 0x7A9Ec1d04904907De0ED7b6839CcdD59c3716AC9: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "before: could not read owner() on 0xA4899D35897033b927acFCf422bc745916139776: Error: Transaction reverted: function selector was not recognized and there's no fallback function",
+      "before: could not read owner() on 0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d: Error: Transaction reverted: function selector was not recognized and there's no fallback function"
+    ],
+    "previewHash": "0xd6d747039bd3fc6a48611d3be51b42cbeff40aea1b79f179fba0e88017fcd5e4"
+  }
+}

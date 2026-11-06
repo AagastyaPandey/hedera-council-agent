@@ -1,0 +1,98 @@
+{
+  "DangerousBytecode": {
+    "code": "DangerousBytecode",
+    "title": "Dangerous opcodes in implementation",
+    "explanation": "The proposed implementation's bytecode contains DELEGATECALL and SELFDESTRUCT, which could let it take over or destroy the proxy.",
+    "layer": "sentinel"
+  },
+  "DelegatecallDetected": {
+    "code": "DelegatecallDetected",
+    "title": "DELEGATECALL detected",
+    "explanation": "The proposed implementation contains DELEGATECALL, allowing external code to run in the proxy's storage context.",
+    "layer": "sentinel"
+  },
+  "SelfdestructDetected": {
+    "code": "SelfdestructDetected",
+    "title": "SELFDESTRUCT detected",
+    "explanation": "The proposed implementation contains SELFDESTRUCT, which could destroy the proxy and make its funds unrecoverable.",
+    "layer": "sentinel"
+  },
+  "StateInvariantViolated": {
+    "code": "StateInvariantViolated",
+    "title": "State invariant violated",
+    "explanation": "Simulation changed monitored state outside the committed intent rules.",
+    "layer": "sentinel"
+  },
+  "CommitmentMismatch": {
+    "code": "CommitmentMismatch",
+    "title": "Commitment mismatch",
+    "explanation": "The submitted actions and rules do not reproduce the queued execution commitment.",
+    "layer": "sentinel"
+  },
+  "ExecutionReverted": {
+    "code": "ExecutionReverted",
+    "title": "Sandbox execution reverted",
+    "explanation": "The simulated execution reverted without a matching executor gate finding.",
+    "layer": "sentinel"
+  },
+  "UnauthorizedUpgrade": {
+    "code": "UnauthorizedUpgrade",
+    "title": "Unauthorized upgrade path",
+    "explanation": "Simulation found an implementation change with no matching committed UPGRADE rule.",
+    "layer": "sentinel"
+  },
+  "UnauthorizedOwnershipTransfer": {
+    "code": "UnauthorizedOwnershipTransfer",
+    "title": "Unauthorized ownership transfer",
+    "explanation": "Simulation found an ownership change with no matching committed ownership rule.",
+    "layer": "sentinel"
+  },
+  "UnauthorizedAllowance": {
+    "code": "UnauthorizedAllowance",
+    "title": "Unauthorized allowance",
+    "explanation": "Simulation found an allowance change outside the committed approval ceiling.",
+    "layer": "sentinel"
+  },
+  "UnauthorizedBalanceChange": {
+    "code": "UnauthorizedBalanceChange",
+    "title": "Unauthorized balance change",
+    "explanation": "Simulation reduced a monitored balance beyond the committed spend ceiling.",
+    "layer": "sentinel"
+  },
+  "UnauthorizedRecipient": {
+    "code": "UnauthorizedRecipient",
+    "title": "Unauthorized fund routing",
+    "explanation": "Simulation routed funds to a recipient outside the committed transfer rules.",
+    "layer": "sentinel"
+  },
+  "UnauthorizedDelegateCall": {
+    "code": "UnauthorizedDelegateCall",
+    "title": "Unauthorized delegatecall",
+    "explanation": "Simulation observed DELEGATECALL routing to an address outside the committed implementation set.",
+    "layer": "sentinel"
+  },
+  "UnauthorizedStorageChange": {
+    "code": "UnauthorizedStorageChange",
+    "title": "Unauthorized storage change",
+    "explanation": "Simulation changed a monitored storage slot outside the committed intent.",
+    "layer": "sentinel"
+  },
+  "RuleMismatch": {
+    "code": "RuleMismatch",
+    "title": "Rule mismatch",
+    "explanation": "The executed action does not match its committed rule.",
+    "layer": "sentinel"
+  },
+  "CodeHashMismatch": {
+    "code": "CodeHashMismatch",
+    "title": "Implementation code hash mismatch",
+    "explanation": "The deployed implementation bytecode does not match the committed code hash.",
+    "layer": "sentinel"
+  },
+  "SentinelViolation": {
+    "code": "SentinelViolation",
+    "title": "Sentinel invariant violation",
+    "explanation": "Simulation detected behavior outside the committed intent.",
+    "layer": "sentinel"
+  }
+}
