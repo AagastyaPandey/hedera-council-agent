@@ -100,6 +100,8 @@ Outcome: `{ auditSeq, auditHash, proposal, transferSource: "request"|"hedera-mir
 
 Money: amounts are tinybars; `hbar()` in `api.js` formats them.
 
+World ID signal: `POST /world/rp-context` for a proposal also returns `signal`, a hash of the exact transfer bytes. `world-flow.js` passes it to `IDKit.proofOfHuman({ signal })`, so the owner's approval covers this transfer only. The server recomputes the signal from its own registered proposal when verifying; the UI never supplies it.
+
 ## State machine for animation
 
 Animation can be built entirely from events and attributes, no server changes.

@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import type { AddressInfo } from "node:net";
 import { createApp, type AppOptions } from "../src/server.js";
 import type { Proposal } from "../src/proposal.js";
+import { hashSignal } from "@worldcoin/idkit-core";
 
 async function withServer(opts: AppOptions, fn: (call: (method: string, path: string, body?: unknown) => Promise<{ status: number; body: any }>) => Promise<void>) {
   const app = await createApp({ statePath: null, ...opts });
@@ -53,7 +54,7 @@ function fakeWorld(sent: any[]): typeof fetch {
   }) as typeof fetch;
 }
 
-const idkit = (action: string, nullifier: string, extra: Record<string, unknown> = {}) => ({
+const idkitBase = (action: string, nullifier: string, extra: Record<string, unknown> = {}) => ({
   protocol_version: "4.0",
   nonce: "0x1",
   action,
@@ -61,6 +62,8 @@ const idkit = (action: string, nullifier: string, extra: Record<string, unknown>
   responses: [{ identifier: "proof_of_human", issuer_schema_id: 1, nullifier, expires_at_min: 1, proof: ["1", "2", "3", "4", "5"] }],
   ...extra,
 });
+
+const idkit = idkitBase;
 
 test("a client-supplied World ID check is ignored", async () => {
   await withServer({ env: {} }, async (call) => {
@@ -134,6 +137,32 @@ test("World configured: RP context is signed for a server-chosen action", async 
     assert.equal(r.body.action, "council-sign:P-RP");
     assert.equal(r.body.rpContext.rp_id, "rp_test");
     assert.match(r.body.rpContext.signature, /^0x[0-9a-f]+$/);
+    assert.match(r.body.signal, /^council-proposal:[0-9a-f]{64}$/);
+    assert.equal((await call("POST", "/world/rp-context", { proposalId: "P-RP" })).body.signal, r.body.signal);
+  });
+});
+
+test("World configured: approval is bound to the exact proposal bytes (signal)", async () => {
+  await withServer({ env: WORLD_ENV, worldFetch: fakeWorld([]) }, async (call) => {
+    await call("POST", "/proposals", { proposal: large("P-SIG") });
+    const { signal } = (await call("POST", "/world/rp-context", { proposalId: "P-SIG" })).body;
+    const withSignal = (s: string | null, hex = "0x2a") => {
+      const r = idkit("council-sign:P-SIG", hex);
+      (r.responses[0] as any).signal_hash = s === null ? undefined : hashSignal(s);
+      return r;
+    };
+    // Proof made for another proposal's content, or with no signal: refused, nothing consumed.
+    const other = await call("POST", "/world/verify", { proposalId: "P-SIG", idkitResult: withSignal("council-proposal:" + "0".repeat(64)) });
+    assert.equal(other.status, 403);
+    assert.match(other.body.error, /signal/);
+    assert.equal((await call("POST", "/world/verify", { proposalId: "P-SIG", idkitResult: withSignal(null) })).status, 403);
+    assert.equal((await call("POST", "/proposals", { proposal: large("P-SIG") })).body.decision, "REFUSED");
+    // The same person can still approve with a correct proof (uppercase hex accepted).
+    const good = withSignal(signal);
+    (good.responses[0] as any).signal_hash = "0x" + hashSignal(signal).slice(2).toUpperCase();
+    const ok = await call("POST", "/world/verify", { proposalId: "P-SIG", idkitResult: good });
+    assert.equal(ok.body.approved, true);
+    assert.equal((await call("POST", "/proposals", { proposal: large("P-SIG") })).body.decision, "SIGNED");
   });
 });
 
@@ -141,6 +170,12 @@ test("World configured: verified approval signs once, environment pinned, replay
   const sent: any[] = [];
   await withServer({ env: WORLD_ENV, worldFetch: fakeWorld(sent) }, async (call) => {
     await call("POST", "/proposals", { proposal: large("P-W") });
+    const { signal } = (await call("POST", "/world/rp-context", { proposalId: "P-W" })).body;
+    const idkit = (action: string, nullifier: string, extra: Record<string, unknown> = {}) => {
+      const r = idkitBase(action, nullifier, extra);
+      (r.responses[0] as any).signal_hash = hashSignal(signal);
+      return r;
+    };
     const wrong = await call("POST", "/world/verify", { proposalId: "P-W", idkitResult: idkit("council-sign:OTHER", "0x2a") });
     assert.equal(wrong.status, 403);
     const ok = await call("POST", "/world/verify", { proposalId: "P-W", idkitResult: idkit("council-sign:P-W", "0x2a", { environment: "staging" }) });

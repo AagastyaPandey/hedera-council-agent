@@ -1,7 +1,8 @@
 // Fresh code, written 2026-11-06 for ETHGlobal Mumbai.
 // World ID gate, backend side.
 // For a LARGE proposal the agent may only sign after its owner passes a
-// fresh World ID check tied to that exact proposal id.
+// fresh World ID check tied to that exact proposal: its id (the action)
+// and its fingerprint (the IDKit signal).
 //
 // Flow (World ID 4.0, IDKit 4.x, verified 2026-11-06 against docs.world.org):
 //   1. The server signs the proof request for one action with the RP
@@ -21,6 +22,8 @@
 // Demo mode: with no World credentials, explicitly mocked approvals are
 // accepted on testnet only, and are labelled MOCKED everywhere.
 
+import { sha256 } from "./auditlog.js";
+import { hashSignal } from "@worldcoin/idkit-core";
 import { signRequest } from "@worldcoin/idkit-core/signing";
 
 export type WorldEnvironment = "production" | "staging" | "sandbox";
@@ -59,6 +62,23 @@ export const JOIN_ACTION = "join-council";
 
 export function councilSignAction(proposalId: string): string {
   return `council-sign:${proposalId}`;
+}
+
+// IDKit signal for one proposal: binds the proof to the exact transfer
+// bytes, not just the proposal id.
+export function proposalSignal(fingerprint: string): string {
+  return `council-proposal:${sha256(fingerprint)}`;
+}
+
+// Signal hashes arrive as 0x-hex; compare as numbers so case and
+// leading zeros do not matter.
+function sameHash(a: unknown, b: string): boolean {
+  if (typeof a !== "string" || a.length === 0 || a.length > 80) return false;
+  try {
+    return BigInt(a) === BigInt(b);
+  } catch {
+    return false;
+  }
 }
 
 export interface RpContext {
@@ -110,9 +130,17 @@ export async function verifyWorldProof(
   idkitResult: Record<string, unknown>,
   expectedAction: string,
   fetchImpl: typeof fetch = fetch,
+  expectedSignal?: string,
 ): Promise<VerifiedProof> {
   if (idkitResult.action !== expectedAction) {
     return { ok: false, nullifier: null, detail: `Proof is for action "${String(idkitResult.action)}", expected "${expectedAction}".` };
+  }
+  if (expectedSignal !== undefined) {
+    const want = hashSignal(expectedSignal);
+    const rs = idkitResult.responses;
+    if (!Array.isArray(rs) || rs.length === 0 || !rs.every((r) => sameHash((r as { signal_hash?: unknown })?.signal_hash, want))) {
+      return { ok: false, nullifier: null, detail: "Proof was not made for this exact proposal (signal mismatch). The agent does not sign." };
+    }
   }
   const res = await fetchImpl(`https://developer.world.org/api/v4/verify/${encodeURIComponent(config.rpId)}`, {
     method: "POST",

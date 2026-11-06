@@ -43,6 +43,7 @@ import {
   isWorldConfigured,
   JOIN_ACTION,
   loadWorldConfig,
+  proposalSignal,
   mockedAllowed,
   mockedWorldCheck,
   rpContextFor,
@@ -390,12 +391,12 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
   });
 
   // The action is chosen by the server, never by the client.
-  const actionFor = (body: { proposalId?: unknown; join?: unknown }): { action: string } | { error: string; status: number } => {
+  const actionFor = (body: { proposalId?: unknown; join?: unknown }): { action: string; signal?: string } | { error: string; status: number } => {
     if (body.join === true) return { action: JOIN_ACTION };
     if (typeof body.proposalId !== "string" || !proposals.has(body.proposalId)) {
       return { error: "Unknown proposal. Submit it to POST /proposals first.", status: 404 };
     }
-    return { action: councilSignAction(body.proposalId) };
+    return { action: councilSignAction(body.proposalId), signal: proposalSignal(proposals.get(body.proposalId)!.fingerprint) };
   };
 
   app.post("/world/rp-context", (req, res) => {
@@ -408,7 +409,7 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       res.status(a.status).json({ error: a.error });
       return;
     }
-    res.json({ action: a.action, appId: agent.world.appId, environment: agent.world.environment, rpContext: rpContextFor(agent.world, a.action) });
+    res.json({ action: a.action, signal: a.signal, appId: agent.world.appId, environment: agent.world.environment, rpContext: rpContextFor(agent.world, a.action) });
   });
 
   app.post("/world/verify", async (req, res) => {
@@ -433,7 +434,7 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       res.status(400).json({ error: "World ID is not configured, or no idkitResult was supplied." });
       return;
     }
-    const verified = await verifyWorldProof(agent.world, body.idkitResult, a.action, options.worldFetch);
+    const verified = await verifyWorldProof(agent.world, body.idkitResult, a.action, options.worldFetch, a.signal);
     if (!verified.ok || !verified.nullifier) {
       res.status(403).json({ approved: false, error: verified.detail });
       return;
