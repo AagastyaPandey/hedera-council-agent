@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="icon" href="data:," />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="Re-check the Council Agent decision log in your own browser, straight from a Hedera mirror node." />
+<meta name="color-scheme" content="light" />
+<meta name="theme-color" content="#f2efe7" />
+<title>Council Agent — Verify log</title>
+<link rel="stylesheet" href="/assets/original.css" />
+<link rel="stylesheet" href="/assets/motion.css" />
+<style>
+  .vmain{flex:1;padding:44px 0 20px;max-width:980px;width:100%;}
+  h1{font-size:clamp(34px,5vw,64px);line-height:.95;letter-spacing:-.04em;margin:10px 0 14px;}
+  .lede{max-width:56ch;font-size:14px;line-height:1.55;margin:0 0 26px;}
+  .form{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-bottom:12px;}
+  .form label{display:block;}
+  .form select,.form input{
+    display:block;margin-top:6px;height:38px;padding:0 10px;background:#fff;color:var(--ink);
+    border:1px solid var(--hair);border-radius:0;
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:13px;}
+  .form input{width:190px;}
+  .form button{
+    height:38px;padding:0 22px;border:1px solid var(--ink);background:var(--ink);color:var(--paper);
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:10.5px;
+    letter-spacing:.15em;text-transform:uppercase;cursor:pointer;}
+  .form button:hover{background:var(--red);border-color:var(--red);}
+  .form button:disabled{opacity:.5;cursor:wait;}
+  .note{font-size:12px;color:var(--muted);margin:0 0 26px;max-width:62ch;line-height:1.5;}
+  .status{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:12px;min-height:20px;margin:0 0 12px;}
+  .status.ok{color:#2f7d36;}
+  .status.bad{color:var(--red);font-weight:700;}
+  .rows{list-style:none;margin:0;padding:0;border-top:1px solid var(--hair);}
+  .row{
+    display:grid;grid-template-columns:28px 54px minmax(0,1.3fr) minmax(0,1fr) 120px;gap:12px;align-items:center;
+    padding:9px 0;border-bottom:1px solid var(--hair);color:var(--muted);
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:12px;
+    transition:color .25s ease,background-color .25s ease;}
+  .row .pip{width:10px;height:10px;border-radius:50%;border:1px solid var(--muted);transition:background-color .25s ease,border-color .25s ease;}
+  .row.ok{color:var(--ink);}
+  .row.ok .pip{background:#3f9b45;border-color:#3f9b45;}
+  .row.bad{color:var(--red);background:rgba(226,59,40,.07);font-weight:700;}
+  .row.bad .pip{background:var(--red);border-color:var(--red);}
+  .row .hash{text-align:right;}
+  .row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .summary{margin-top:22px;font-size:12px;line-height:1.7;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;word-break:break-all;}
+  .summary b{font-weight:700;}
+  .summary a{color:var(--ink);}
+  .summary a:hover{color:var(--red);}
+  @media (max-width:760px){
+    .sheet{padding:24px 18px 20px 60px;}
+    .row{grid-template-columns:20px 40px minmax(0,1fr) 90px;}
+    .row .pid{display:none;}
+    .topbar{grid-template-columns:1fr 1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+
+<div class="sheet">
+  <div class="rail">
+    <div class="wordmark">COUNCIL</div>
+    <div class="rail-rule"></div>
+    <div class="rail-meta">Agent&nbsp;·&nbsp;Verify</div>
+  </div>
+
+  <div class="rail-r" aria-hidden="true">
+    <div class="dot"></div>
+    <div class="est">Mumbai&nbsp;2026</div>
+  </div>
+
+  <header class="topbar">
+    <div class="menu">
+      <div class="label menu-title">Menu</div>
+      <a href="/">Atlas</a>
+      <a href="/console.html">Console</a>
+      <a href="/report.html">Report</a>
+      <a href="/policy">Policy</a>
+      <a href="/verify.html">Verify log</a>
+    </div>
+    <div>
+      <div class="label">Network</div>
+      <p class="topval" id="tNet">&mdash;</p>
+    </div>
+    <div>
+      <div class="label">Checked</div>
+      <p class="topval" id="tCount">0</p>
+    </div>
+    <div class="right">
+      <div class="label">Result</div>
+      <p class="topval"><span class="live"></span><span id="tResult">Idle</span></p>
+    </div>
+  </header>
+
+  <main class="vmain">
+    <div class="label">Public audit</div>
+    <h1>Verify the log yourself.</h1>
+    <p class="lede">Every decision is a hash-chained message on a Hedera topic. This page reads that topic from a mirror node and re-computes each hash here, so you do not have to trust the agent&rsquo;s server.</p>
+
+    <form class="form" id="form" autocomplete="off">
+      <label><span class="label">Network</span>
+        <select id="network"><option value="testnet">testnet</option><option value="mainnet">mainnet</option></select>
+      </label>
+      <label><span class="label">Topic id</span>
+        <input id="topic" placeholder="0.0.1234" spellcheck="false" />
+      </label>
+      <button type="submit" id="go">Verify</button>
+    </form>
+    <p class="note">Checked in your browser against the mirror node. Nothing is sent to our server.</p>
+
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+    <ol class="rows" id="rows"></ol>
+    <div class="summary" id="summary" hidden></div>
+  </main>
+</div>
+
+<script type="module">
+import { fetchTopic, isChainedEntry, checkEntry, GENESIS } from "/assets/chain-verify.js";
+
+const $ = (id) => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const short = (h) => (h ? `${h.slice(0, 8)}…${h.slice(-6)}` : "");
+
+// A ?mirror= override is honoured only for a local stub, never a remote host.
+function mirrorOverride() {
+  const raw = params.get("mirror");
+  if (!raw) return undefined;
+  try {
+    const u = new URL(raw);
+    if (u.protocol === "http:" && (u.hostname === "127.0.0.1" || u.hostname === "localhost")) return u.origin;
+  } catch {}
+  return undefined;
+}
+
+const net = params.get("network");
+if (net === "mainnet" || net === "testnet") $("network").value = net;
+$("topic").value = params.get("topic") || "";
+$("tNet").textContent = $("network").value;
+if (!$("topic").value) {
+  fetch("/health").then((r) => r.json()).then((h) => {
+    if (!$("topic").value && /^0\.0\.\d+$/.test(h.hcsTopic || "")) $("topic").value = h.hcsTopic;
+  }).catch(() => {});
+}
+$("network").addEventListener("change", () => ($("tNet").textContent = $("network").value));
+
+function setStatus(text, cls) {
+  const s = $("status");
+  s.textContent = text;
+  s.className = "status" + (cls ? " " + cls : "");
+}
+
+function makeRow(e) {
+  const li = document.createElement("li");
+  li.className = "row";
+  const parts = [
+    ["pip", ""],
+    ["", String(e.seq).padStart(3, "0")],
+    ["", e.event],
+    ["pid", e.proposalId],
+    ["hash", short(e.hash)],
+  ];
+  for (const [cls, text] of parts) {
+    const el = document.createElement("span");
+    if (cls === "pip") el.className = "pip";
+    else {
+      if (cls) el.className = cls;
+      el.textContent = text;
+    }
+    li.appendChild(el);
+  }
+  li.title = e.hash;
+  return li;
+}
+
+function line(parent, label, node) {
+  const d = document.createElement("div");
+  const b = document.createElement("b");
+  b.textContent = label + " ";
+  d.append(b, node);
+  parent.appendChild(d);
+}
+
+let running = false;
+$("form").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  if (running) return;
+  running = true;
+  $("go").disabled = true;
+  const rows = $("rows");
+  const summary = $("summary");
+  rows.replaceChildren();
+  summary.replaceChildren();
+  summary.hidden = true;
+  $("tCount").textContent = "0";
+  $("tResult").textContent = "Reading";
+  const network = $("network").value;
+  const topic = $("topic").value.trim();
+  try {
+    setStatus("Reading the topic from the mirror node…");
+    const messages = await fetchTopic(network, topic, {
+      baseUrl: mirrorOverride(),
+      onPage: (n) => setStatus(`Read ${n} messages from the mirror node…`),
+    });
+    const entries = messages.filter(isChainedEntry);
+    const ignored = messages.length - entries.length;
+    if (!entries.length) {
+      setStatus(`No chain entries found on topic ${topic} (${messages.length} messages).`, "bad");
+      $("tResult").textContent = "Empty";
+      return;
+    }
+    const lis = entries.map((e) => {
+      const li = makeRow(e);
+      rows.appendChild(li);
+      return li;
+    });
+    setStatus("Re-computing every hash in your browser…");
+    $("tResult").textContent = "Checking";
+    let head = { seq: 0, hash: GENESIS };
+    let checked = 0;
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+      const reason = await checkEntry(e, head);
+      if (!reduced) await sleep(120);
+      if (reason) {
+        lis[i].classList.add("bad");
+        lis[i].scrollIntoView?.({ block: "nearest" });
+        setStatus(`Broken at entry ${e.seq}: ${reason}`, "bad");
+        $("tResult").textContent = `Broken at ${e.seq}`;
+        showSummary(entries.slice(0, i + 1), topic, network, ignored);
+        return;
+      }
+      lis[i].classList.add("ok");
+      head = { seq: e.seq, hash: e.hash };
+      checked += 1;
+      $("tCount").textContent = String(checked);
+    }
+    setStatus(`Intact: ${checked} entries re-checked from genesis. Head ${short(head.hash)}.`, "ok");
+    $("tResult").textContent = "Intact";
+    showSummary(entries, topic, network, ignored, head);
+  } catch (err) {
+    setStatus(err instanceof Error ? err.message : String(err), "bad");
+    $("tResult").textContent = "Error";
+  } finally {
+    running = false;
+    $("go").disabled = false;
+  }
+});
+
+function showSummary(entries, topic, network, ignored, head) {
+  const s = $("summary");
+  const policies = [...new Set(entries.map((e) => e.policy))];
+  line(s, "Policy hash in entries:", document.createTextNode(policies.join(", ")));
+  const a = document.createElement("a");
+  a.href = "/policy";
+  a.textContent = "/policy";
+  line(s, "Compare with the published policy:", a);
+  if (policies.length > 1) line(s, "Note:", document.createTextNode("more than one policy hash appears in this log."));
+  if (head) line(s, "Chain head:", document.createTextNode(`seq ${head.seq}, ${head.hash}`));
+  if (ignored) line(s, "Ignored:", document.createTextNode(`${ignored} messages on the topic are not chain entries.`));
+  const h = document.createElement("a");
+  h.href = `https://hashscan.io/${network}/topic/${encodeURIComponent(topic)}`;
+  h.target = "_blank";
+  h.rel = "noopener";
+  h.textContent = "HashScan";
+  line(s, "Cross-check:", h);
+  s.hidden = false;
+}
+
+if (params.get("topic") && params.get("auto") !== "0") $("form").requestSubmit();
+</script>
+</body>
+</html>
