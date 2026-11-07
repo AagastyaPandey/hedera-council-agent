@@ -82,10 +82,11 @@ import {
   verifyWorldProof,
 } from "./world.js";
 import { loadZeroGConfig } from "./zeroG.js";
+import { HEDERA_KEYS, WORLD_KEYS, ZERO_G_KEYS, isRealOnly, missingKeys, missingSetup, mockedDisabledReason, setupRequiredBody } from "./realOnly.js";
 import { acceptsForCheck, paymentRequiredResponse, X402_FACILITATOR_URL } from "./x402.js";
 import { APPROVAL_TTL_MINUTES } from "./world.js";
 import { hashscanUrl } from "./hedera.js";
-import { demoMode, healthMode, missingSetup, resolveRunMode, type RunMode } from "./runmode.js";
+import { demoMode, healthMode, resolveRunMode, type RunMode } from "./runmode.js";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -124,7 +125,8 @@ export function buildAgent(env: NodeJS.ProcessEnv = process.env, port = Number(e
         )
       : new SimulatedCheckPayer(hedera, priceAtomic, { expectedPayTo: payTo });
   // The demo payees are accepted only in simulated mode, and say so.
-  const payees = loadPayeeRegistry(env, mode === "simulated" ? DEMO_PAYEES : []);
+  // Under REAL_ONLY=1 there is no demo registry: unknown payees are refused.
+  const payees = loadPayeeRegistry(env, mode === "simulated" && !isRealOnly(env) ? DEMO_PAYEES : []);
   return {
     payees,
     // Real mode fails closed without a 0G verdict; ALLOW_NO_0G=true overrides.
@@ -208,11 +210,21 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     challenge: { windowSeconds: agent.challengeWindowSeconds, recheckAtExecution: true },
     auth: { enabled: auth.enabled },
   });
-  const authLabel = auth.enabled ? "API key required for state-changing routes" : "open (demo)";
+  // The demo kill-switch (src/realOnly.ts). REAL_ONLY=1: no mocked proofs,
+  // no demo payee registry, and every route that needs real credentials
+  // fails closed with a setup-required message instead of demo data.
+  const realOnly = isRealOnly(env);
+  const setupMissing = missingSetup(env);
+  const authLabel = auth.enabled ? "API key required for state-changing routes" : realOnly ? "open (real-only: set COUNCIL_API_KEY before exposing)" : "open (demo)";
   agent.hedera.setPolicy(policyHash);
   const proposals = new Map<string, RegisteredProposal>();
   const worldOn = isWorldConfigured(agent.world);
-  const allowMocked = mockedAllowed(agent.world, agent.hedera.config.network);
+  const allowMocked = realOnly ? false : mockedAllowed(agent.world, agent.hedera.config.network);
+  // Fail-closed guard for state-changing routes under REAL_ONLY=1: returns
+  // the 503 setup-required body when the credentials the route needs are
+  // missing, null when the route may proceed. Default mode is unaffected.
+  const setupGuard = (keys: string[]): { setupRequired: true; realOnly: true; missing: { key: string; where: string }[] } | null =>
+    realOnly && missingKeys(env, keys).length > 0 ? setupRequiredBody(env, keys) : null;
 
   const mandateCtx = (): MandateContext | null => {
     const m = store.activeMandate();
@@ -267,15 +279,20 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
   // still starts and still answers reads, but every state-changing route
   // fails closed with a 503 that names the missing credentials and where to
   // get them. Nothing is faked, nothing crashes. See docs/REAL-MODE-RUNBOOK.md.
-  const setupMissing = agent.runMode === "setup" ? missingSetup(env) : [];
+  const setupBlockedMissing = agent.runMode === "setup" ? missingSetup(env) : [];
   const setupError = () => ({
     error: "Setup required: this server has no Hedera credentials and DEMO_MODE is not set, so it cannot act on the real chain. Set the credentials in .env (see docs/REAL-MODE-RUNBOOK.md) or start with DEMO_MODE=1 for the labelled demo fallback.",
     setupRequired: true,
-    missing: setupMissing,
+    missing: setupBlockedMissing,
   });
   const SETUP_BLOCKED = ["/check", "/proposals", "/council", "/mandate", "/payees", "/world/verify", "/world/rp-context"];
+  // Under REAL_ONLY=1 the middleware stands down: the per-route guards
+  // govern instead, so /world/verify keeps its own 404-before-mocked
+  // ordering, mocked paths get their 403 real-only reason, and routes
+  // that need credentials still fail closed with 503 via setupGuard.
+  // Plain setup mode (REAL_ONLY unset) is still blocked here.
   app.use((req, res, next) => {
-    if (setupMissing.length && req.method !== "GET" && req.method !== "HEAD" && SETUP_BLOCKED.some((p) => req.path === p || req.path.startsWith(`${p}/`))) {
+    if (!realOnly && setupBlockedMissing.length && req.method !== "GET" && req.method !== "HEAD" && SETUP_BLOCKED.some((p) => req.path === p || req.path.startsWith(`${p}/`))) {
       res.status(503).json(setupError());
       return;
     }
@@ -357,7 +374,11 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       ok: true,
       mode: healthMode(agent.runMode),
       runMode: agent.runMode,
-      ...(setupMissing.length ? { missingCredentials: setupMissing, setupNote: "Set the missing credentials in .env (docs/REAL-MODE-RUNBOOK.md) or start with DEMO_MODE=1 for the labelled demo fallback." } : {}),
+      realOnly,
+      ...(agent.runMode !== "demo" && setupMissing.length ? { missingCredentials: setupMissing, setupNote: "Set the missing credentials in .env (docs/REAL-MODE-RUNBOOK.md) or start with DEMO_MODE=1 for the labelled demo fallback." } : {}),
+      // Under REAL_ONLY=1 with credentials missing, the server starts but
+      // refuses to act: every state-changing route returns this payload.
+      setupRequired: realOnly && setupMissing.length > 0 ? { missing: setupMissing } : null,
       network: agent.hedera.config.network,
       x402Seller:
         agent.runMode === "setup"
@@ -373,10 +394,10 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       hcsTopic: agent.hedera.config.topicId || (agent.mode === "real" ? "created on first audit" : "simulated"),
       treasury: agent.hedera.config.treasuryAccountId || "simulated",
       councilProposer: agent.councilProposer ?? (agent.mode === "real" ? "none: proposals must name a scheduleId" : "simulated"),
-      zeroG: agent.zeroG.apiKey ? "real" : "simulated",
+      zeroG: agent.zeroG.apiKey ? "real" : realOnly ? "not configured (real-only mode: no simulated verdict)" : "simulated",
       zeroGFailClosed: agent.allowNo0G ? "off (ALLOW_NO_0G=true)" : agent.requireVerdict || agent.zeroG.apiKey ? "on: no 0G verdict, no signature" : "off in simulated mode with no key (labelled template verdict)",
       payeeRegistry: payeeSummary(),
-      world: worldOn ? `real (${agent.world.environment})` : "not configured, MOCKED approvals only",
+      world: worldOn ? `real (${agent.world.environment})` : realOnly ? "not configured (real-only mode: mocked approvals disabled)" : "not configured, MOCKED approvals only",
       councilSeats: store.seats().length,
       epoch: store.epoch(),
       mandate: (() => {
@@ -386,11 +407,15 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       auth: authLabel,
       challengeWindow: agent.challengeWindowSeconds > 0 ? `${agent.challengeWindowSeconds}s, re-checked at execution` : "off (signs as soon as every check passes)",
       note:
-        agent.runMode === "setup"
-          ? "SETUP REQUIRED: no Hedera credentials set and DEMO_MODE is not 1. State-changing routes return 503 until the credentials are set (docs/REAL-MODE-RUNBOOK.md) or the server is started with DEMO_MODE=1."
-          : agent.runMode === "demo"
-            ? "DEMO mode (DEMO_MODE=1): no real chain ids. Chain ids are SIM- ids, not real."
-            : "REAL mode: Hedera credentials set.",
+        realOnly && setupMissing.length > 0
+          ? `REAL-ONLY mode: setup required before this server can act. Missing: ${setupMissing.map((m) => m.key).join(", ")}. See /health setupRequired for where to get each one.`
+          : realOnly
+            ? "REAL-ONLY mode (REAL_ONLY=1): all credentials configured. No demo data, no mocked proofs."
+            : agent.runMode === "setup"
+              ? "SETUP REQUIRED: no Hedera credentials set and DEMO_MODE is not 1. State-changing routes return 503 until the credentials are set (docs/REAL-MODE-RUNBOOK.md) or the server is started with DEMO_MODE=1."
+              : agent.runMode === "demo"
+                ? "DEMO mode (DEMO_MODE=1): no real chain ids. Chain ids are SIM- ids, not real."
+                : "REAL mode: Hedera credentials set.",
     });
   });
 
@@ -399,7 +424,8 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
   app.get("/setup", (_req, res) => {
     res.json({
       runMode: agent.runMode,
-      ready: agent.runMode === "real",
+      realOnly,
+      ready: agent.runMode === "real" && setupMissing.length === 0,
       missing: agent.runMode === "setup" ? setupMissing : missingSetup(env),
       demoFallback: "Start with DEMO_MODE=1 for the labelled demo fallback. It never touches the real chain.",
       runbook: "docs/REAL-MODE-RUNBOOK.md",
@@ -410,6 +436,11 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     const v = validateProposal(req.body);
     if (!v.ok) {
       res.status(400).json({ error: v.error });
+      return;
+    }
+    const checkGuard = setupGuard(HEDERA_KEYS);
+    if (checkGuard) {
+      res.status(503).json({ error: "Setup required: this server cannot run a paid check without Hedera credentials.", ...checkGuard });
       return;
     }
     if (x402Applied) {
@@ -447,6 +478,11 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     const v = validateProposal((req.body as { proposal?: unknown } | null)?.proposal);
     if (!v.ok) {
       res.status(400).json({ error: v.error });
+      return;
+    }
+    const proposalGuard = setupGuard(HEDERA_KEYS);
+    if (proposalGuard) {
+      res.status(503).json({ error: "Setup required: this server cannot process a proposal without Hedera credentials.", ...proposalGuard });
       return;
     }
     const proposal = v.proposal;
@@ -573,6 +609,11 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       res.status(404).json({ error: "Unknown proposal. Submit it to POST /proposals first." });
       return;
     }
+    const executeGuard = setupGuard(HEDERA_KEYS);
+    if (executeGuard) {
+      res.status(503).json({ error: "Setup required: this server cannot execute a proposal without Hedera credentials.", ...executeGuard });
+      return;
+    }
     if (!entry.pending || entry.busy) {
       res.status(409).json({ error: `Proposal ${entry.proposal.id} is not waiting to be executed (decision: ${entry.lastOutcome.decision}).` });
       return;
@@ -622,6 +663,11 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     const entry = proposals.get(String(req.params.id));
     if (!entry) {
       res.status(404).json({ error: "Unknown proposal." });
+      return;
+    }
+    const challengeGuard = setupGuard(HEDERA_KEYS);
+    if (challengeGuard) {
+      res.status(503).json({ error: "Setup required: this server cannot act on a proposal without Hedera credentials.", ...challengeGuard });
       return;
     }
     if (!entry.pending) {
@@ -744,7 +790,7 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     let holder: string | null = null;
     if (body.mocked === true) {
       if (!allowMocked) {
-        res.status(403).json({ error: "Mocked revocations are disabled: World ID is configured (or this is mainnet)." });
+        res.status(403).json({ error: realOnly ? mockedDisabledReason("revocations") : "Mocked revocations are disabled: World ID is configured (or this is mainnet)." });
         return;
       }
       if (typeof body.byNullifier !== "string" || !store.seats().some((s) => s.source === "mocked" && s.nullifier === body.byNullifier)) {
@@ -905,6 +951,8 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       appId: worldOn ? agent.world.appId : null,
       environment: agent.world.environment,
       mockedAllowed: allowMocked,
+      realOnly,
+      setupRequired: realOnly && missingKeys(env, WORLD_KEYS).length > 0,
     });
   });
 
@@ -982,7 +1030,7 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     const proposalId = body.proposalId as string;
     if (body.mocked === true) {
       if (!allowMocked) {
-        res.status(403).json({ error: "Mocked approvals are disabled: World ID is configured (or this is mainnet)." });
+        res.status(403).json({ error: realOnly ? mockedDisabledReason("approvals") : "Mocked approvals are disabled: World ID is configured (or this is mainnet)." });
         return;
       }
       const check = mockedWorldCheck(proposalId, "approved");
@@ -1020,7 +1068,7 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     let source: "world" | "mocked";
     if (body.mocked === true) {
       if (!allowMocked) {
-        res.status(403).json({ error: "Mocked joins are disabled: World ID is configured (or this is mainnet)." });
+        res.status(403).json({ error: realOnly ? mockedDisabledReason("joins") : "Mocked joins are disabled: World ID is configured (or this is mainnet)." });
         return;
       }
       if (typeof body.nullifier !== "string" || body.nullifier.length === 0 || body.nullifier.length > 80) {
@@ -1073,7 +1121,7 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     let by: string;
     if (body.mocked === true) {
       if (!allowMocked) {
-        res.status(403).json({ error: "Mocked invites are disabled: World ID is configured (or this is mainnet)." });
+        res.status(403).json({ error: realOnly ? mockedDisabledReason("invites") : "Mocked invites are disabled: World ID is configured (or this is mainnet)." });
         return;
       }
       const seat = typeof body.byNullifier === "string" ? store.seats().find((s) => s.source === "mocked" && s.nullifier === body.byNullifier) : undefined;
@@ -1144,7 +1192,7 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     if (b.choice !== "yes" && b.choice !== "no") return { ok: false, status: 400, error: 'choice must be "yes" or "no".' };
     const choice = b.choice;
     if (b.mocked === true) {
-      if (!allowMocked) return { ok: false, status: 403, error: "Mocked ballots are disabled: World ID is configured (or this is mainnet)." };
+      if (!allowMocked) return { ok: false, status: 403, error: realOnly ? mockedDisabledReason("ballots") : "Mocked ballots are disabled: World ID is configured (or this is mainnet)." };
       const seat = typeof b.byNullifier === "string" ? store.seats().find((s) => s.source === "mocked" && s.nullifier === b.byNullifier) : undefined;
       return seat ? { ok: true, seat: seat.seat, source: "mocked", choice } : { ok: false, status: 403, error: "Only a current seat holder may vote." };
     }
@@ -1176,6 +1224,12 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     }
     if (text.length > MAX_MANDATE_TEXT) {
       res.status(400).json({ error: `text is too long (at most ${MAX_MANDATE_TEXT} characters).` });
+      return;
+    }
+    // Under REAL_ONLY=1 the simulated parser is off: compiling needs a real 0G key.
+    const mandateGuard = setupGuard(ZERO_G_KEYS);
+    if (mandateGuard) {
+      res.status(503).json({ error: "Setup required: compiling a standing instruction needs a 0G API key.", ...mandateGuard });
       return;
     }
     if (store.seats().length === 0) {
