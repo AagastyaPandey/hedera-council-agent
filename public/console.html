@@ -241,7 +241,7 @@
 </div>
 <script src="/vendor/idkit.js"></script>
 <script type="module">
-import { api, bus, hbar, qs } from "/assets/api.js";
+import { api, bus, hbar, qs, showSetupBanner } from "/assets/api.js";
 import { runWorldFlow, runMockedFlow } from "/assets/world-flow.js";
 import { joinCouncil } from "/assets/council-votes.js";
 import { replay, stagger, whileWorking as animateWorking, reduced, runFlow } from "/assets/motion.js";
@@ -431,7 +431,7 @@ async function select(id, { land = false } = {}) {
   $("mRecord").textContent = `Record ${String(idx + 1 || rowsCache.length + 1).padStart(2, "0")}`;
   $("mId").textContent = p.id; $("mDate").textContent = new Date(p.createdAt).toLocaleDateString();
   $("mNotes").replaceChildren(...[decision === "SIGNED" ? "Agent signed" : decision === "REFUSED" ? "Agent refused" : pending ? (challenge?.challenged ? "Challenged, execution paused" : "Waiting out the challenge window") : voting ? "Waiting for the council" : decision === "CANCELLED" ? "Cancelled by a seat revocation" : "Awaiting the agent", check.matches ? "Check passed" : "Check failed", mandate ? (mandate.within ? `Within ${mandate.id}` : `Outside ${mandate.id}`) : large ? "Large: World ID gate" : "Routine"].map((t, i) => el("div", t, `doc-note ${i ? "mt-1" : ""}`)));
-  const stamp = $("mStamp"); stamp.textContent = decision ? LABEL[decision] ?? decision.toLowerCase() : health.mode === "real" ? "Real mode" : "Simulated"; const stampTone = decision === "SIGNED" ? "var(--color-safe)" : pending || voting ? "var(--color-signal)" : ""; stamp.style.color = stampTone; stamp.style.borderColor = stampTone;
+  const stamp = $("mStamp"); stamp.textContent = decision ? LABEL[decision] ?? decision.toLowerCase() : health.mode === "real" ? "Real mode" : health.mode === "setup-required" ? "Setup required" : "Simulated"; const stampTone = decision === "SIGNED" ? "var(--color-safe)" : pending || voting ? "var(--color-signal)" : ""; stamp.style.color = stampTone; stamp.style.borderColor = stampTone;
 
   const al = $("alert"); al.className = `border-l-2 ${decision === "SIGNED" ? "border-safe" : pending || voting ? "border-signal" : "border-danger"} text-[12px] leading-relaxed text-dim`;
   al.dataset.decision = decision ?? "PENDING";
@@ -689,7 +689,8 @@ try {
   const logLine = ver.ok ? `log verified, ${ver.checked} entries` : ver.checked === 0 ? "log empty" : typeof ver.checked === "number" ? "log BROKEN" : "log unavailable";
   $("railMode").textContent = `${health.mode}, ${health.network}`;
   $("chainTag").textContent = `${health.mode}, ${health.network}`;
-  $("mStamp").textContent = health.mode === "real" ? "Real mode" : "Simulated";
+  $("mStamp").textContent = health.mode === "real" ? "Real mode" : health.mode === "setup-required" ? "Setup required" : "Simulated";
+  showSetupBanner(health);
   $("footLeft").textContent = `Council Agent, Mumbai 2026, policy ${pol.hash ? pol.hash.slice(0, 12) + "…" : "n/a"}`;
   $("footRight").textContent = `${logLine}, check ${health.checkPrice}, World ${health.world.startsWith("real") ? "real" : "mocked"}, 0G ${health.zeroG}`;
   world = (await api.worldConfig()).data;

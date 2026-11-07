@@ -85,6 +85,7 @@ import { loadZeroGConfig } from "./zeroG.js";
 import { acceptsForCheck, paymentRequiredResponse, X402_FACILITATOR_URL } from "./x402.js";
 import { APPROVAL_TTL_MINUTES } from "./world.js";
 import { hashscanUrl } from "./hedera.js";
+import { demoMode, healthMode, missingSetup, resolveRunMode, type RunMode } from "./runmode.js";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -101,7 +102,11 @@ function windowSeconds(env: NodeJS.ProcessEnv): number {
 }
 
 export function buildAgent(env: NodeJS.ProcessEnv = process.env, port = Number(env.PORT ?? 3000)) {
-  const { config, mode } = loadHederaConfig(env);
+  const { config, mode: hederaMode } = loadHederaConfig(env);
+  const runMode: RunMode = resolveRunMode(env);
+  // DEMO_MODE=1 forces the simulated paths even when credentials are set:
+  // the demo fallback must never touch the real chain by accident.
+  const mode = runMode === "demo" ? "simulated" : hederaMode;
   const council = mode === "real" ? loadCouncilSetup(env) : null;
   // The treasury comes from setup when not set explicitly.
   if (council?.treasuryAccountId && !env.HEDERA_TREASURY_ACCOUNT_ID?.trim()) config.treasuryAccountId = council.treasuryAccountId;
@@ -141,6 +146,8 @@ export function buildAgent(env: NodeJS.ProcessEnv = process.env, port = Number(e
     x402Network,
     checkServiceUrl,
     mode,
+    runMode,
+    demoExplicit: demoMode(env),
   };
 }
 
@@ -256,6 +263,25 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
   const app = express();
   app.use(express.json({ limit: "64kb" }));
 
+  // Setup-required mode: no Hedera credentials and no DEMO_MODE. The server
+  // still starts and still answers reads, but every state-changing route
+  // fails closed with a 503 that names the missing credentials and where to
+  // get them. Nothing is faked, nothing crashes. See docs/REAL-MODE-RUNBOOK.md.
+  const setupMissing = agent.runMode === "setup" ? missingSetup(env) : [];
+  const setupError = () => ({
+    error: "Setup required: this server has no Hedera credentials and DEMO_MODE is not set, so it cannot act on the real chain. Set the credentials in .env (see docs/REAL-MODE-RUNBOOK.md) or start with DEMO_MODE=1 for the labelled demo fallback.",
+    setupRequired: true,
+    missing: setupMissing,
+  });
+  const SETUP_BLOCKED = ["/check", "/proposals", "/council", "/mandate", "/payees", "/world/verify", "/world/rp-context"];
+  app.use((req, res, next) => {
+    if (setupMissing.length && req.method !== "GET" && req.method !== "HEAD" && SETUP_BLOCKED.some((p) => req.path === p || req.path.startsWith(`${p}/`))) {
+      res.status(503).json(setupError());
+      return;
+    }
+    next();
+  });
+
   if (agent.mode === "real" && !auth.enabled) {
     console.warn("COUNCIL_API_KEY is not set: POST /proposals and the other state-changing routes are unauthenticated. Set it before exposing this server.");
   }
@@ -266,14 +292,17 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     );
   }
 
-  // Real x402 protection for POST /check, when a payee account is set.
+  // Real x402 protection for POST /check, in real mode only, when a payee
+  // account is set. Demo mode always takes the plain 402 path below, even
+  // when credentials are present, so the fallback never spends real USDC.
   // The resource server must initialize() first: it fetches the
   // facilitator's supported kinds, otherwise every request fails with
   // "Facilitator does not support exact on hedera:testnet". If the
-  // facilitator is unreachable at boot, fall back to the plain 402
-  // shape and log it honestly.
+  // facilitator is unreachable at boot, real mode fails closed: /check
+  // returns 503 instead of accepting unverified payments (see the handler).
   let x402Applied = false;
-  if (agent.payTo !== "0.0.0") {
+  let x402Error: string | null = null;
+  if (agent.runMode === "real" && agent.payTo !== "0.0.0") {
     try {
       const { HTTPFacilitatorClient, x402ResourceServer } = await import("@x402/core/server");
       const { paymentMiddleware } = await import("@x402/express");
@@ -315,16 +344,29 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       );
       x402Applied = true;
     } catch (err) {
-      console.warn("x402 middleware unavailable, falling back to plain 402:", err instanceof Error ? err.message : err);
+      x402Error = err instanceof Error ? err.message : String(err);
+      console.warn("x402 middleware unavailable, real mode fails closed on /check:", x402Error);
     }
   }
 
+  // What is real, what is demo, and what is still missing. The UI reads
+  // mode ("real", "demo" or "setup-required") for its banner; runMode is
+  // the same value in the server's own words.
   app.get("/health", (_req, res) => {
     res.json({
       ok: true,
-      mode: agent.mode,
+      mode: healthMode(agent.runMode),
+      runMode: agent.runMode,
+      ...(setupMissing.length ? { missingCredentials: setupMissing, setupNote: "Set the missing credentials in .env (docs/REAL-MODE-RUNBOOK.md) or start with DEMO_MODE=1 for the labelled demo fallback." } : {}),
       network: agent.hedera.config.network,
-      x402Seller: x402Applied ? `real (@x402/express, Official facilitator, $${agent.priceUsd} USDC to ${agent.payTo})` : "simulated (plain 402 shape)",
+      x402Seller:
+        agent.runMode === "setup"
+          ? "setup required"
+          : x402Applied
+            ? `real (@x402/express, Official facilitator, $${agent.priceUsd} USDC to ${agent.payTo})`
+            : agent.runMode === "real"
+              ? `unavailable (facilitator unreachable at boot${x402Error ? `: ${x402Error}` : ""}): /check returns 503`
+              : "simulated (plain 402 shape)",
       x402Buyer: agent.payer.via === "x402" ? `real, pays ${agent.checkServiceUrl}` : "simulated (SIM-PAY ids)",
       checkPrice: atomicToUsd(agent.priceAtomic),
       spendCapRemaining: atomicToUsd(agent.budget.remainingAtomic),
@@ -344,9 +386,23 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       auth: authLabel,
       challengeWindow: agent.challengeWindowSeconds > 0 ? `${agent.challengeWindowSeconds}s, re-checked at execution` : "off (signs as soon as every check passes)",
       note:
-        agent.mode === "simulated"
-          ? "SIMULATED mode: no Hedera credentials set. Chain ids are SIM- ids, not real."
-          : "REAL mode: Hedera credentials set.",
+        agent.runMode === "setup"
+          ? "SETUP REQUIRED: no Hedera credentials set and DEMO_MODE is not 1. State-changing routes return 503 until the credentials are set (docs/REAL-MODE-RUNBOOK.md) or the server is started with DEMO_MODE=1."
+          : agent.runMode === "demo"
+            ? "DEMO mode (DEMO_MODE=1): no real chain ids. Chain ids are SIM- ids, not real."
+            : "REAL mode: Hedera credentials set.",
+    });
+  });
+
+  // Machine-readable setup state: which credentials are missing and where
+  // each one comes from. The same list /health carries in setup mode.
+  app.get("/setup", (_req, res) => {
+    res.json({
+      runMode: agent.runMode,
+      ready: agent.runMode === "real",
+      missing: agent.runMode === "setup" ? setupMissing : missingSetup(env),
+      demoFallback: "Start with DEMO_MODE=1 for the labelled demo fallback. It never touches the real chain.",
+      runbook: "docs/REAL-MODE-RUNBOOK.md",
     });
   });
 
@@ -360,6 +416,16 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       // The middleware verified the payment before this handler ran and
       // settles it via the facilitator after it.
       res.json({ ...checkProposal(v.proposal), mode: agent.mode });
+      return;
+    }
+    if (agent.runMode === "real") {
+      // The facilitator could not be reached at boot, so there is no
+      // verified way to take the check fee. The plain 402 path below only
+      // checks that a transaction id exists, not that it paid this service
+      // the right amount, so real mode refuses instead of taking it.
+      res.status(503).json({
+        error: `x402 check service unavailable: the facilitator could not be reached at boot${x402Error ? ` (${x402Error})` : ""}. No payment is taken and no check is returned. Restart once the facilitator is reachable.`,
+      });
       return;
     }
     // Simulated / fallback path: plain 402, verify a SIM- payment id.

@@ -1,7 +1,7 @@
 // Shared by /mandate.html, /council.html and /member.html: who this browser can vote as, joining,
 // casting a ballot (World ID or a DEMO identity), and the tally / vote card renderers.
 // The server decides everything; this module only relays ballots and draws what it returns.
-import { api, emit, hbar } from "./api.js";
+import { api, emit, hbar, showSetupBanner } from "./api.js";
 import { runWorldFlow, runWorldBallot, runWorldInvite, runMockedFlow } from "./world-flow.js";
 import { agentMarkup } from "./council-scene.js";
 import { reduced, replay } from "./motion.js";
@@ -374,6 +374,7 @@ export async function fillChrome() {
     fetch("/policy").then((r) => r.json()).catch(() => ({})),
   ]);
   if (!h) return null;
+  showSetupBanner(h);
   const tag = `${h.mode}, ${h.network}`;
   for (const id of ["chainTag", "railMode"]) { const n = $(id); if (n) n.textContent = tag; }
   const left = $("footLeft"), right = $("footRight");
