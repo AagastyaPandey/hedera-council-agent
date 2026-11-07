@@ -1054,12 +1054,17 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     res.status(201).json({ code: inv.code, id: inviteId(inv.code), expiresAt: inv.expiresAt, by, link: `/council.html?invite=${encodeURIComponent(inv.code)}`, ...logged });
   });
 
+  // Public: the council's members, with how many ballots each has cast (the council
+  // page links every row to that member's page).
   app.get("/council/seats", (_req, res) => {
+    const { items } = allVotes();
+    const cast = new Map<string, number>();
+    for (const i of items) for (const b of i.vote.ballots) cast.set(b.seat, (cast.get(b.seat) ?? 0) + 1);
     res.json({
       count: store.seats().length,
       epoch: store.epoch(),
       admission: store.seats().length === 0 ? "founder: the first seat joins freely" : "invite: a current seat holder must invite",
-      seats: store.seats().map((s) => ({ seat: s.seat, source: s.source, joinedAt: s.joinedAt, nullifier: `${s.nullifier.slice(0, 10)}…` })),
+      seats: store.seats().map((s) => ({ seat: s.seat, source: s.source, joinedAt: s.joinedAt, ballots: cast.get(s.seat) ?? 0, nullifier: `${s.nullifier.slice(0, 10)}…` })),
     });
   });
 
